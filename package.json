@@ -9,7 +9,7 @@
     "build": "vite build && node scripts/prepare-release.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && exit 1",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "node --test scripts/*.test.mjs",
     "validate:release": "node scripts/validate-release.mjs",
