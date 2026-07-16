@@ -1,0 +1,455 @@
+@import "tailwindcss" source(none);
+/* Self-hosted fonts — no external requests, instant LCP, no FOIT */
+@import "@fontsource-variable/inter";
+@import "@fontsource/sora/600.css";
+@import "@fontsource/sora/700.css";
+@import "@fontsource/sora/800.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@source "../src";
+
+
+@theme inline {
+  /* Brand palette */
+  --color-ink: #14112B;
+  --color-ink-soft: #1C1A38;
+  --color-mist: #F4F3FF;
+  --color-violet: #4F3CFF;
+  --color-violet-deep: #2E22B8;
+  --color-amber: #FFB020;
+  --color-slate: #6B7280;
+  --color-white: #FFFFFF;
+
+  /* shadcn semantics (kept for compatibility) */
+  --color-background: #14112B;
+  --color-foreground: #FFFFFF;
+  --color-border: rgba(255, 255, 255, 0.10);
+  --color-muted: #6B7280;
+  --color-primary: #4F3CFF;
+  --color-primary-foreground: #FFFFFF;
+
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Semantic z-scale */
+  --z-base: 0;
+  --z-grid: 1;
+  --z-sticky: 30;
+  --z-nav: 50;
+  --z-modal-backdrop: 70;
+  --z-modal: 80;
+  --z-toast: 90;
+  --z-tooltip: 100;
+
+  /* Motion tokens — strong ease-out per Emil Kowalski.
+     Хардкодить bezier'ы в десяти местах — путь к рассинхрону. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    background-color: var(--color-ink);
+    /* Плавный скролл двигает JS-обработчик в NavBar (scrollIntoView({behavior:"smooth"})).
+       Дублировать CSS-scroll-behavior — iOS Safari даёт двойной jitter. */
+  }
+
+  /* Sections/mains targeted by hash-nav should not slide under the fixed navbar. */
+  section[id],
+  main[id],
+  [data-scroll-anchor] {
+    scroll-margin-top: 96px;
+  }
+
+
+  body {
+    background-color: var(--color-ink);
+    color: #FFFFFF;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  ::selection {
+    background: var(--color-violet);
+    color: #FFFFFF;
+  }
+
+  /* Visible focus ring fallback — violet glow + amber outline for contrast */
+  :focus-visible {
+    outline: 2px solid var(--color-amber);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-violet) 35%, transparent);
+    border-radius: 6px;
+    transition: box-shadow 120ms ease-out;
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Defer paint/layout for off-screen sections.
+   Massive win for scroll perf and initial render on long landing pages. */
+@utility cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 720px;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: var(--z-tooltip);
+  background: var(--color-ink);
+  color: var(--color-white);
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-amber);
+  font-size: 0.875rem;
+  transform: translateY(-150%);
+  transition: transform 200ms ease-out;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* Grain overlay.
+   Desktop only — on mobile the full-screen fixed layer with mix-blend-mode
+   forces a giant compositor layer and tanks scroll FPS for ~no visual gain. */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .grain::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+}
+
+/* Aurora background */
+.aurora {
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 60% at 85% 0%, rgba(79, 60, 255, 0.55), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 10%, rgba(255, 176, 32, 0.18), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 20% 110%, rgba(46, 34, 184, 0.45), transparent 60%),
+    var(--color-ink);
+}
+
+/* Hour grid */
+.hour-grid {
+  background-image:
+    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 100% 88px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Slow-drifting amber orb inside the aurora — feels alive without noise.
+     Linear на бесконечном alternate: ease-in-out даёт видимую «остановку» на краях. */
+  .aurora::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10% auto auto;
+    width: 55vmax;
+    height: 55vmax;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 176, 32, 0.22), transparent 60%);
+    filter: blur(20px);
+    pointer-events: none;
+    z-index: -1;
+    animation: aurora-drift 22s linear infinite alternate;
+    will-change: transform;
+  }
+  @keyframes aurora-drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-6vmax, 4vmax, 0) scale(1.08); }
+  }
+
+  /* Live-clock digits get a hairline pulse on tick. */
+  .clock-tick { animation: clock-tick 1s var(--ease-out); }
+  @keyframes clock-tick {
+    0%   { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  /* Reveal-on-scroll — single restrained fade-up.
+   * Only hides when JS is enabled AND motion is not reduced. Without JS,
+   * `html.no-js` (default in prerendered HTML until the client bundle sets
+   * `.js`) keeps content fully visible so crawlers and no-JS visitors see
+   * everything immediately. */
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 500ms var(--ease-out),
+      transform 500ms var(--ease-out);
+  }
+  html.js .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  html.js .reveal[data-revealed="true"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Staggered reveal for a group of siblings (bento tiles, plan cards). */
+  .reveal-stagger > * {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 500ms var(--ease-out),
+      transform 500ms var(--ease-out);
+  }
+  html.js .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  html.js .reveal-stagger[data-revealed="true"] > * {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal-stagger[data-revealed="true"] > *:nth-child(1) { transition-delay: 0ms; }
+  .reveal-stagger[data-revealed="true"] > *:nth-child(2) { transition-delay: 60ms; }
+  .reveal-stagger[data-revealed="true"] > *:nth-child(3) { transition-delay: 120ms; }
+  .reveal-stagger[data-revealed="true"] > *:nth-child(4) { transition-delay: 180ms; }
+  .reveal-stagger[data-revealed="true"] > *:nth-child(5) { transition-delay: 240ms; }
+  .reveal-stagger[data-revealed="true"] > *:nth-child(6) { transition-delay: 300ms; }
+  .reveal-stagger[data-revealed="true"] > *:nth-child(7) { transition-delay: 360ms; }
+
+
+  /* Hover lift for bordered surfaces (bento, plan cards).
+     200ms — hover-фидбек должен быть быстрым; 400ms ощущалось «ватным». */
+  .lift {
+    transition:
+      transform 200ms var(--ease-out),
+      border-color 200ms var(--ease-out),
+      background-color 200ms var(--ease-out);
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 176, 32, 0.35);
+  }
+
+  /* Hero entrance — transitions + @starting-style: прерываемы, не рестартятся
+     при быстрой навигации, работают без JS-триггера. */
+  .hero-rise > * {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 600ms var(--ease-out),
+      transform 600ms var(--ease-out);
+  }
+  @starting-style {
+    .hero-rise > * {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  .hero-rise > *:nth-child(1) { transition-delay: 0ms; }
+  .hero-rise > *:nth-child(2) { transition-delay: 80ms; }
+  .hero-rise > *:nth-child(3) { transition-delay: 150ms; }
+  .hero-rise > *:nth-child(4) { transition-delay: 220ms; }
+
+  /* Nav drops in from above once — transition + @starting-style. */
+  .nav-drop {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition:
+      opacity 450ms var(--ease-out),
+      transform 450ms var(--ease-out);
+  }
+  @starting-style {
+    .nav-drop {
+      opacity: 0;
+      transform: translate(-50%, -140%);
+    }
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+
+/* ============================================================
+   MorningLoop — 12s cinematic phone animation
+   Layers stack inside .morning-loop:
+     .ml-lock  → lock screen (0 - 25%)
+     .ml-push  → push notification (15% - 45%)
+     .ml-chat  → chat with schedule (40% - 100%)
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  .morning-loop .ml-lock   { animation: ml-lock   12s ease-in-out infinite; }
+  .morning-loop .ml-push   { animation: ml-push   12s cubic-bezier(0.22, 1, 0.36, 1) infinite; opacity: 0; transform: translateY(-20px) scale(0.96); }
+  .morning-loop .ml-chat   { animation: ml-chat   12s cubic-bezier(0.22, 1, 0.36, 1) infinite; opacity: 0; transform: translateY(24px); }
+  .morning-loop .ml-bigclock { animation: ml-clockpulse 2.4s ease-in-out infinite; }
+  .morning-loop .ml-colon  { animation: ml-colon 1s steps(2, jump-none) infinite; }
+  .morning-loop .ml-row    { animation: ml-row 12s ease-out infinite; opacity: 0; transform: translateY(8px); }
+
+  @keyframes ml-clockpulse {
+    0%, 100% { opacity: 0.85; }
+    50%      { opacity: 1; }
+  }
+  @keyframes ml-colon {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.3; }
+  }
+
+  @keyframes ml-lock {
+    0%, 30%   { opacity: 1; transform: scale(1); }
+    38%, 100% { opacity: 0; transform: scale(1.04); }
+  }
+
+  @keyframes ml-push {
+    0%, 14%  { opacity: 0; transform: translateY(-32px) scale(0.94); }
+    20%, 36% { opacity: 1; transform: translateY(0) scale(1); }
+    42%      { opacity: 1; transform: translateY(0) scale(1.02); }
+    48%, 100% { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  }
+
+  @keyframes ml-chat {
+    0%, 40%  { opacity: 0; transform: translateY(24px); }
+    50%, 92% { opacity: 1; transform: translateY(0); }
+    100%     { opacity: 0; transform: translateY(8px); }
+  }
+
+  @keyframes ml-row {
+    0%, 49% { opacity: 0; transform: translateY(10px); }
+    /* delays applied inline per-row push the actual entrance later */
+    58%, 92% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: none; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Show only the final chat state — no looping animation */
+  .morning-loop .ml-lock,
+  .morning-loop .ml-push { display: none; }
+  .morning-loop .ml-chat { opacity: 1; transform: none; }
+  .morning-loop .ml-row  { opacity: 1; transform: none; }
+}
+
+/* Sunrise easter egg — soft amber pulse */
+@media (prefers-reduced-motion: no-preference) {
+  .sunrise-pulse {
+    animation: sunrise-glow 2.4s ease-in-out infinite;
+  }
+  @keyframes sunrise-glow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-amber) 0%, transparent); }
+    50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-amber) 18%, transparent); }
+  }
+}
+
+/* prefers-reduced-data — kill heavy decorative paints on metered connections.
+   Saves bandwidth (no grain SVG), CPU (no aurora gradients) and battery. */
+@media (prefers-reduced-data: reduce) {
+  .grain::before { display: none !important; }
+  .aurora {
+    background: var(--color-ink) !important;
+  }
+  .hour-grid { display: none; }
+  .morning-loop .ml-lock,
+  .morning-loop .ml-push,
+  .morning-loop .ml-chat,
+  .morning-loop .ml-row {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .morning-loop .ml-lock,
+  .morning-loop .ml-push { display: none; }
+  .sunrise-pulse { animation: none !important; }
+}
+
+/* Subtle digit-pulse on the LiveClock — applied via class .live-tick.
+   Restarts every second through the key prop in LiveClock. */
+@media (prefers-reduced-motion: no-preference) {
+  .live-tick {
+    animation: digit-fade 600ms ease-out;
+  }
+  @keyframes digit-fade {
+    0%   { opacity: 0.55; transform: translateY(-1px); }
+    100% { opacity: 1; transform: none; }
+  }
+
+  /* Animated underline for nav links — grows from the left on hover/focus. */
+  .nav-item {
+    position: relative;
+    /* Transform на самом элементе — иначе :active scale защёлкивается без анимации. */
+    transition: transform 140ms var(--ease-out);
+  }
+  .nav-item::after {
+    content: "";
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 4px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-amber), var(--color-violet));
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 200ms var(--ease-out);
+  }
+  .nav-item:hover::after,
+  .nav-item:focus-visible::after {
+    transform: scaleX(1);
+  }
+  .nav-item:active {
+    transform: scale(0.96);
+  }
+
+  /* One-shot glow when a section becomes the scroll target from nav click. */
+  .section-flash {
+    animation: section-flash 750ms var(--ease-out);
+  }
+  @keyframes section-flash {
+    0%   { box-shadow: inset 0 0 0 0 rgba(255, 176, 32, 0); }
+    30%  { box-shadow: inset 0 0 80px 0 rgba(255, 176, 32, 0.18); }
+    100% { box-shadow: inset 0 0 0 0 rgba(255, 176, 32, 0); }
+  }
+
+  /* Press feedback — короче и мягче. Не keyframe, чтобы rapid clicks не рестартили. */
+  .click-pop {
+    animation: click-pop 160ms var(--ease-out);
+  }
+  @keyframes click-pop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+}
+
+/* Slider thumb — tactile press feedback для калькулятора. */
+@media (prefers-reduced-motion: no-preference) {
+  .calc-slider::-webkit-slider-thumb {
+    transition: transform 140ms var(--ease-out);
+  }
+  .calc-slider:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+  .calc-slider::-moz-range-thumb {
+    transition: transform 140ms var(--ease-out);
+  }
+  .calc-slider:active::-moz-range-thumb {
+    transform: scale(1.15);
+  }
+}

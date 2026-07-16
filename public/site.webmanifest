@@ -1,0 +1,13 @@
+{
+  "name": "Vuzora",
+  "short_name": "Vuzora",
+  "description": "Расписание твоего вуза каждое утро в удобное тебе время, тихо в Telegram.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14112B",
+  "theme_color": "#14112B",
+  "lang": "ru",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" }
+  ]
+}
