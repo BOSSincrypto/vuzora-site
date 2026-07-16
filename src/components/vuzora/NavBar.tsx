@@ -20,6 +20,33 @@ import { LINKS, NAV_LINKS } from "@/content/vuzora";
 
 const MOBILE_MENU_ID = "vuzora-mobile-menu";
 
+/**
+ * Tailwind `lg` breakpoint media query. The hamburger + MobileMenu panel are
+ * `lg:hidden`; once the viewport matches this query the compact menu must
+ * force-close so we never leave aria-expanded=true + body scroll-lock after a
+ * mobile→desktop resize (VAL-BROWSER-007).
+ */
+export const DESKTOP_NAV_MQ = "(min-width: 1024px)";
+
+/**
+ * Pure desktop-media handler used by {@link NavBar} and unit-tested for the
+ * resize-to-desktop close path. When the query matches, close and clear any
+ * body overflow lock left from the mobile open state.
+ */
+export function handleDesktopNavMediaChange(
+  matchesDesktop: boolean,
+  close: () => void,
+  clearBodyOverflow: () => void = () => {
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = "";
+    }
+  },
+): void {
+  if (!matchesDesktop) return;
+  close();
+  clearBodyOverflow();
+}
+
 /** Render the site-wide navigation bar (fixed at the top of the viewport). */
 export function NavBar() {
   const [open, setOpen] = useState(false);
@@ -67,6 +94,27 @@ export function NavBar() {
     [closeMenu],
   );
 
+  // Force-close the compact menu when the viewport crosses into desktop (lg+).
+  // Without this, an open mobile menu resized to 1440px keeps aria-expanded=true
+  // and body overflow=hidden even though the panel is CSS-hidden via lg:hidden.
+  // Listen to both matchMedia("change") and window resize: some automation
+  // drivers only surface one path when the viewport is resized programmatically.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mql = window.matchMedia(DESKTOP_NAV_MQ);
+    const onChange = () => {
+      handleDesktopNavMediaChange(mql.matches, closeMenu);
+    };
+    onChange();
+    mql.addEventListener("change", onChange);
+    window.addEventListener("resize", onChange);
+    return () => {
+      mql.removeEventListener("change", onChange);
+      window.removeEventListener("resize", onChange);
+    };
+  }, [closeMenu]);
 
   // Lock scroll while open + Escape closes + return focus to toggle + focus trap.
   useEffect(() => {

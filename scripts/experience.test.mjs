@@ -94,6 +94,59 @@ test("mobile menu is absolutely positioned under the nav pill", async () => {
   );
 });
 
+/**
+ * Pure contract for VAL-BROWSER-007: when viewport crosses into desktop (lg+),
+ * the compact menu must close and body scroll-lock must clear. Mirrors
+ * `handleDesktopNavMediaChange` in NavBar (kept free of React so node --test
+ * can exercise open@mobile → desktop without a DOM renderer).
+ */
+function handleDesktopNavMediaChange(matchesDesktop, close, clearBodyOverflow) {
+  if (!matchesDesktop) return;
+  close();
+  clearBodyOverflow();
+}
+
+test("resize-to-desktop force-closes mobile menu and clears body overflow", () => {
+  // Simulate open-at-390 then cross to 1440 (matchMedia min-width 1024).
+  let open = true;
+  let bodyOverflow = "hidden";
+  const close = () => {
+    open = false;
+  };
+  const clearBodyOverflow = () => {
+    bodyOverflow = "";
+  };
+
+  // Still mobile: no-op — open state and scroll-lock must remain.
+  handleDesktopNavMediaChange(false, close, clearBodyOverflow);
+  assert.equal(open, true);
+  assert.equal(bodyOverflow, "hidden");
+
+  // Desktop media matches: close + clear overflow (VAL-BROWSER-007).
+  handleDesktopNavMediaChange(true, close, clearBodyOverflow);
+  assert.equal(open, false);
+  assert.equal(bodyOverflow, "");
+  // Closed body overflow must not remain 'hidden'.
+  assert.notEqual(bodyOverflow, "hidden");
+});
+
+test("NavBar wires matchMedia lg+ to force-close mobile menu", async () => {
+  const nav = await read("src/components/vuzora/NavBar.tsx");
+  const menu = await read("src/components/vuzora/nav/MobileMenu.tsx");
+  // Desktop breakpoint matches Tailwind lg (hamburger is lg:hidden).
+  assert.match(nav, /DESKTOP_NAV_MQ\s*=\s*"\(min-width:\s*1024px\)"/);
+  assert.match(nav, /matchMedia\(DESKTOP_NAV_MQ\)/);
+  assert.match(nav, /addEventListener\("change"/);
+  // Dual path: matchMedia change + window resize (automation/CDP may only surface one).
+  assert.match(nav, /window\.addEventListener\("resize"/);
+  assert.match(nav, /handleDesktopNavMediaChange/);
+  // Closing must clear body overflow lock left from open mobile state.
+  assert.match(nav, /document\.body\.style\.overflow\s*=\s*""/);
+  // Closed MobileMenu still keeps crawlable data-cta anchors in the tree.
+  assert.match(menu, /data-cta="bot-navigation"/);
+  assert.match(menu, /open \? "block" : "hidden"/);
+});
+
 test("not-found recovery UI has known-route recovery without university CTA", async () => {
   const rootNotFound = await read("src/routes/__root.tsx");
   const detail = await read("src/routes/unis_.$slug.tsx");
