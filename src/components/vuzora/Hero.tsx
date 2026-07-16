@@ -66,7 +66,7 @@ export function Hero() {
             слот с 05:00 до 10:00 МСК выбираешь ты. Без поиска. Без рекламы. Без шума.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
-            <CtaButton href={LINKS.botUrl} variant="primary">
+            <CtaButton href={LINKS.genericBotUrl} variant="primary" data-cta="generic-conversion">
               Открыть {LINKS.botHandle}
             </CtaButton>
             <CtaButton href="#how" variant="link" external={false} arrow={false}>

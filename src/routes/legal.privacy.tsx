@@ -44,6 +44,9 @@ export const Route = createFileRoute("/legal/privacy")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
+          "@id": "https://vuzora.ru/legal/privacy#breadcrumb",
+          name: "Политика конфиденциальности – Vuzora",
+          url: abs("/legal/privacy"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
             {
@@ -108,6 +111,7 @@ function PrivacyPage() {
             <a
               className="underline"
               href={LINKS.supportBotUrl}
+              data-cta="support"
               target="_blank"
               rel="noopener noreferrer"
             >

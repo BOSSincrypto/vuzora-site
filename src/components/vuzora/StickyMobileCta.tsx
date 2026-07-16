@@ -49,7 +49,8 @@ export function StickyMobileCta() {
       style={{ zIndex: "var(--z-sticky)" as unknown as number }}
     >
       <a
-        href={LINKS.botUrl}
+        href={LINKS.genericBotUrl}
+        data-cta="generic-conversion"
         target="_blank"
         rel="noopener noreferrer"
         tabIndex={visible ? 0 : -1}

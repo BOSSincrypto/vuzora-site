@@ -30,6 +30,7 @@ export const abs = (path: string) =>
 /** External Telegram destinations. */
 export const LINKS = {
   botUrl: "https://t.me/vuzora_bot",
+  genericBotUrl: "https://t.me/vuzora_bot?start=from-site",
   botHandle: "@vuzora_bot",
   supportBotUrl: "https://t.me/vuzora_support_bot",
   supportHandle: "@vuzora_support_bot",

@@ -41,6 +41,9 @@ export const Route = createFileRoute("/changelog")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
+          "@id": "https://vuzora.ru/changelog#breadcrumb",
+          name: PAGE_TITLE,
+          url: abs("/changelog"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
             { "@type": "ListItem", position: 2, name: "Что нового", item: abs("/changelog") },

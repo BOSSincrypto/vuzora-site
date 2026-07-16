@@ -14,6 +14,7 @@ export function TelegramIconLink({ className = "" }: { className?: string }) {
   return (
     <a
       href={LINKS.botUrl}
+      data-cta="bot-navigation"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Открыть в Telegram"

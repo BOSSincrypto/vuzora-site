@@ -80,6 +80,7 @@ export const MobileMenu = forwardRef<HTMLDivElement, Props>(function MobileMenu(
         </ul>
         <a
           href={LINKS.botUrl}
+          data-cta="bot-navigation"
           target="_blank"
           rel="noopener noreferrer"
           onClick={onClose}

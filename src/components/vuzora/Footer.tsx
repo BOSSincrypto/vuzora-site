@@ -32,6 +32,7 @@ export function Footer() {
           >
             <a
               href={LINKS.botUrl}
+              data-cta="bot-navigation"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white"

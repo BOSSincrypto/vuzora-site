@@ -63,7 +63,11 @@ const CORE_ROUTE_EXPECTATIONS = {
     jsonLdIdentity: [
       { type: "SoftwareApplication", name: "Vuzora", url: "https://t.me/vuzora_bot" },
     ],
-    ctas: [{ href: "https://t.me/vuzora_bot", classIncludes: ["bg-violet"] }],
+    ctas: [
+      { marker: "generic-conversion", href: "https://t.me/vuzora_bot?start=from-site", count: 4 },
+      { marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 },
+      { marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 },
+    ],
   },
   "/pricing": {
     title: "Тарифы Vuzora – подписка от 49 ₽",
@@ -71,38 +75,75 @@ const CORE_ROUTE_EXPECTATIONS = {
     internalLinks: ["/pricing", "/unis", "/blog"],
     jsonLdTypes: ["Product", "BreadcrumbList"],
     jsonLdIdentity: [{ type: "Product", name: "Vuzora — подписка" }],
-    ctas: [{ href: "https://t.me/vuzora_bot", classIncludes: ["bg-violet"] }],
+    ctas: [
+      { marker: "generic-conversion", href: "https://t.me/vuzora_bot?start=from-site", count: 1 },
+      { marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 },
+    ],
   },
   "/unis": {
     title: "Поддерживаемые вузы – Vuzora",
     heading: "Поддерживаемые вузы",
     internalLinks: ["/unis", "/pricing", "/blog"],
     jsonLdTypes: ["ItemList", "BreadcrumbList"],
-    ctas: [{ href: "https://t.me/vuzora_support_bot", classIncludes: ["border"] }],
+    jsonLdIdentity: [
+      {
+        type: "ItemList",
+        "@id": "https://vuzora.ru/unis#directory",
+        name: "Поддерживаемые вузы – Vuzora",
+        url: "https://vuzora.ru/unis",
+      },
+    ],
+    ctas: [
+      { marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 },
+      { marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 },
+    ],
   },
   "/blog/": {
     title: "Блог – Vuzora",
     heading: "Блог Vuzora",
     internalLinks: ["/blog", "/pricing", "/unis", "/changelog", "/legal/terms", "/legal/privacy"],
     jsonLdTypes: ["Blog"],
-    jsonLdIdentity: [{ type: "Blog", url: "https://vuzora.ru/blog" }],
-    ctas: [{ href: "https://t.me/vuzora_bot", classIncludes: ["bg-white"] }],
+    jsonLdIdentity: [
+      {
+        type: "Blog",
+        "@id": "https://vuzora.ru/blog#blog",
+        name: "Блог – Vuzora",
+        url: "https://vuzora.ru/blog",
+      },
+    ],
+    ctas: [{ marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 }],
   },
   "/changelog": {
     title: "Что нового – Vuzora",
     heading: "Что нового",
     internalLinks: ["/changelog", "/pricing", "/unis", "/blog", "/legal/terms", "/legal/privacy"],
     jsonLdTypes: ["BreadcrumbList"],
-    ctas: [{ href: "https://t.me/vuzora_bot", classIncludes: ["bg-white"] }],
+    jsonLdIdentity: [
+      {
+        type: "BreadcrumbList",
+        "@id": "https://vuzora.ru/changelog#breadcrumb",
+        name: "Что нового – Vuzora",
+        url: "https://vuzora.ru/changelog",
+      },
+    ],
+    ctas: [{ marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 }],
   },
   "/legal/terms": {
     title: "Публичная оферта – Vuzora",
     heading: "Публичная оферта",
     internalLinks: ["/", "/pricing"],
     jsonLdTypes: ["BreadcrumbList"],
+    jsonLdIdentity: [
+      {
+        type: "BreadcrumbList",
+        "@id": "https://vuzora.ru/legal/terms#breadcrumb",
+        name: "Публичная оферта – Vuzora",
+        url: "https://vuzora.ru/legal/terms",
+      },
+    ],
     ctas: [
-      { href: "https://t.me/vuzora_bot", classIncludes: ["underline"] },
-      { href: "https://t.me/vuzora_support_bot", classIncludes: ["underline"] },
+      { marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 1 },
+      { marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 },
     ],
   },
   "/legal/privacy": {
@@ -110,7 +151,17 @@ const CORE_ROUTE_EXPECTATIONS = {
     heading: "Политика конфиденциальности",
     internalLinks: ["/"],
     jsonLdTypes: ["BreadcrumbList"],
-    ctas: [{ href: "https://t.me/vuzora_support_bot", classIncludes: ["underline"] }],
+    jsonLdIdentity: [
+      {
+        type: "BreadcrumbList",
+        "@id": "https://vuzora.ru/legal/privacy#breadcrumb",
+        name: "Политика конфиденциальности – Vuzora",
+        url: "https://vuzora.ru/legal/privacy",
+      },
+    ],
+    ctas: [
+      { marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 },
+    ],
   },
 };
 
@@ -139,9 +190,11 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
         ],
         ctas: [
           {
+            marker: "university-conversion",
             href: `https://t.me/vuzora_bot?start=from-site_${university.slug}`,
-            classIncludes: ["bg-violet"],
+            count: 1,
           },
+          { marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 },
         ],
       };
     }
@@ -169,7 +222,14 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
             url: `https://vuzora.ru${route}`,
           },
         ],
-        ctas: [{ href: "https://t.me/vuzora_bot", classIncludes: ["bg-violet"] }],
+        ctas: [
+          {
+            marker: "generic-conversion",
+            href: "https://t.me/vuzora_bot?start=from-site",
+            count: 1,
+          },
+          { marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 },
+        ],
       };
     }
   }

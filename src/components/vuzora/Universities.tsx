@@ -63,7 +63,12 @@ export function Universities() {
               Напиши в Telegram – добавим, если есть открытое расписание.
             </p>
           </div>
-          <CtaButton href={LINKS.supportBotUrl} variant="ghost" arrow={false}>
+          <CtaButton
+            href={LINKS.supportBotUrl}
+            variant="ghost"
+            arrow={false}
+            data-cta="support"
+          >
             Предложить вуз
           </CtaButton>
         </div>

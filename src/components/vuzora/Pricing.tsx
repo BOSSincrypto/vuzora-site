@@ -99,7 +99,7 @@ export function Pricing() {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-4">
-              <CtaButton href={LINKS.botUrl} variant="primary">
+              <CtaButton href={LINKS.genericBotUrl} variant="primary" data-cta="generic-conversion">
                 Открыть бесплатно · 2 недели
               </CtaButton>
               <a

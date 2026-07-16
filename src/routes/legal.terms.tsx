@@ -44,6 +44,9 @@ export const Route = createFileRoute("/legal/terms")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
+          "@id": "https://vuzora.ru/legal/terms#breadcrumb",
+          name: "Публичная оферта – Vuzora",
+          url: abs("/legal/terms"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
             { "@type": "ListItem", position: 2, name: "Оферта", item: abs("/legal/terms") },
@@ -73,7 +76,13 @@ function TermsPage() {
           {BRAND.legal.entity}, ИНН {BRAND.legal.inn}, {BRAND.legal.city}
           {" – далее «Исполнитель». Любое физическое лицо, активировавшее"}
           {" подписку в Telegram-боте "}
-          <a className="underline" href={LINKS.botUrl} target="_blank" rel="noopener noreferrer">
+          <a
+            className="underline"
+            href={LINKS.botUrl}
+            data-cta="bot-navigation"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {LINKS.botHandle}
           </a>
           {" – далее «Пользователь»."}
@@ -145,6 +154,7 @@ function TermsPage() {
           <a
             className="underline"
             href={LINKS.supportBotUrl}
+            data-cta="support"
             target="_blank"
             rel="noopener noreferrer"
           >

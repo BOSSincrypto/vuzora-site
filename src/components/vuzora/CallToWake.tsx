@@ -42,7 +42,7 @@ export function CallToWake() {
           <span className="text-amber">проснись с расписанием.</span>
         </h2>
         <div className="mt-10 flex items-center justify-center">
-          <CtaButton href={LINKS.botUrl} variant="white">
+          <CtaButton href={LINKS.genericBotUrl} variant="white" data-cta="generic-conversion">
             Открыть {LINKS.botHandle}
           </CtaButton>
         </div>

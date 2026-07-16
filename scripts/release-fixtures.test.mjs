@@ -8,6 +8,7 @@ import {
   parseHtmlDocument,
   parseSitemapXml,
 } from "./release-validator.mjs";
+import { routeExpectationFor } from "./route-policy.mjs";
 import { hashReleaseBytes, normalizeSitemapLastmodBytes } from "./compare-release.mjs";
 
 const baseHtml = (body, head = "") =>
@@ -73,6 +74,50 @@ test("sitemap parser rejects duplicate child fields instead of overwriting", () 
     () => parseSitemapXml("<urlset><url><loc></loc><loc></loc></url></urlset>"),
     /duplicate sitemap field loc/,
   );
+});
+
+test("invalid UTF-8 bytes remain distinguishable in release hashes", () => {
+  const first = Uint8Array.from([0x3c, 0x70, 0x3e, 0xc3, 0x28, 0x3c, 0x2f, 0x70, 0x3e]);
+  const second = Uint8Array.from([0x3c, 0x70, 0x3e, 0xe2, 0x28, 0x3c, 0x2f, 0x70, 0x3e]);
+  assert.equal(new TextDecoder().decode(first), new TextDecoder().decode(second));
+  assert.notEqual(hashReleaseBytes("index.html", first), hashReleaseBytes("index.html", second));
+});
+
+test("exact route JSON-LD identities reject copied and duplicate subjects", () => {
+  const expectation = routeExpectationFor("/changelog", { universities: [] });
+  const copied = parseHtmlDocument(
+    baseHtml(
+      '<a href="/">Главная</a>',
+      '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog"}</script>' +
+        '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog"}</script>',
+    ),
+  );
+  const failures = [];
+  validateRouteDocument(copied, "/changelog", ["/changelog"], [], failures, new Set(), new Set(), {
+    "/changelog": { ...expectation, title: copied.title, heading: copied.headings[0], jsonLdTypes: ["BreadcrumbList"] },
+  });
+  assert.ok(failures.some((failure) => /JSON-LD identity mismatch/.test(failure)));
+});
+
+test("semantic CTA rules reject confusion, cardinality, and unsafe attributes", () => {
+  const expectation = routeExpectationFor("/", { universities: [] });
+  const html = baseHtml(
+    '<a href="/">Главная</a>' +
+      '<a href="https://t.me/vuzora_bot?start=from-site" data-cta="bot-navigation" target="_blank" rel="noopener noreferrer">Wrong marker</a>',
+  );
+  const failures = [];
+  validateRouteDocument(parseHtmlDocument(html), "/", ["/"], [], failures, new Set(), new Set(), {
+    "/": { ...expectation, ctas: [{ marker: "generic-conversion", href: "https://t.me/vuzora_bot?start=from-site", count: 2 }] },
+  });
+  assert.ok(failures.some((failure) => /data-cta=generic-conversion expected 2/.test(failure)));
+  assert.ok(failures.some((failure) => /unexpected data-cta marker bot-navigation/.test(failure)));
+
+  const unsafe = baseHtml(
+    '<a href="/">Главная</a><a href="https://t.me/vuzora_bot" data-cta="bot-navigation">Bot</a>',
+  );
+  const unsafeFailures = [];
+  validateRouteDocument(parseHtmlDocument(unsafe), "/pricing", ["/pricing"], [], unsafeFailures);
+  assert.ok(unsafeFailures.some((failure) => /unsafe external attributes|target=_blank/.test(failure)));
 });
 
 test("release hashes preserve raw bytes outside allowed sitemap dates", () => {

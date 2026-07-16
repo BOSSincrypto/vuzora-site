@@ -39,6 +39,9 @@ export const Route = createFileRoute("/unis")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "ItemList",
+          "@id": "https://vuzora.ru/unis#directory",
+          name: TITLE,
+          url: abs("/unis"),
           itemListElement: UNIVERSITIES.map((u, i) => ({
             "@type": "ListItem",
             position: i + 1,
@@ -55,6 +58,9 @@ export const Route = createFileRoute("/unis")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
+          "@id": "https://vuzora.ru/unis#breadcrumb",
+          name: TITLE,
+          url: abs("/unis"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
             { "@type": "ListItem", position: 2, name: "Вузы", item: abs("/unis") },

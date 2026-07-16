@@ -165,6 +165,7 @@ export function NavBar() {
         <div className="flex shrink-0 items-center gap-1.5">
           <a
             href={LINKS.botUrl}
+            data-cta="bot-navigation"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden shrink-0 whitespace-nowrap rounded-full bg-white px-3.5 py-2 text-[13px] font-medium text-ink transition-transform duration-200 ease-out hover:bg-mist active:scale-[0.97] sm:inline-flex"

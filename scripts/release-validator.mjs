@@ -130,20 +130,58 @@ export function assertManifest(actual, expected) {
   }
 }
 
+const CTA_MARKERS = new Set([
+  "generic-conversion",
+  "university-conversion",
+  "support",
+  "bot-navigation",
+]);
+
+function expectedMarkerForHref(href) {
+  if (href === GENERIC_CTA) return "generic-conversion";
+  if (href === SUPPORT_CTA) return "support";
+  if (href === "https://t.me/vuzora_bot") return "bot-navigation";
+  if (/^https:\/\/t\.me\/vuzora_bot\?start=from-site_[a-z0-9-]+$/.test(href))
+    return "university-conversion";
+  return undefined;
+}
+
 function validateExternalAnchors(document, failures, route) {
   for (const anchor of document.anchors) {
     const href = anchor.href ?? "";
-    if (!href.startsWith("https://t.me/")) continue;
-    if (
-      ![SUPPORT_CTA, "https://t.me/vuzora_bot", GENERIC_CTA].includes(href) &&
-      !/^https:\/\/t\.me\/vuzora_bot\?start=from-site_[a-z0-9-]+$/.test(href)
-    ) {
+    const isTelegram = href.startsWith("https://t.me/");
+    const isExternalHttp = /^https?:\/\//.test(href) && !href.startsWith(CANONICAL_ORIGIN);
+    if (!isTelegram && !isExternalHttp) continue;
+    if (isTelegram && !expectedMarkerForHref(href))
       failures.push(`${route}: unsupported Telegram destination ${href}`);
-    }
     if (anchor.target !== "_blank")
       failures.push(`${route}: external anchor must use target=_blank`);
     if (anchor.rel !== "noopener noreferrer")
       failures.push(`${route}: external anchor must use rel=noopener noreferrer`);
+    if (isTelegram && !CTA_MARKERS.has(anchor["data-cta"]))
+      failures.push(`${route}: Telegram anchor ${href} is missing a semantic data-cta marker`);
+  }
+}
+
+function validateCtaExpectations(document, expectation, failures, route) {
+  const marked = document.anchors.filter((anchor) => anchor["data-cta"]);
+  const expectedMarkers = new Set((expectation.ctas ?? []).map((cta) => cta.marker));
+  for (const anchor of marked) {
+    const marker = anchor["data-cta"];
+    if (!CTA_MARKERS.has(marker)) failures.push(`${route}: unsupported data-cta marker ${marker}`);
+    if (!expectedMarkers.has(marker))
+      failures.push(`${route}: unexpected data-cta marker ${marker}`);
+  }
+  for (const cta of expectation.ctas ?? []) {
+    const matching = document.anchors.filter((anchor) => anchor["data-cta"] === cta.marker);
+    if (matching.length !== cta.count)
+      failures.push(
+        `${route}: data-cta=${cta.marker} expected ${cta.count} anchors, found ${matching.length}`,
+      );
+    if (matching.some((anchor) => anchor.href !== cta.href))
+      failures.push(`${route}: data-cta=${cta.marker} has an incorrect destination`);
+    if (matching.some((anchor) => anchor.target !== "_blank" || anchor.rel !== "noopener noreferrer"))
+      failures.push(`${route}: data-cta=${cta.marker} has unsafe external attributes`);
   }
 }
 
@@ -216,30 +254,20 @@ export function validateRouteDocument(
     for (const type of expectation.jsonLdTypes ?? []) {
       if (!jsonLdTypes.includes(type)) failures.push(`${route}: missing JSON-LD type ${type}`);
     }
+    const jsonLdNodes = document.jsonLd.flatMap(flattenJsonLd);
     for (const identity of expectation.jsonLdIdentity ?? []) {
-      const node = document.jsonLd
-        .flatMap(flattenJsonLd)
-        .find((candidate) => candidate["@type"] === identity.type);
-      const matches =
-        node &&
+      const candidates = jsonLdNodes.filter(
+        (candidate) => candidate["@type"] === identity.type,
+      );
+      const matches = candidates.filter((candidate) =>
         Object.entries(identity).every(
-          ([key, value]) => node[key === "type" ? "@type" : key] === value,
-        );
-      if (!matches) failures.push(`${route}: JSON-LD identity mismatch for ${identity.type}`);
+          ([key, value]) => candidate[key === "type" ? "@type" : key] === value,
+        ),
+      );
+      if (matches.length !== 1)
+        failures.push(`${route}: JSON-LD identity mismatch for ${identity.type}`);
     }
-    for (const cta of expectation.ctas ?? []) {
-      const matching = document.anchors.filter((anchor) => anchor.href === cta.href);
-      if (!matching.length) failures.push(`${route}: missing expected CTA ${cta.href}`);
-      if (
-        cta.classIncludes?.length &&
-        !matching.some((anchor) =>
-          cta.classIncludes.every((classToken) => anchor.class?.split(/\s+/).includes(classToken)),
-        )
-      )
-        failures.push(
-          `${route}: CTA ${cta.href} is missing class marker ${cta.classIncludes.join(" ")}`,
-        );
-    }
+    validateCtaExpectations(document, expectation, failures, route);
   }
   if (knownTitles.has(document.title))
     failures.push(`${route}: copied route title ${document.title}`);

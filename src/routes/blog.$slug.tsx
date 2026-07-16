@@ -157,7 +157,7 @@ function BlogPost() {
               2026.
             </p>
             <div className="mt-4">
-              <CtaButton href={LINKS.botUrl} variant="primary">
+              <CtaButton href={LINKS.genericBotUrl} variant="primary" data-cta="generic-conversion">
                 Открыть {LINKS.botHandle}
               </CtaButton>
             </div>
