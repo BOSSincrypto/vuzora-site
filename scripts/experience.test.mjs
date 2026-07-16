@@ -60,11 +60,23 @@ test("reveal surfaces stay visible without JS and under reduced motion preferenc
 
 test("mobile menu is absolutely positioned under the nav pill", async () => {
   const menu = await read("src/components/vuzora/nav/MobileMenu.tsx");
+  const sticky = await read("src/components/vuzora/StickyMobileCta.tsx");
   assert.match(menu, /absolute left-0 right-0 top-full/);
   assert.match(menu, /data-motion-surface="menu"/);
   assert.match(menu, /inert/);
-  // Closed state must unmount panel content from tab/hit testing.
-  assert.match(menu, /className="[^"]*hidden/);
+  // Closed state hides from layout/tab/hit testing without removing crawlable CTAs.
+  assert.match(menu, /hidden/);
+  assert.match(menu, /data-cta="bot-navigation"/);
+  assert.match(sticky, /data-cta="generic-conversion"/);
+  // Must keep CTA anchors in initial HTML (no early-return empty shell only).
+  assert.doesNotMatch(
+    menu,
+    /if\s*\(\s*!open\s*\)\s*\{\s*return\s*\(\s*<div[\s\S]*?\/>\s*\)\s*;?\s*\}/,
+  );
+  assert.doesNotMatch(
+    sticky,
+    /if\s*\(\s*!visible\s*\)\s*\{\s*return\s*\(\s*<div[\s\S]*?\/>\s*\)\s*;?\s*\}/,
+  );
 });
 
 test("not-found recovery UI has known-route recovery without university CTA", async () => {
