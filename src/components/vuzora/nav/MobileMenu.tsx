@@ -23,22 +23,33 @@ export const MobileMenu = forwardRef<HTMLDivElement, Props>(function MobileMenu(
   { id, open, onClose },
   ref,
 ) {
+  // Use display + visibility (not opacity) for open state. Opacity utilities
+  // were stacking with sticky/nav motion surfaces and left the open panel at
+  // computed opacity 0 even when class `opacity-100` was present.
+  if (!open) {
+    return (
+      <div
+        id={id}
+        ref={ref}
+        data-motion-surface="menu"
+        className="absolute left-0 right-0 top-full z-50 mt-2 hidden lg:hidden"
+        aria-hidden="true"
+        inert={"" as unknown as boolean}
+      />
+    );
+  }
+
   return (
     <div
       id={id}
       ref={ref}
-      className={`lg:hidden ${
-        open
-          ? "pointer-events-auto translate-y-0 opacity-100"
-          : "pointer-events-none -translate-y-2 opacity-0"
-      } mt-2 transition-all duration-200 ease-out`}
-      aria-hidden={!open}
-      // `inert` removes the subtree from tab order, hit testing, and the
-      // a11y tree in one property — prevents keyboard users from landing
-      // on invisible links behind the closed panel.
-      {...(!open ? { inert: "" as unknown as boolean } : {})}
+      data-motion-surface="menu"
+      // Absolute under the nav pill so a closed panel never inflates header
+      // height (which previously stuck `.nav-drop` above the viewport).
+      className="absolute left-0 right-0 top-full z-50 mt-2 block lg:hidden"
+      aria-hidden={false}
     >
-      <div className="rounded-3xl border border-white/10 bg-ink/95 p-2 backdrop-blur-xl">
+      <div className="rounded-3xl border border-white/10 bg-ink/95 p-2 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.65)] backdrop-blur-xl">
         <ul className="flex flex-col">
           {NAV_LINKS.map((l) => (
             <li key={l.href}>

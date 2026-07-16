@@ -40,12 +40,22 @@ export function StickyMobileCta() {
     };
   }, []);
 
+  if (!visible) {
+    return (
+      <div
+        aria-hidden="true"
+        data-motion-surface="menu"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 hidden px-3 lg:hidden"
+        style={{ zIndex: "var(--z-sticky)" as unknown as number }}
+      />
+    );
+  }
+
   return (
     <div
-      aria-hidden={!visible}
-      className={`pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-all duration-300 ease-out lg:hidden ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-      }`}
+      aria-hidden={false}
+      data-motion-surface="menu"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 block px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden"
       style={{ zIndex: "var(--z-sticky)" as unknown as number }}
     >
       <a
@@ -53,7 +63,6 @@ export function StickyMobileCta() {
         data-cta="generic-conversion"
         target="_blank"
         rel="noopener noreferrer"
-        tabIndex={visible ? 0 : -1}
         className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/95 px-4 py-3 text-ink shadow-[0_20px_60px_-20px_rgba(79,60,255,0.6)] backdrop-blur-xl"
       >
         <span className="flex flex-col leading-tight">

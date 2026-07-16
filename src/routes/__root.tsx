@@ -4,10 +4,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import interCyrillicWoff2 from "@fontsource-variable/inter/files/inter-cyrillic-wght-normal.woff2?url";
@@ -191,10 +192,12 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         {/* Toggle `html.js` before the first paint so reveal-on-scroll CSS
          * only hides content when JS is actually running. Prevents blank
-         * sections for crawlers, no-JS users, and briefly broken bundles. */}
+         * sections for crawlers, no-JS users, and briefly broken bundles.
+         * Also mirror Save-Data onto `html.save-data` for reduced-data CSS. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: "document.documentElement.classList.add('js');",
+            __html:
+              "document.documentElement.classList.add('js');try{if(navigator.connection&&navigator.connection.saveData){document.documentElement.classList.add('save-data');}}catch(e){}/* Fail-safe: if the client bundle never mounts useReveal, force-show server content so crawlers with partial JS and broken bundles never keep sections at opacity 0. */(function(){function revealAll(){try{document.querySelectorAll('.reveal:not([data-revealed=\"true\"]),.reveal-stagger:not([data-revealed=\"true\"])').forEach(function(el){el.dataset.revealed='true';});}catch(e){}}if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){revealAll();return;}window.setTimeout(revealAll,1800);})();",
           }}
         />
         <HeadContent />
@@ -207,11 +210,91 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * After same-origin navigations, land keyboard focus on main/H1 (or the first
+ * actionable control inside main) so focus is never detached or left on a
+ * stale node behind an overlay (VAL-BROWSER-014).
+ *
+ * Handles both SPA path changes (`useRouterState`) and full document loads
+ * that arrive from another on-site URL (referrer / performance navigation).
+ * Cold first visits are left alone so the skip-link remains the first stop.
+ */
+function focusRouteSurface() {
+  if (typeof document === "undefined") return;
+  const main = document.querySelector("main");
+  if (!main) return;
+  // Prefer visible H1 text (skip sr-only if a visible heading exists later).
+  const headings = [...main.querySelectorAll<HTMLElement>("h1, h2")];
+  const heading =
+    headings.find((el) => {
+      const style = window.getComputedStyle(el);
+      return style.display !== "none" && style.visibility !== "hidden";
+    }) ?? headings[0];
+  const target =
+    heading ??
+    main.querySelector<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ) ??
+    (main as HTMLElement);
+
+  if (!target.hasAttribute("tabindex")) {
+    target.setAttribute("tabindex", "-1");
+  }
+
+  try {
+    target.focus({ preventScroll: true });
+  } catch {
+    /* ignore focus failures in non-interactive environments */
+  }
+}
+
+const FOCUS_PATH_KEY = "vuzora:last-path";
+
+function RouteFocusManager() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const previousPath = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Retry a few times so a late paint or hydration doesn't leave focus on body.
+    const scheduleFocus = () => {
+      for (const ms of [0, 50, 150, 300]) {
+        window.setTimeout(focusRouteSurface, ms);
+      }
+    };
+
+    const spaChanged =
+      previousPath.current !== null && previousPath.current !== pathname;
+
+    // sessionStorage survives full reloads (agent-browser hard navigations).
+    // Compare *before* writing so a cold first visit (no key yet) stays quiet
+    // and Strict Mode remounts with the same path do not re-trigger focus.
+    let storageChanged = false;
+    try {
+      const last = sessionStorage.getItem(FOCUS_PATH_KEY);
+      storageChanged = last !== null && last !== pathname;
+      sessionStorage.setItem(FOCUS_PATH_KEY, pathname);
+    } catch {
+      storageChanged = false;
+    }
+
+    previousPath.current = pathname;
+
+    if (spaChanged || storageChanged) {
+      scheduleFocus();
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
+      <RouteFocusManager />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>

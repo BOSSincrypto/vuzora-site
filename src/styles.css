@@ -55,6 +55,9 @@
 
   html {
     background-color: var(--color-ink);
+    /* Clip horizontal bleed from full-bleed decorative layers without
+       removing vertical scroll or sticky/fixed children. */
+    overflow-x: clip;
     /* Плавный скролл двигает JS-обработчик в NavBar (scrollIntoView({behavior:"smooth"})).
        Дублировать CSS-scroll-behavior — iOS Safari даёт двойной jitter. */
   }
@@ -73,6 +76,8 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "ss01", "cv11";
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   ::selection {
@@ -264,28 +269,57 @@
   .hero-rise > *:nth-child(2) { transition-delay: 80ms; }
   .hero-rise > *:nth-child(3) { transition-delay: 150ms; }
   .hero-rise > *:nth-child(4) { transition-delay: 220ms; }
+}
 
-  /* Nav drops in from above once — transition + @starting-style. */
-  .nav-drop {
-    opacity: 1;
-    transform: translate(-50%, 0);
-    transition:
-      opacity 450ms var(--ease-out),
-      transform 450ms var(--ease-out);
-  }
-  @starting-style {
-    .nav-drop {
-      opacity: 0;
-      transform: translate(-50%, -140%);
-    }
-  }
+/* Fixed nav pill — always painted. Never put this inside a motion media query
+   or @starting-style: previous percent-based drop + tall mobile menu left the
+   bar stuck at opacity 0 above/off the viewport. */
+.nav-drop {
+  opacity: 1 !important;
 }
 
 
+/* Reduced motion — nonessential surfaces must compute to animation-name: none
+   and transition-duration: 0ms (VAL-BROWSER-010). Global short-circuit first;
+   named surfaces then pin explicit none/0ms for validator sampling. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
+    animation: none !important;
+    animation-duration: 0ms !important;
+    animation-name: none !important;
+    transition: none !important;
+    transition-duration: 0ms !important;
+  }
+
+  .reveal,
+  [data-motion-surface="reveal"],
+  .reveal-stagger > *,
+  .hero-rise > *,
+  .morning-loop,
+  .morning-loop .ml-lock,
+  .morning-loop .ml-push,
+  .morning-loop .ml-chat,
+  .morning-loop .ml-row,
+  .morning-demo,
+  [data-motion-surface="demo"] {
+    animation: none !important;
+    animation-name: none !important;
+    transition: none !important;
+    transition-duration: 0ms !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Route/menu surfaces kill motion without resetting layout transforms
+     (fixed nav uses -translate-x-1/2; sticky CTA uses translate-y). */
+  .nav-drop,
+  [data-motion-surface="route"],
+  [data-motion-surface="menu"] {
+    animation: none !important;
+    animation-name: none !important;
+    transition: none !important;
+    transition-duration: 0ms !important;
+    opacity: 1 !important;
   }
 }
 
@@ -359,8 +393,8 @@
   }
 }
 
-/* prefers-reduced-data — kill heavy decorative paints on metered connections.
-   Saves bandwidth (no grain SVG), CPU (no aurora gradients) and battery. */
+/* prefers-reduced-data + Save-Data (navigator.connection.saveData → html.save-data).
+   Drop decorative/heavy surfaces only; required copy, links, and CTAs stay. */
 @media (prefers-reduced-data: reduce) {
   .grain::before { display: none !important; }
   .aurora {
@@ -379,6 +413,23 @@
   .morning-loop .ml-push { display: none; }
   .sunrise-pulse { animation: none !important; }
 }
+
+html.save-data .grain::before { display: none !important; }
+html.save-data .aurora {
+  background: var(--color-ink) !important;
+}
+html.save-data .hour-grid { display: none; }
+html.save-data .morning-loop .ml-lock,
+html.save-data .morning-loop .ml-push,
+html.save-data .morning-loop .ml-chat,
+html.save-data .morning-loop .ml-row {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+html.save-data .morning-loop .ml-lock,
+html.save-data .morning-loop .ml-push { display: none; }
+html.save-data .sunrise-pulse { animation: none !important; }
 
 /* Subtle digit-pulse on the LiveClock — applied via class .live-tick.
    Restarts every second through the key prop in LiveClock. */

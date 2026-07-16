@@ -3,12 +3,28 @@
  *
  * Adds `data-revealed="true"` to the element once it scrolls into view.
  * Pair with the `.reveal` utility in styles.css for a single, restrained
- * fade-up. Respects `prefers-reduced-motion` via CSS (no transform when set).
+ * fade-up. Under `prefers-reduced-motion: reduce`, missing IntersectionObserver,
+ * or reduced-data / Save-Data, content is revealed immediately so required
+ * copy never depends on timers or observers.
  */
 import { useEffect, useRef } from "react";
 
+function shouldRevealImmediately(): boolean {
+  if (typeof window === "undefined") return true;
+  if (typeof IntersectionObserver === "undefined") return true;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true;
+  if (window.matchMedia("(prefers-reduced-data: reduce)").matches) return true;
+  const connection = (
+    navigator as Navigator & {
+      connection?: { saveData?: boolean };
+    }
+  ).connection;
+  if (connection?.saveData) return true;
+  return false;
+}
+
 export function useReveal<T extends HTMLElement = HTMLDivElement>(
-  options?: IntersectionObserverInit
+  options?: IntersectionObserverInit,
 ) {
   const ref = useRef<T | null>(null);
   // Serialise primitive fields so callers can pass a fresh object literal
@@ -21,7 +37,17 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>(
   });
   useEffect(() => {
     const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!el) return;
+
+    if (!el.dataset.motionSurface) {
+      el.dataset.motionSurface = "reveal";
+    }
+
+    if (shouldRevealImmediately()) {
+      el.dataset.revealed = "true";
+      return;
+    }
+
     const parsed = JSON.parse(optionsKey) as IntersectionObserverInit;
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) {

@@ -62,6 +62,7 @@ export function SectionHeader({
   return (
     <div
       ref={ref}
+      data-motion-surface="reveal"
       className={`reveal mb-14 flex flex-col gap-6 ${
         align === "between" ? "md:flex-row md:items-end md:justify-between" : "items-start"
       } ${className}`}

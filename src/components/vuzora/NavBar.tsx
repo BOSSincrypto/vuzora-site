@@ -123,8 +123,8 @@ export function NavBar() {
 
   return (
     <header
+      data-motion-surface="route"
       className="nav-drop pointer-events-none fixed left-1/2 top-3 z-50 w-[calc(100%-1rem)] max-w-6xl -translate-x-1/2 md:top-4 md:w-[calc(100%-1.5rem)]"
-
       style={{ zIndex: "var(--z-nav)" as unknown as number }}
     >
       <nav

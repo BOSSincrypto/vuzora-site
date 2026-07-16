@@ -70,7 +70,8 @@ export function MorningLoop() {
             aria-hidden
           />
           <div
-            className="morning-loop relative mx-auto aspect-[10/16] w-full max-w-[360px] overflow-hidden rounded-[2.25rem] border border-white/10 bg-ink-soft/80 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl"
+            className="morning-loop morning-demo relative mx-auto aspect-[10/16] w-full max-w-[360px] overflow-hidden rounded-[2.25rem] border border-white/10 bg-ink-soft/80 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl"
+            data-motion-surface="demo"
             role="img"
             aria-label="Анимация: пуш-уведомление Vuzora раскрывается в расписание дня в выбранное тобой утро"
           >
