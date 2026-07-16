@@ -3,9 +3,11 @@
  * mobile. Appears after the user has scrolled past the hero so it doesn't
  * compete with the in-hero CTA.
  *
- * Desktop renders nothing. Respects `prefers-reduced-motion` (transition is
- * zeroed via `[data-motion-surface="menu"]`). The conversion anchor remains in
- * the initial HTML so static release validation and no-JS crawlers still see it.
+ * Desktop is hidden via `lg:hidden`. Respects `prefers-reduced-motion`
+ * (transition zeroed via `[data-motion-surface="sticky"]` without forcing
+ * opacity:1). The conversion anchor remains in the initial HTML so static
+ * release validation and no-JS crawlers still see it; when not scrolled it is
+ * non-interactive (no pointer hit-testing, tabIndex=-1).
  *
  * @module components/vuzora/StickyMobileCta
  */
@@ -43,7 +45,7 @@ export function StickyMobileCta() {
   return (
     <div
       aria-hidden={!visible}
-      data-motion-surface="menu"
+      data-motion-surface="sticky"
       className={`pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-all duration-300 ease-out lg:hidden ${
         visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       }`}
@@ -55,7 +57,10 @@ export function StickyMobileCta() {
         target="_blank"
         rel="noopener noreferrer"
         tabIndex={visible ? 0 : -1}
-        className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/95 px-4 py-3 text-ink shadow-[0_20px_60px_-20px_rgba(79,60,255,0.6)] backdrop-blur-xl"
+        aria-hidden={!visible}
+        className={`${
+          visible ? "pointer-events-auto" : "pointer-events-none"
+        } flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/95 px-4 py-3 text-ink shadow-[0_20px_60px_-20px_rgba(79,60,255,0.6)] backdrop-blur-xl`}
       >
         <span className="flex flex-col leading-tight">
           <span className="font-display text-[15px] font-semibold tracking-tight">

@@ -218,9 +218,23 @@ function RootShell({ children }: { children: ReactNode }) {
  * Handles both SPA path changes (`useRouterState`) and full document loads
  * that arrive from another on-site URL (referrer / performance navigation).
  * Cold first visits are left alone so the skip-link remains the first stop.
+ *
+ * Skips focus moves while the mobile menu focus trap is active so retries do
+ * not steal focus from the open panel. All multi-timeout retries are cleared
+ * on effect cleanup (path change / unmount).
  */
+function isMobileMenuFocusTrapActive() {
+  if (typeof document === "undefined") return false;
+  const toggle = document.querySelector<HTMLElement>(
+    '[aria-controls="vuzora-mobile-menu"]',
+  );
+  return toggle?.getAttribute("aria-expanded") === "true";
+}
+
 function focusRouteSurface() {
   if (typeof document === "undefined") return;
+  // Do not fight the open mobile menu focus trap.
+  if (isMobileMenuFocusTrapActive()) return;
   const main = document.querySelector("main");
   if (!main) return;
   // Prefer visible H1 text (skip sr-only if a visible heading exists later).
@@ -257,10 +271,14 @@ function RouteFocusManager() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const timeoutIds: number[] = [];
+
     // Retry a few times so a late paint or hydration doesn't leave focus on body.
+    // Clear all scheduled retries on cleanup so path changes / unmount cannot
+    // leave stale timers fighting a later focus trap or a newer route.
     const scheduleFocus = () => {
       for (const ms of [0, 50, 150, 300]) {
-        window.setTimeout(focusRouteSurface, ms);
+        timeoutIds.push(window.setTimeout(focusRouteSurface, ms));
       }
     };
 
@@ -284,6 +302,12 @@ function RouteFocusManager() {
     if (spaChanged || storageChanged) {
       scheduleFocus();
     }
+
+    return () => {
+      for (const id of timeoutIds) {
+        window.clearTimeout(id);
+      }
+    };
   }, [pathname]);
 
   return null;

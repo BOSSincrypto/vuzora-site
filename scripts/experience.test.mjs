@@ -24,9 +24,18 @@ test("reduced-motion CSS disables nonessential motion surfaces with none/0ms", a
     '[data-motion-surface="demo"]',
     '[data-motion-surface="menu"]',
     '[data-motion-surface="route"]',
+    '[data-motion-surface="sticky"]',
   ]) {
     assert.ok(css.includes(surface), `missing reduced-motion surface ${surface}`);
   }
+  // Sticky intentional hide must keep zeroed motion without opacity:1 !important.
+  const stickyRule = css.match(
+    /\[data-motion-surface="sticky"\]\s*\{([^}]+)\}/,
+  );
+  assert.ok(stickyRule, "sticky motion surface rule missing");
+  assert.match(stickyRule[1], /animation-name:\s*none\s*!important/);
+  assert.match(stickyRule[1], /transition-duration:\s*0ms\s*!important/);
+  assert.doesNotMatch(stickyRule[1], /opacity:\s*1\s*!important/);
   // Must not leave the previous sub-millisecond "trick" as the only rule.
   assert.doesNotMatch(
     css,
@@ -68,6 +77,12 @@ test("mobile menu is absolutely positioned under the nav pill", async () => {
   assert.match(menu, /hidden/);
   assert.match(menu, /data-cta="bot-navigation"/);
   assert.match(sticky, /data-cta="generic-conversion"/);
+  // Sticky uses a distinct motion surface so reduced-motion cannot force opacity:1.
+  assert.match(sticky, /data-motion-surface="sticky"/);
+  // Hidden sticky must disable pointer hit-testing on the anchor, not only tabIndex.
+  assert.match(sticky, /tabIndex=\{visible \? 0 : -1\}/);
+  assert.match(sticky, /pointer-events-none/);
+  assert.match(sticky, /visible \? "pointer-events-auto" : "pointer-events-none"/);
   // Must keep CTA anchors in initial HTML (no early-return empty shell only).
   assert.doesNotMatch(
     menu,
@@ -106,6 +121,10 @@ test("route focus manager restores focus after client navigation", async () => {
   assert.match(root, /preventScroll:\s*true/);
   assert.match(root, /sessionStorage|FOCUS_PATH_KEY|vuzora:last-path/);
   assert.match(root, /spaChanged|storageChanged/);
+  // Multi-timeout retries must clear on cleanup and avoid fighting the menu trap.
+  assert.match(root, /clearTimeout/);
+  assert.match(root, /timeoutIds/);
+  assert.match(root, /isMobileMenuFocusTrapActive|aria-expanded.*true|vuzora-mobile-menu/);
 });
 
 test("demo surface is marked for reduced-motion sampling", async () => {

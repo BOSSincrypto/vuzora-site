@@ -311,7 +311,7 @@
   }
 
   /* Route/menu surfaces kill motion without resetting layout transforms
-     (fixed nav uses -translate-x-1/2; sticky CTA uses translate-y). */
+     (fixed nav uses -translate-x-1/2). Nav/route stay fully painted. */
   .nav-drop,
   [data-motion-surface="route"],
   [data-motion-surface="menu"] {
@@ -320,6 +320,15 @@
     transition: none !important;
     transition-duration: 0ms !important;
     opacity: 1 !important;
+  }
+
+  /* Sticky CTA uses opacity/translate for intentional hide-until-scroll.
+     Zero motion only — never force opacity:1 or the bar paints before scroll. */
+  [data-motion-surface="sticky"] {
+    animation: none !important;
+    animation-name: none !important;
+    transition: none !important;
+    transition-duration: 0ms !important;
   }
 }
 
