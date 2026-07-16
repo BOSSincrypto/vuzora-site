@@ -47,9 +47,24 @@ jobs:
         run: bun run build
         env:
           NODE_ENV: production
+          TZ: UTC
+          SOURCE_DATE_EPOCH: "0"
 
-      - name: Validate release artifacts
+      - name: Validate first release artifacts
         run: bun run validate:release
+
+      - name: Run two clean frozen-install build cycles
+        run: bun run repeat:release
+        env:
+          NODE_ENV: production
+          TZ: UTC
+          SOURCE_DATE_EPOCH: "0"
+
+      - name: Remove validated transport manifest
+        run: bun run finalize:release
+
+      - name: Check upload tree
+        run: test ! -e dist/release-manifest.json && test -s dist/index.html && test -s dist/404.html && test -s dist/sitemap.xml
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

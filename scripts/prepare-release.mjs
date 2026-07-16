@@ -1,5 +1,6 @@
 import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { manifestFor, readRegistry } from "./route-policy.mjs";
 
 const root = process.cwd();
 const dist = join(root, "dist");
@@ -23,6 +24,13 @@ for (const path of await htmlFiles(dist)) {
   const normalized = html.replace(/u:\d{13}/g, "u:0");
   if (normalized !== html) await writeFile(path, normalized);
 }
+
+const { universities, posts } = await readRegistry();
+await writeFile(
+  join(dist, "release-manifest.json"),
+  `${JSON.stringify(manifestFor({ universities, posts }), null, 2)}\n`,
+  "utf8",
+);
 
 await Promise.all([
   rm(join(dist, "pages.json"), { force: true }),

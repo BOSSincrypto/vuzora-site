@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "node --test scripts/*.test.mjs",
-    "validate:release": "node scripts/validate-release.mjs"
+    "validate:release": "node scripts/validate-release.mjs",
+    "compare:release": "node scripts/compare-release.mjs",
+    "repeat:release": "node scripts/repeat-release.mjs",
+    "finalize:release": "node scripts/finalize-release.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

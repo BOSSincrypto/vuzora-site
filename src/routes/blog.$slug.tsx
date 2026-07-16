@@ -13,15 +13,11 @@ import { Footer } from "@/components/vuzora/Footer";
 import { Kicker } from "@/components/vuzora/ui/Kicker";
 import { CtaButton } from "@/components/vuzora/ui/CtaButton";
 import { ReadProgress } from "@/components/vuzora/ReadProgress";
-import {
-  RouteErrorFallback,
-  RouteNotFoundFallback,
-} from "@/components/vuzora/ui/RouteFallbacks";
+import { RouteErrorFallback, RouteNotFoundFallback } from "@/components/vuzora/ui/RouteFallbacks";
 import { useReadProgress } from "@/hooks/use-read-progress";
 import { findPost, formatPostDate, POSTS } from "@/content/blog";
 import { BRAND, LINKS, SITE_URL, abs } from "@/content/vuzora";
 import ogCover from "@/assets/og-cover.jpg";
-
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: ({ params }) => {
@@ -58,7 +54,7 @@ export const Route = createFileRoute("/blog/$slug")({
         { name: "description", content: post.summary },
         { property: "og:title", content: title },
         { property: "og:description", content: post.summary },
-        { property: "og:type", content: "article" },
+        { property: "og:type", content: "website" },
         { property: "og:locale", content: "ru_RU" },
         { property: "og:url", content: url },
         { property: "og:image", content: abs(ogCover) },
@@ -70,7 +66,6 @@ export const Route = createFileRoute("/blog/$slug")({
         { name: "twitter:description", content: post.summary },
         { name: "twitter:image", content: abs(ogCover) },
       ],
-
 
       links: [{ rel: "canonical", href: url }],
       scripts: [
@@ -143,9 +138,7 @@ function BlogPost() {
           >
             {post.title}
           </h1>
-          <p className="mt-5 text-lg leading-relaxed text-white/70">
-            {post.summary}
-          </p>
+          <p className="mt-5 text-lg leading-relaxed text-white/70">{post.summary}</p>
 
           <div className="mt-10 space-y-5 text-[17px] leading-[1.7] text-white/80">
             {post.body.map((para: string, i: number) => (
@@ -153,7 +146,6 @@ function BlogPost() {
               // transitions between two posts of similar length.
               <p key={`${post.slug}-${i}`}>{para}</p>
             ))}
-
           </div>
 
           <div className="mt-14 rounded-2xl border border-white/10 bg-ink-soft/60 p-6">
@@ -161,7 +153,8 @@ function BlogPost() {
               Утро без поиска расписания
             </div>
             <p className="mt-2 text-sm text-white/65">
-              Vuzora сама присылает пары в Telegram в удобное тебе утро. Бесплатно до 31 октября 2026.
+              Vuzora сама присылает пары в Telegram в удобное тебе утро. Бесплатно до 31 октября
+              2026.
             </p>
             <div className="mt-4">
               <CtaButton href={LINKS.botUrl} variant="primary">

@@ -1,18 +1,16 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const root = process.cwd();
-
-const read = (path) => readFile(join(root, path), "utf8");
+const read = (path, root = process.cwd()) => readFile(join(root, path), "utf8");
 const field = (record, name) => {
   const match = record.match(new RegExp(`\\b${name}\\s*:\\s*["']([^"']*)["']`));
   return match?.[1];
 };
 
-export async function readRegistry() {
+export async function readRegistry(root = process.cwd()) {
   const [universitiesSource, blogSource] = await Promise.all([
-    read("src/content/universities.ts"),
-    read("src/content/blog.ts"),
+    read("src/content/universities.ts", root),
+    read("src/content/blog.ts", root),
   ]);
   const registryBlock = universitiesSource.match(
     /export const UNIVERSITIES[\s\S]*?=\s*\[[\s\S]*?\]\s*as const/,
@@ -30,23 +28,13 @@ export async function readRegistry() {
       officialUrl: field(record, "officialUrl") ?? null,
     };
   });
-  const posts = [...blogSource.matchAll(/\bslug\s*:\s*["']([^"']+)["']/g)].map(
-    (match) => match[1],
-  );
+  const posts = [...blogSource.matchAll(/\bslug\s*:\s*["']([^"']+)["']/g)].map((match) => match[1]);
 
   return { universities, posts };
 }
 
 export function buildRoutes({ universities, posts }) {
-  const core = [
-    "/",
-    "/pricing",
-    "/unis",
-    "/blog/",
-    "/changelog",
-    "/legal/terms",
-    "/legal/privacy",
-  ];
+  const core = ["/", "/pricing", "/unis", "/blog/", "/changelog", "/legal/terms", "/legal/privacy"];
   const blog = posts.map((slug) => `/blog/${slug}`);
   const university = universities
     .filter((record) => record.slug)

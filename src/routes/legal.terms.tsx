@@ -21,10 +21,9 @@ export const Route = createFileRoute("/legal/terms")({
       { property: "og:title", content: "Публичная оферта – Vuzora" },
       {
         property: "og:description",
-        content:
-          "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
+        content: "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
       },
-      { property: "og:type", content: "article" },
+      { property: "og:type", content: "website" },
       { property: "og:locale", content: "ru_RU" },
       { property: "og:url", content: abs("/legal/terms") },
       { property: "og:image", content: abs(ogCover) },
@@ -32,8 +31,7 @@ export const Route = createFileRoute("/legal/terms")({
       { name: "twitter:title", content: "Публичная оферта – Vuzora" },
       {
         name: "twitter:description",
-        content:
-          "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
+        content: "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
       },
       { name: "twitter:image", content: abs(ogCover) },
       { name: "robots", content: "index, follow" },
@@ -61,14 +59,14 @@ function TermsPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-20 md:px-10 md:py-28 text-white/85">
       <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/55">
-        <Link to="/" className="hover:text-white">← На главную</Link>
+        <Link to="/" className="hover:text-white">
+          ← На главную
+        </Link>
       </p>
       <h1 className="mt-4 font-display text-3xl font-semibold text-white md:text-4xl">
         Публичная оферта
       </h1>
-      <p className="mt-2 font-mono text-xs text-white/55">
-        Редакция от {BRAND.legal.revision}
-      </p>
+      <p className="mt-2 font-mono text-xs text-white/55">Редакция от {BRAND.legal.revision}</p>
 
       <Section title="1. Стороны">
         <p>
@@ -77,15 +75,15 @@ function TermsPage() {
           {" подписку в Telegram-боте "}
           <a className="underline" href={LINKS.botUrl} target="_blank" rel="noopener noreferrer">
             {LINKS.botHandle}
-          </a>{" – далее «Пользователь»."}
+          </a>
+          {" – далее «Пользователь»."}
         </p>
       </Section>
 
       <Section title="2. Предмет">
         <p>
-          Исполнитель предоставляет доступ к Telegram-боту Vuzora, который
-          ежедневно публикует расписание занятий пользователя на основе открытых
-          данных вузов. {BRAND.legal.disclaimer}
+          Исполнитель предоставляет доступ к Telegram-боту Vuzora, который ежедневно публикует
+          расписание занятий пользователя на основе открытых данных вузов. {BRAND.legal.disclaimer}
         </p>
       </Section>
 
@@ -95,8 +93,7 @@ function TermsPage() {
           <Link to="/pricing" className="underline">
             «Тарифы»
           </Link>{" "}
-          и являются неотъемлемой частью оферты. Действующие тарифы на момент
-          редакции:
+          и являются неотъемлемой частью оферты. Действующие тарифы на момент редакции:
         </p>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">
           {PLANS.map((p) => (
@@ -106,35 +103,32 @@ function TermsPage() {
           ))}
         </ul>
         <p className="mt-3">
-          Оплата подписки – единовременным платежом, без автоматического
-          продления. Услуга считается оказанной с момента активации доступа в
-          боте.
+          Оплата подписки – единовременным платежом, без автоматического продления. Услуга считается
+          оказанной с момента активации доступа в боте.
         </p>
       </Section>
 
       <Section title="4. Возврат средств">
         <p>
-          Возврат полной стоимости подписки возможен в течение 14 календарных
-          дней с момента оплаты, если Пользователь не получил ни одной доставки
-          расписания по вине Исполнителя. По истечении 14 дней либо при штатной
-          работе сервиса возврат осуществляется пропорционально неиспользованному
-          сроку подписки.
+          Возврат полной стоимости подписки возможен в течение 14 календарных дней с момента оплаты,
+          если Пользователь не получил ни одной доставки расписания по вине Исполнителя. По
+          истечении 14 дней либо при штатной работе сервиса возврат осуществляется пропорционально
+          неиспользованному сроку подписки.
         </p>
         <p className="mt-2">
           Заявка на возврат направляется на{" "}
           <a className="underline" href={`mailto:${BRAND.email}`}>
             {BRAND.email}
           </a>{" "}
-          с указанием Telegram-аккаунта и даты оплаты. Срок рассмотрения – до 10
-          рабочих дней.
+          с указанием Telegram-аккаунта и даты оплаты. Срок рассмотрения – до 10 рабочих дней.
         </p>
       </Section>
 
       <Section title="5. Ответственность">
         <p>
-          Исполнитель не несёт ответственности за изменения расписания на стороне
-          вуза, временную недоступность официальных систем вузов и за решения,
-          принятые Пользователем на основе полученной информации.
+          Исполнитель не несёт ответственности за изменения расписания на стороне вуза, временную
+          недоступность официальных систем вузов и за решения, принятые Пользователем на основе
+          полученной информации.
         </p>
       </Section>
 
@@ -148,7 +142,12 @@ function TermsPage() {
           </a>
           <br />
           Поддержка в Telegram:{" "}
-          <a className="underline" href={LINKS.supportBotUrl} target="_blank" rel="noopener noreferrer">
+          <a
+            className="underline"
+            href={LINKS.supportBotUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {LINKS.supportHandle}
           </a>
         </p>
