@@ -3,14 +3,20 @@
  *
  * Renders a responsive grid of every entry in {@link UNIVERSITIES} plus a
  * trailing "suggest a university" prompt that opens the support bot
- * ({@link LINKS.supportBotUrl}).
+ * ({@link LINKS.supportBotUrl}). Each university name is a crawlable link to
+ * its detail route.
  *
  * @module components/vuzora/Universities
  */
 
 import { SectionHeader } from "./ui/SectionHeader";
 import { CtaButton } from "./ui/CtaButton";
-import { LINKS, UNIVERSITIES } from "@/content/vuzora";
+import {
+  LINKS,
+  UNIVERSITIES,
+  statusLabel,
+  universityPagePath,
+} from "@/content/vuzora";
 
 /** Supported-universities grid + "suggest a university" CTA. */
 export function Universities() {
@@ -31,27 +37,41 @@ export function Universities() {
         />
 
         <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/5 md:grid-cols-2">
-          {UNIVERSITIES.map((u) => (
-            <li
-              key={u.code}
-              className="group flex items-start gap-5 bg-ink p-6 transition-colors hover:bg-ink-soft/70 md:p-7"
-            >
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] font-mono text-[11px] font-medium tracking-tight text-white/85">
-                {u.code}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-display text-base font-semibold leading-snug text-white">
-                  {u.name}
-                </h3>
-                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
-                  {u.city}
-                </p>
-              </div>
-              <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-300/90">
-                {u.status === "online" ? "Онлайн" : "Скоро"}
-              </span>
-            </li>
-          ))}
+          {UNIVERSITIES.map((u) => {
+            const href = universityPagePath(u.slug);
+            return (
+              <li
+                key={u.slug}
+                className="group flex items-start gap-5 bg-ink p-6 transition-colors hover:bg-ink-soft/70 md:p-7"
+              >
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] font-mono text-[11px] font-medium tracking-tight text-white/85">
+                  {u.code}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-display text-base font-semibold leading-snug text-white">
+                    <a
+                      href={href}
+                      className="transition-colors hover:text-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm"
+                    >
+                      {u.name}
+                    </a>
+                  </h3>
+                  <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
+                    {u.city}
+                  </p>
+                </div>
+                <span
+                  className={
+                    u.status === "online"
+                      ? "mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-300/90"
+                      : "mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-amber/90"
+                  }
+                >
+                  {statusLabel(u.status)}
+                </span>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-white/10 px-6 py-5">

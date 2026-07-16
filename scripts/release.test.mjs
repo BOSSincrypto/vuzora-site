@@ -76,10 +76,15 @@ test("current registry, content, and Telegram destinations stay explicit", async
   const universities = await read("src/content/universities.ts");
   const site = await read("src/content/site.ts");
   const sitemap = await read("src/routes/sitemap[.]xml.tsx");
-  assert.match(universities, /status:\s*"online"\s*\|\s*"soon"/);
+  assert.match(universities, /"online"\s*\|\s*"soon"/);
   assert.match(universities, /status: "online"/);
+  assert.match(universities, /slug:\s*"[a-z0-9-]+"/);
+  assert.match(universities, /export function findUniversity/);
+  assert.match(universities, /universityBotUrl/);
   assert.match(site, /botUrl:\s*"https:\/\/t\.me\/vuzora_bot"/);
   assert.match(site, /supportBotUrl:\s*"https:\/\/t\.me\/vuzora_support_bot"/);
+  assert.match(site, /genericBotUrl:\s*"https:\/\/t\.me\/vuzora_bot\?start=from-site"/);
   assert.match(sitemap, /path: "\/blog\/"/);
+  assert.match(sitemap, /UNIVERSITIES\.map|universityPagePath/);
   assert.doesNotMatch(sitemap, /fallback|status:\s*200/);
 });

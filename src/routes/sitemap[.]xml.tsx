@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { POSTS } from "@/content/blog";
-import { abs } from "@/content/vuzora";
+import { UNIVERSITIES, abs, universityPagePath } from "@/content/vuzora";
 
 type Entry = { path: string; lastmod: string; changefreq: string; priority: string };
 
@@ -21,6 +21,12 @@ function buildEntries(): Entry[] {
     })),
     { path: "/legal/terms", lastmod: today, changefreq: "yearly", priority: "0.3" },
     { path: "/legal/privacy", lastmod: today, changefreq: "yearly", priority: "0.3" },
+    ...UNIVERSITIES.map<Entry>((u) => ({
+      path: universityPagePath(u.slug),
+      lastmod: today,
+      changefreq: "monthly",
+      priority: "0.8",
+    })),
   ];
 }
 

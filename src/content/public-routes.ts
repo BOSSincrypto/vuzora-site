@@ -1,5 +1,5 @@
 import { POSTS } from "./blog";
-import { UNIVERSITIES } from "./universities";
+import { universityDetailPaths } from "./universities";
 
 const CORE_ROUTES = [
   "/",
@@ -12,12 +12,7 @@ const CORE_ROUTES = [
 ] as const;
 
 const BLOG_ROUTES = POSTS.map((post) => `/blog/${post.slug}`);
-const UNIVERSITY_ROUTES = UNIVERSITIES.flatMap((university) => {
-  if ("slug" in university && typeof university.slug === "string") {
-    return [`/unis/${university.slug}`];
-  }
-  return [];
-});
+const UNIVERSITY_ROUTES = universityDetailPaths();
 
 /** The complete registry-derived set of pages that must be statically rendered. */
 export const PRERENDER_ROUTES = [

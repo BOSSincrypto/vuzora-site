@@ -9,7 +9,7 @@
  *   - `@/content/site`         — BRAND, SITE_URL, abs, LINKS
  *   - `@/content/nav`          — NAV_LINKS
  *   - `@/content/faq`          — FAQ, FaqEntry
- *   - `@/content/universities` — UNIVERSITIES, University
+ *   - `@/content/universities` — UNIVERSITIES, University, helpers
  *   - `@/content/pricing`      — PLANS, Plan, TIMELINE, TimelineEntry, formatPrice
  *
  * @module content/vuzora
@@ -18,5 +18,19 @@
 export { BRAND, SITE_URL, abs, LINKS } from "./site";
 export { NAV_LINKS } from "./nav";
 export { FAQ, type FaqEntry } from "./faq";
-export { UNIVERSITIES, type University } from "./universities";
+export {
+  UNIVERSITIES,
+  UNIVERSITY_STATUS_LABELS,
+  DETAIL_CONTENT_MIN_LENGTH,
+  findUniversity,
+  universityPagePath,
+  universityPageUrl,
+  universityBotUrl,
+  genericBotUrl,
+  statusLabel,
+  universityDetailCopy,
+  universityDetailPaths,
+  type University,
+  type UniversityStatus,
+} from "./universities";
 export { PLANS, TIMELINE, formatPrice, type Plan, type TimelineEntry } from "./pricing";

@@ -47,8 +47,14 @@ export const Route = createFileRoute("/unis")({
             position: i + 1,
             item: {
               "@type": "CollegeOrUniversity",
+              "@id": abs(`/unis/${u.slug}#university`),
               name: u.name,
-              address: u.city,
+              url: abs(`/unis/${u.slug}`),
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: u.city,
+                addressCountry: "RU",
+              },
             },
           })),
         }),
