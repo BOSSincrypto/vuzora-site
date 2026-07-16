@@ -1,6 +1,12 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { artifactFor, buildRoutes, manifestFor, readRegistry } from "./route-policy.mjs";
+import {
+  artifactFor,
+  buildRoutes,
+  manifestFor,
+  readRegistry,
+  routeExpectationFor,
+} from "./route-policy.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -155,7 +161,10 @@ export function validateRouteDocument(
   failures,
   knownTitles = new Set(),
   knownCanonicals = new Set(),
+  routeExpectations,
 ) {
+  const expectation = routeExpectations?.[route] ?? routeExpectationFor(route, { universities });
+  if (!expectation) failures.push(`${route}: missing explicit route expectation`);
   if (!/^<!doctype html>/i.test(document.html)) failures.push(`${route}: invalid HTML doctype`);
   if (document.headings.length !== 1) failures.push(`${route}: expected exactly one H1`);
   if (
@@ -193,6 +202,44 @@ export function validateRouteDocument(
   ]) {
     const values = document.meta(key, value);
     if (values.length !== 1 || !values[0]) failures.push(`${route}: missing or duplicate ${value}`);
+  }
+  if (expectation) {
+    if (expectation.title !== undefined && document.title !== expectation.title)
+      failures.push(`${route}: route-specific title mismatch`);
+    if (expectation.heading !== undefined && document.headings[0] !== expectation.heading)
+      failures.push(`${route}: route-specific H1 mismatch`);
+    for (const href of expectation.internalLinks ?? []) {
+      if (!document.anchors.some((anchor) => anchor.href === href))
+        failures.push(`${route}: missing expected internal link ${href}`);
+    }
+    const jsonLdTypes = document.jsonLd.flatMap(flattenJsonLd).map((node) => node["@type"]);
+    for (const type of expectation.jsonLdTypes ?? []) {
+      if (!jsonLdTypes.includes(type)) failures.push(`${route}: missing JSON-LD type ${type}`);
+    }
+    for (const identity of expectation.jsonLdIdentity ?? []) {
+      const node = document.jsonLd
+        .flatMap(flattenJsonLd)
+        .find((candidate) => candidate["@type"] === identity.type);
+      const matches =
+        node &&
+        Object.entries(identity).every(
+          ([key, value]) => node[key === "type" ? "@type" : key] === value,
+        );
+      if (!matches) failures.push(`${route}: JSON-LD identity mismatch for ${identity.type}`);
+    }
+    for (const cta of expectation.ctas ?? []) {
+      const matching = document.anchors.filter((anchor) => anchor.href === cta.href);
+      if (!matching.length) failures.push(`${route}: missing expected CTA ${cta.href}`);
+      if (
+        cta.classIncludes?.length &&
+        !matching.some((anchor) =>
+          cta.classIncludes.every((classToken) => anchor.class?.split(/\s+/).includes(classToken)),
+        )
+      )
+        failures.push(
+          `${route}: CTA ${cta.href} is missing class marker ${cta.classIncludes.join(" ")}`,
+        );
+    }
   }
   if (knownTitles.has(document.title))
     failures.push(`${route}: copied route title ${document.title}`);
@@ -326,12 +373,14 @@ export function parseSitemapXml(xml) {
         throw new Error("urlset must be the sitemap root");
       if (name === "url") {
         if (stack.length !== 2 || current) throw new Error("invalid sitemap url nesting");
-        current = {};
+        current = { _fields: new Set() };
       } else if (
         stack.length === 3 &&
         current &&
         ["loc", "lastmod", "changefreq", "priority"].includes(name)
       ) {
+        if (current._fields.has(name)) throw new Error(`duplicate sitemap field ${name}`);
+        current._fields.add(name);
         current._field = name;
       } else if (name !== "urlset" && name !== "url" && stack.length !== 3) {
         throw new Error(`unexpected sitemap element ${name}`);
@@ -344,7 +393,7 @@ export function parseSitemapXml(xml) {
     if (token.startsWith("</") && current?._field) current._field = undefined;
   }
   if (stack.length || entries.length === 0) throw new Error("sitemap XML is incomplete");
-  return entries.map(({ _field, ...entry }) => entry);
+  return entries.map(({ _field, _fields, ...entry }) => entry);
 }
 
 export function assertSitemap(xml, routes, artifactExists = () => true) {
@@ -416,8 +465,11 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
   const failures = [];
   const fail = (message) => failures.push(message);
   const read = (path) => readFile(path, "utf8");
-  const { universities, posts } = await readRegistry(root);
+  const { universities, posts, postRecords } = await readRegistry(root);
   const routes = buildRoutes({ universities, posts });
+  const routeExpectations = Object.fromEntries(
+    routes.map((route) => [route, routeExpectationFor(route, { universities, postRecords })]),
+  );
   const expectedManifest = manifestFor({ universities, posts });
   const knownTitles = new Set();
   const knownCanonicals = new Set();
@@ -461,6 +513,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
           failures,
           knownTitles,
           knownCanonicals,
+          routeExpectations,
         );
       } catch (error) {
         fail(`${route}: ${error.message}`);
