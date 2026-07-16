@@ -264,7 +264,7 @@ export function validateRouteDocument(
           ([key, value]) => candidate[key === "type" ? "@type" : key] === value,
         ),
       );
-      if (matches.length !== 1)
+      if (candidates.length !== 1 || matches.length !== 1)
         failures.push(`${route}: JSON-LD identity mismatch for ${identity.type}`);
     }
     validateCtaExpectations(document, expectation, failures, route);

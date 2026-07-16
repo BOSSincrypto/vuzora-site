@@ -83,9 +83,9 @@ test("invalid UTF-8 bytes remain distinguishable in release hashes", () => {
   assert.notEqual(hashReleaseBytes("index.html", first), hashReleaseBytes("index.html", second));
 });
 
-test("exact route JSON-LD identities reject copied and duplicate subjects", () => {
+test("exact route JSON-LD identities reject identical duplicate subjects", () => {
   const expectation = routeExpectationFor("/changelog", { universities: [] });
-  const copied = parseHtmlDocument(
+  const duplicated = parseHtmlDocument(
     baseHtml(
       '<a href="/">Главная</a>',
       '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog"}</script>' +
@@ -93,8 +93,24 @@ test("exact route JSON-LD identities reject copied and duplicate subjects", () =
     ),
   );
   const failures = [];
-  validateRouteDocument(copied, "/changelog", ["/changelog"], [], failures, new Set(), new Set(), {
-    "/changelog": { ...expectation, title: copied.title, heading: copied.headings[0], jsonLdTypes: ["BreadcrumbList"] },
+  validateRouteDocument(duplicated, "/changelog", ["/changelog"], [], failures, new Set(), new Set(), {
+    "/changelog": { ...expectation, title: duplicated.title, heading: duplicated.headings[0], jsonLdTypes: ["BreadcrumbList"] },
+  });
+  assert.ok(failures.some((failure) => /JSON-LD identity mismatch/.test(failure)));
+});
+
+test("exact route JSON-LD identities reject contradictory duplicate subjects", () => {
+  const expectation = routeExpectationFor("/changelog", { universities: [] });
+  const contradictory = parseHtmlDocument(
+    baseHtml(
+      '<a href="/">Главная</a>',
+      '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog"}</script>' +
+        '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Другая страница","url":"https://vuzora.ru/other"}</script>',
+    ),
+  );
+  const failures = [];
+  validateRouteDocument(contradictory, "/changelog", ["/changelog"], [], failures, new Set(), new Set(), {
+    "/changelog": { ...expectation, title: contradictory.title, heading: contradictory.headings[0], jsonLdTypes: ["BreadcrumbList"] },
   });
   assert.ok(failures.some((failure) => /JSON-LD identity mismatch/.test(failure)));
 });
