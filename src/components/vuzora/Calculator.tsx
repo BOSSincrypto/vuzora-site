@@ -23,8 +23,7 @@ import {
 export const Calculator = memo(function Calculator() {
   const sliderId = useId();
   const ref = useReveal<HTMLDivElement>();
-  const { checks, setChecks, perWeek, perYearH, shared, share } =
-    useCalculator();
+  const { checks, setChecks, perWeek, perYearH, shared, share } = useCalculator();
 
   const shareLabel =
     shared === "copied"
@@ -42,7 +41,9 @@ export const Calculator = memo(function Calculator() {
       ref={ref}
     >
       <div className="mx-auto max-w-6xl px-6 md:px-12">
-        <Kicker dot tone="amber">Калькулятор тишины</Kicker>
+        <Kicker dot tone="amber">
+          Калькулятор тишины
+        </Kicker>
         <h2
           className="mt-4 font-display text-white"
           style={{
@@ -104,9 +105,9 @@ export const Calculator = memo(function Calculator() {
               <Stat value={perYearH} unit="часов / год" />
             </div>
             <p className="mt-6 border-t border-white/10 pt-4 text-xs leading-relaxed text-white/45">
-              Считаем по {MINUTES_PER_CHECK} минуты на одно открытие сайта вуза –
-              путь до закладки, ожидание, поиск своей группы. Vuzora забирает это
-              на себя: одно сообщение утром, в выбранное тобой время – и ты свободен.
+              Считаем по {MINUTES_PER_CHECK} минуты на одно открытие сайта вуза – путь до закладки,
+              ожидание, поиск своей группы. Vuzora забирает это на себя: одно сообщение утром, в
+              выбранное тобой время – и ты свободен.
             </p>
 
             <button

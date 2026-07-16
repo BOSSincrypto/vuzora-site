@@ -11,7 +11,6 @@ import {
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
 export const SUPPORT_CTA = "https://t.me/vuzora_support_bot";
-export const AFFILIATION_BOUNDARY = "Сервис не является официальным сервисом вуза";
 
 const PLACEHOLDER_RE = /\b(?:undefined|null|todo|lorem ipsum|placeholder)\b/i;
 const ANALYTICS_RE =
@@ -183,7 +182,9 @@ function validateCtaExpectations(document, expectation, failures, route) {
       );
     if (matching.some((anchor) => anchor.href !== cta.href))
       failures.push(`${route}: data-cta=${cta.marker} has an incorrect destination`);
-    if (matching.some((anchor) => anchor.target !== "_blank" || anchor.rel !== "noopener noreferrer"))
+    if (
+      matching.some((anchor) => anchor.target !== "_blank" || anchor.rel !== "noopener noreferrer")
+    )
       failures.push(`${route}: data-cta=${cta.marker} has unsafe external attributes`);
   }
 }
@@ -203,6 +204,7 @@ export function validateRouteDocument(
   knownTitles = new Set(),
   knownCanonicals = new Set(),
   routeExpectations,
+  affiliationBoundary,
 ) {
   const expectation = routeExpectations?.[route] ?? routeExpectationFor(route, { universities });
   if (!expectation) failures.push(`${route}: missing explicit route expectation`);
@@ -259,9 +261,7 @@ export function validateRouteDocument(
     }
     const jsonLdNodes = document.jsonLd.flatMap(flattenJsonLd);
     for (const identity of expectation.jsonLdIdentity ?? []) {
-      const candidates = jsonLdNodes.filter(
-        (candidate) => candidate["@type"] === identity.type,
-      );
+      const candidates = jsonLdNodes.filter((candidate) => candidate["@type"] === identity.type);
       const matches = candidates.filter((candidate) =>
         Object.entries(identity).every(
           ([key, value]) => candidate[key === "type" ? "@type" : key] === value,
@@ -323,7 +323,9 @@ export function validateRouteDocument(
         failures.push(`${route}: title/description pair must include the registry name`);
       if (!(document.descriptions[0] ?? "").includes(university.name))
         failures.push(`${route}: description must include the registry name`);
-      if (!document.text.includes(AFFILIATION_BOUNDARY))
+      if (!affiliationBoundary)
+        failures.push(`${route}: affiliation-boundary wording is not configured from registry`);
+      else if (!document.text.includes(affiliationBoundary))
         failures.push(`${route}: affiliation-boundary wording is missing`);
       const expectedCta = `https://t.me/vuzora_bot?start=from-site_${university.slug}`;
       const universityCtas = document.anchors.filter((anchor) =>
@@ -528,7 +530,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
   const failures = [];
   const fail = (message) => failures.push(message);
   const read = (path) => readFile(path, "utf8");
-  const { universities, posts, postRecords } = await readRegistry(root);
+  const { universities, posts, postRecords, affiliationBoundary } = await readRegistry(root);
   const routes = buildRoutes({ universities, posts });
   const routeExpectations = Object.fromEntries(
     routes.map((route) => [route, routeExpectationFor(route, { universities, postRecords })]),
@@ -579,6 +581,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
           knownTitles,
           knownCanonicals,
           routeExpectations,
+          affiliationBoundary,
         );
         if (route.startsWith("/unis/")) {
           const description = document.descriptions[0] ?? "";
@@ -636,8 +639,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       for (const route of routes) {
         if (route.startsWith("/api")) fail(`robots policy blocks indexable route ${route}`);
       }
-      if (!/^User-agent:\s*\*/im.test(robots))
-        fail("robots.txt must declare a User-agent rule");
+      if (!/^User-agent:\s*\*/im.test(robots)) fail("robots.txt must declare a User-agent rule");
       if (ANALYTICS_RE.test(robots)) fail("robots.txt must not reference analytics collectors");
     }
     // First-party public artifact scan for analytics integrations (HTML/JS/CSS/robots/CSP).

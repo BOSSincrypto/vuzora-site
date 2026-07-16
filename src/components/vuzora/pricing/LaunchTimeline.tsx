@@ -14,16 +14,11 @@ export function LaunchTimeline() {
     <ol className="space-y-6 border-l border-white/10 pl-6">
       {TIMELINE.map((t) => (
         <li key={t.date} className="relative">
-          <span
-            className="absolute -left-[27px] top-2 h-2 w-2 rounded-full bg-amber"
-            aria-hidden
-          />
+          <span className="absolute -left-[27px] top-2 h-2 w-2 rounded-full bg-amber" aria-hidden />
           <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/55">
             {t.date}
           </div>
-          <div className="mt-1 font-display text-base font-semibold text-white">
-            {t.label}
-          </div>
+          <div className="mt-1 font-display text-base font-semibold text-white">{t.label}</div>
           <p className="mt-1 max-w-[40ch] text-sm text-white/65">{t.body}</p>
         </li>
       ))}

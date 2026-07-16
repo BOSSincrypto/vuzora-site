@@ -93,9 +93,23 @@ test("exact route JSON-LD identities reject identical duplicate subjects", () =>
     ),
   );
   const failures = [];
-  validateRouteDocument(duplicated, "/changelog", ["/changelog"], [], failures, new Set(), new Set(), {
-    "/changelog": { ...expectation, title: duplicated.title, heading: duplicated.headings[0], jsonLdTypes: ["BreadcrumbList"] },
-  });
+  validateRouteDocument(
+    duplicated,
+    "/changelog",
+    ["/changelog"],
+    [],
+    failures,
+    new Set(),
+    new Set(),
+    {
+      "/changelog": {
+        ...expectation,
+        title: duplicated.title,
+        heading: duplicated.headings[0],
+        jsonLdTypes: ["BreadcrumbList"],
+      },
+    },
+  );
   assert.ok(failures.some((failure) => /JSON-LD identity mismatch/.test(failure)));
 });
 
@@ -109,9 +123,23 @@ test("exact route JSON-LD identities reject contradictory duplicate subjects", (
     ),
   );
   const failures = [];
-  validateRouteDocument(contradictory, "/changelog", ["/changelog"], [], failures, new Set(), new Set(), {
-    "/changelog": { ...expectation, title: contradictory.title, heading: contradictory.headings[0], jsonLdTypes: ["BreadcrumbList"] },
-  });
+  validateRouteDocument(
+    contradictory,
+    "/changelog",
+    ["/changelog"],
+    [],
+    failures,
+    new Set(),
+    new Set(),
+    {
+      "/changelog": {
+        ...expectation,
+        title: contradictory.title,
+        heading: contradictory.headings[0],
+        jsonLdTypes: ["BreadcrumbList"],
+      },
+    },
+  );
   assert.ok(failures.some((failure) => /JSON-LD identity mismatch/.test(failure)));
 });
 
@@ -123,7 +151,12 @@ test("semantic CTA rules reject confusion, cardinality, and unsafe attributes", 
   );
   const failures = [];
   validateRouteDocument(parseHtmlDocument(html), "/", ["/"], [], failures, new Set(), new Set(), {
-    "/": { ...expectation, ctas: [{ marker: "generic-conversion", href: "https://t.me/vuzora_bot?start=from-site", count: 2 }] },
+    "/": {
+      ...expectation,
+      ctas: [
+        { marker: "generic-conversion", href: "https://t.me/vuzora_bot?start=from-site", count: 2 },
+      ],
+    },
   });
   assert.ok(failures.some((failure) => /data-cta=generic-conversion expected 2/.test(failure)));
   assert.ok(failures.some((failure) => /unexpected data-cta marker bot-navigation/.test(failure)));
@@ -133,7 +166,9 @@ test("semantic CTA rules reject confusion, cardinality, and unsafe attributes", 
   );
   const unsafeFailures = [];
   validateRouteDocument(parseHtmlDocument(unsafe), "/pricing", ["/pricing"], [], unsafeFailures);
-  assert.ok(unsafeFailures.some((failure) => /unsafe external attributes|target=_blank/.test(failure)));
+  assert.ok(
+    unsafeFailures.some((failure) => /unsafe external attributes|target=_blank/.test(failure)),
+  );
 });
 
 test("release hashes preserve raw bytes outside allowed sitemap dates", () => {

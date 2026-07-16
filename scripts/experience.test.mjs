@@ -29,9 +29,7 @@ test("reduced-motion CSS disables nonessential motion surfaces with none/0ms", a
     assert.ok(css.includes(surface), `missing reduced-motion surface ${surface}`);
   }
   // Sticky intentional hide must keep zeroed motion without opacity:1 !important.
-  const stickyRule = css.match(
-    /\[data-motion-surface="sticky"\]\s*\{([^}]+)\}/,
-  );
+  const stickyRule = css.match(/\[data-motion-surface="sticky"\]\s*\{([^}]+)\}/);
   assert.ok(stickyRule, "sticky motion surface rule missing");
   assert.match(stickyRule[1], /animation-name:\s*none\s*!important/);
   assert.match(stickyRule[1], /transition-duration:\s*0ms\s*!important/);

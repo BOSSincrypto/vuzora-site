@@ -34,10 +34,7 @@ export function useCalculator() {
   const [checks, setChecksRaw] = useState(CHECKS_DEFAULT);
   const [shared, setShared] = useState<ShareState>("idle");
 
-  const setChecks = useCallback(
-    (n: number) => setChecksRaw(clampChecks(n)),
-    [],
-  );
+  const setChecks = useCallback((n: number) => setChecksRaw(clampChecks(n)), []);
 
   // Hydrate from ?checks= on mount (client-only). Wrapped in try/catch because
   // URL parsing throws on malformed `window.location.search` in some embeds.
@@ -109,7 +106,6 @@ export function useCalculator() {
         // blocking window.prompt() that some browsers treat as a phishing UI.
         flash("error");
       }
-
     } catch (err) {
       // AbortError = user cancelled the native share sheet — that's fine.
       const name = (err as { name?: string } | null)?.name;

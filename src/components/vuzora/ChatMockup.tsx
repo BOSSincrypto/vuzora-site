@@ -14,8 +14,20 @@ import { Kicker } from "./ui/Kicker";
 /** Sample timetable rendered inside the mockup message bubble. */
 const TODAY = [
   { time: "09:00", subj: "Матанализ", room: "ауд. 314", type: "лекция", prof: "Иванов А. П." },
-  { time: "10:40", subj: "Линейная алгебра", room: "ауд. 207", type: "семинар", prof: "Смирнова Е. В." },
-  { time: "13:00", subj: "Английский язык", room: "ауд. 412", type: "практика", prof: "Кузнецова О. М." },
+  {
+    time: "10:40",
+    subj: "Линейная алгебра",
+    room: "ауд. 207",
+    type: "семинар",
+    prof: "Смирнова Е. В.",
+  },
+  {
+    time: "13:00",
+    subj: "Английский язык",
+    room: "ауд. 412",
+    type: "практика",
+    prof: "Кузнецова О. М.",
+  },
   { time: "14:40", subj: "Программирование", room: "ауд. 501", type: "лаб", prof: "Петров Д. С." },
 ];
 
@@ -36,12 +48,13 @@ export function ChatMockup() {
               textWrap: "balance",
             }}
           >
-            Не справочник.<br />
+            Не справочник.
+            <br />
             <span className="text-white/55">Утренний ритуал.</span>
           </h2>
           <p className="mt-6 max-w-[42ch] text-base leading-relaxed text-white/70">
-            Конкуренты заставляют искать. Vuzora открывается уведомлением –
-            расписание уже там, точное и на сегодня.
+            Конкуренты заставляют искать. Vuzora открывается уведомлением – расписание уже там,
+            точное и на сегодня.
           </p>
         </div>
 

@@ -47,10 +47,7 @@ function SunriseEggImpl({ className = "" }: { className?: string }) {
       role="status"
       aria-live="polite"
     >
-      <span
-        className="relative inline-flex h-2 w-2 rounded-full bg-amber"
-        aria-hidden
-      />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-amber" aria-hidden />
       Сейчас идёт доставка
     </span>
   );

@@ -16,8 +16,7 @@ import { BRAND, abs, SITE_URL } from "@/content/vuzora";
 import ogCover from "@/assets/og-cover.jpg";
 
 const PAGE_TITLE = `Что нового – ${BRAND.name}`;
-const PAGE_DESC =
-  "Публичная история изменений Vuzora: что добавили в бот, на сайт и в подписку.";
+const PAGE_DESC = "Публичная история изменений Vuzora: что добавили в бот, на сайт и в подписку.";
 
 export const Route = createFileRoute("/changelog")({
   head: () => ({
@@ -75,8 +74,8 @@ function ChangelogPage() {
             Что нового
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-white/70">
-            Каждое заметное обновление Vuzora – здесь. Без маркетинговых анонсов:
-            просто список того, что поменялось и когда.
+            Каждое заметное обновление Vuzora – здесь. Без маркетинговых анонсов: просто список
+            того, что поменялось и когда.
           </p>
 
           <ol className="mt-12 space-y-10 border-l border-white/10 pl-6">

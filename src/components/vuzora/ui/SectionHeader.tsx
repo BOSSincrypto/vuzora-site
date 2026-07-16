@@ -12,7 +12,6 @@ import type { ReactNode } from "react";
 import { Kicker } from "./Kicker";
 import { useReveal } from "@/hooks/use-reveal";
 
-
 /**
  * Props for {@link SectionHeader}.
  *
@@ -67,7 +66,6 @@ export function SectionHeader({
         align === "between" ? "md:flex-row md:items-end md:justify-between" : "items-start"
       } ${className}`}
     >
-
       <div>
         {kicker && (
           <Kicker dot={kickerDot} tone={kickerTone} className="mb-4">
@@ -88,9 +86,7 @@ export function SectionHeader({
           {title}
         </h2>
       </div>
-      {lede && (
-        <p className={`max-w-[42ch] text-base leading-relaxed ${ledeColor}`}>{lede}</p>
-      )}
+      {lede && <p className={`max-w-[42ch] text-base leading-relaxed ${ledeColor}`}>{lede}</p>}
     </div>
   );
 }

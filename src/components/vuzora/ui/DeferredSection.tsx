@@ -24,12 +24,7 @@ export interface DeferredSectionProps {
   children: ReactNode;
 }
 
-export function DeferredSection({
-  label,
-  fallback,
-  defer = true,
-  children,
-}: DeferredSectionProps) {
+export function DeferredSection({ label, fallback, defer = true, children }: DeferredSectionProps) {
   const boundary = (
     <ErrorBoundary label={label} fallback={fallback}>
       {children}

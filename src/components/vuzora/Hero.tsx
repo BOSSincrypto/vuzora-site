@@ -34,7 +34,9 @@ export function Hero() {
       <div className="mx-auto max-w-6xl px-6 md:px-12">
         <div className="mb-10 flex items-start justify-between gap-4 md:mb-14">
           <div className="flex flex-col items-start gap-2">
-            <Kicker dot tone="amber">Утром · в удобное тебе время</Kicker>
+            <Kicker dot tone="amber">
+              Утром · в удобное тебе время
+            </Kicker>
             <SunriseEgg />
           </div>
           <div className="flex flex-col items-end gap-1">
@@ -62,8 +64,8 @@ export function Hero() {
             <span className="text-white/70">Каждое утро.</span>
           </h1>
           <p className="mt-6 max-w-[55ch] text-base leading-relaxed text-white/70 md:text-lg">
-            Telegram-бот, который сам присылает расписание в удобное тебе время —
-            слот с 05:00 до 10:00 МСК выбираешь ты. Без поиска. Без рекламы. Без шума.
+            Telegram-бот, который сам присылает расписание в удобное тебе время — слот с 05:00 до
+            10:00 МСК выбираешь ты. Без поиска. Без рекламы. Без шума.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
             <CtaButton href={LINKS.genericBotUrl} variant="primary" data-cta="generic-conversion">

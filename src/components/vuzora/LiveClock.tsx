@@ -108,7 +108,9 @@ function LiveClockImpl({ className = "" }: { className?: string }) {
       aria-label="Текущее время в Москве"
     >
       {/* `key={text}` restarts the .live-tick fade animation on each new value */}
-      <span key={text} className="live-tick inline-block">{text}</span>
+      <span key={text} className="live-tick inline-block">
+        {text}
+      </span>
     </span>
   );
 }
@@ -128,8 +130,7 @@ function UntilNextDeliveryImpl({ className = "" }: { className?: string }) {
     if (!p) return COUNTDOWN_FALLBACK;
     try {
       // Convert Moscow-local seconds-of-day to ms-since-start-of-MSK-day.
-      const msIntoDay =
-        (p.hour * 3600 + p.minute * 60 + p.second) * 1000;
+      const msIntoDay = (p.hour * 3600 + p.minute * 60 + p.second) * 1000;
       const target = 7 * 3600 * 1000; // 07:00:00 МСК in ms
       let diff = target - msIntoDay;
       // After 07:00 МСК roll forward to tomorrow's window.

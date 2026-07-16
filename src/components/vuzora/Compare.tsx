@@ -20,11 +20,41 @@ type Row = {
 };
 
 const ROWS: Row[] = [
-  { label: "Доставка",       vuzora: "сама, в твой слот",   bookmark: "ты идёшь сам",     chat: "когда староста встанет", app: "ты идёшь сам" },
-  { label: "Реклама и баннеры", vuzora: "нет",         bookmark: "есть",             chat: "стикеры, мемы, флуд",    app: "есть" },
-  { label: "Поиск своей группы", vuzora: "один раз при настройке", bookmark: "каждое утро", chat: "листать чат",   app: "каждое утро" },
-  { label: "Изменения за ночь",  vuzora: "уже в сообщении",    bookmark: "узнаёшь на паре", chat: "если кто-то заметил", app: "если откроешь" },
-  { label: "Работает офлайн",    vuzora: "сообщение остаётся", bookmark: "нет",        chat: "да, если скрин",         app: "иногда" },
+  {
+    label: "Доставка",
+    vuzora: "сама, в твой слот",
+    bookmark: "ты идёшь сам",
+    chat: "когда староста встанет",
+    app: "ты идёшь сам",
+  },
+  {
+    label: "Реклама и баннеры",
+    vuzora: "нет",
+    bookmark: "есть",
+    chat: "стикеры, мемы, флуд",
+    app: "есть",
+  },
+  {
+    label: "Поиск своей группы",
+    vuzora: "один раз при настройке",
+    bookmark: "каждое утро",
+    chat: "листать чат",
+    app: "каждое утро",
+  },
+  {
+    label: "Изменения за ночь",
+    vuzora: "уже в сообщении",
+    bookmark: "узнаёшь на паре",
+    chat: "если кто-то заметил",
+    app: "если откроешь",
+  },
+  {
+    label: "Работает офлайн",
+    vuzora: "сообщение остаётся",
+    bookmark: "нет",
+    chat: "да, если скрин",
+    app: "иногда",
+  },
 ];
 
 export const Compare = memo(function Compare() {
@@ -40,8 +70,17 @@ export const Compare = memo(function Compare() {
         <SectionHeader
           kicker="Честно"
           kickerDot
-          title={<>А чем это <span className="text-white/55">лучше</span> закладки?</>}
-          lede={<>Сравнили по тому, что реально происходит утром — когда ты ещё не проснулся, а первая пара уже на горизонте.</>}
+          title={
+            <>
+              А чем это <span className="text-white/55">лучше</span> закладки?
+            </>
+          }
+          lede={
+            <>
+              Сравнили по тому, что реально происходит утром — когда ты ещё не проснулся, а первая
+              пара уже на горизонте.
+            </>
+          }
           titleMaxCh={18}
         />
 
@@ -50,7 +89,9 @@ export const Compare = memo(function Compare() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-white/10 bg-ink-soft/60 text-left">
-                <th className="px-5 py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Сценарий</th>
+                <th className="px-5 py-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">
+                  Сценарий
+                </th>
                 <Th highlight>Vuzora</Th>
                 <Th>Сайт вуза</Th>
                 <Th>Чат группы</Th>
@@ -59,10 +100,7 @@ export const Compare = memo(function Compare() {
             </thead>
             <tbody>
               {ROWS.map((r, i) => (
-                <tr
-                  key={r.label}
-                  className={i % 2 === 0 ? "bg-transparent" : "bg-white/[0.015]"}
-                >
+                <tr key={r.label} className={i % 2 === 0 ? "bg-transparent" : "bg-white/[0.015]"}>
                   <td className="border-t border-white/5 px-5 py-4 text-white/70">{r.label}</td>
                   <Td highlight>{r.vuzora}</Td>
                   <Td muted>{r.bookmark}</Td>

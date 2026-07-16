@@ -20,8 +20,7 @@ async function htmlFiles(directory) {
 function buildAuthoritativeSitemap(routes, lastmod) {
   const body = routes
     .map(
-      (route) =>
-        `  <url><loc>${CANONICAL_ORIGIN}${route}</loc><lastmod>${lastmod}</lastmod></url>`,
+      (route) => `  <url><loc>${CANONICAL_ORIGIN}${route}</loc><lastmod>${lastmod}</lastmod></url>`,
     )
     .join("\n");
   return (

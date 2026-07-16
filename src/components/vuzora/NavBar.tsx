@@ -168,7 +168,6 @@ export function NavBar() {
     };
   }, [open]);
 
-
   return (
     <header
       data-motion-surface="route"
@@ -208,8 +207,6 @@ export function NavBar() {
           </a>
         </div>
 
-
-
         <div className="flex shrink-0 items-center gap-1.5">
           <a
             href={LINKS.botUrl}
@@ -220,7 +217,6 @@ export function NavBar() {
           >
             Открыть в Telegram
           </a>
-
 
           <TelegramIconLink className="sm:hidden" />
 

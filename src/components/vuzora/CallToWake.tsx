@@ -51,6 +51,5 @@ export function CallToWake() {
   );
 }
 
-
 // Re-export for backwards compatibility with existing imports.
 export { Footer } from "./Footer";

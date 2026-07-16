@@ -82,10 +82,12 @@ test("directory surface links each supported university name", async () => {
 
 test("detail metadata helpers emit bounded unique Russian titles and descriptions", async () => {
   const source = await readFile(join(root, "src/content/universities.ts"), "utf8");
+  const { affiliationBoundary } = await readRegistry(root);
   assert.match(source, /export function universityDetailTitle/);
   assert.match(source, /export function universityDetailDescription/);
   assert.match(source, /AFFILIATION_BOUNDARY/);
   assert.match(source, /Сервис не является официальным сервисом вуза/);
+  assert.equal(affiliationBoundary, "Сервис не является официальным сервисом вуза");
   // Title candidates prefer full name then code+city when length overflows.
   assert.match(source, /Расписание \$\{university\.name\}/);
   assert.match(source, /Расписание \$\{university\.code\} · \$\{university\.city\}/);

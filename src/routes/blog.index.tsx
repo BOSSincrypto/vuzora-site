@@ -26,40 +26,40 @@ export const Route = createFileRoute("/blog/")({
       { name: "description", content: DESCRIPTION },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
-        { property: "og:type", content: "website" },
-        { property: "og:locale", content: "ru_RU" },
-        { property: "og:url", content: abs("/blog/") },
-        { property: "og:image", content: abs(ogCover) },
-        { property: "og:image:width", content: "1216" },
-        { property: "og:image:height", content: "640" },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: TITLE },
-        { name: "twitter:description", content: DESCRIPTION },
-        { name: "twitter:image", content: abs(ogCover) },
-      ],
-      links: [{ rel: "canonical", href: abs("/blog/") }],
+      { property: "og:type", content: "website" },
+      { property: "og:locale", content: "ru_RU" },
+      { property: "og:url", content: abs("/blog/") },
+      { property: "og:image", content: abs(ogCover) },
+      { property: "og:image:width", content: "1216" },
+      { property: "og:image:height", content: "640" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: TITLE },
+      { name: "twitter:description", content: DESCRIPTION },
+      { name: "twitter:image", content: abs(ogCover) },
+    ],
+    links: [{ rel: "canonical", href: abs("/blog/") }],
 
-      scripts: [
-        {
-          type: "application/ld+json",
-          children: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Blog",
-            "@id": `${abs("/blog")}#blog`,
-            url: abs("/blog"),
-            name: TITLE,
-            inLanguage: "ru",
-            publisher: { "@id": `${SITE_URL}/#org` },
-            blogPost: POSTS.map((p) => ({
-              "@type": "BlogPosting",
-              headline: p.title,
-              datePublished: p.date,
-              url: abs(`/blog/${p.slug}`),
-              description: p.summary,
-            })),
-          }),
-        },
-      ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Blog",
+          "@id": `${abs("/blog")}#blog`,
+          url: abs("/blog"),
+          name: TITLE,
+          inLanguage: "ru",
+          publisher: { "@id": `${SITE_URL}/#org` },
+          blogPost: POSTS.map((p) => ({
+            "@type": "BlogPosting",
+            headline: p.title,
+            datePublished: p.date,
+            url: abs(`/blog/${p.slug}`),
+            description: p.summary,
+          })),
+        }),
+      },
+    ],
   }),
   component: BlogIndex,
 });
@@ -85,8 +85,8 @@ function BlogIndex() {
             Блог Vuzora
           </h1>
           <p className="mt-4 max-w-[55ch] text-base leading-relaxed text-white/65">
-            Короткие тексты о том, как устроен бот, почему мы выбираем
-            именно такие решения и что меняется с каждым релизом.
+            Короткие тексты о том, как устроен бот, почему мы выбираем именно такие решения и что
+            меняется с каждым релизом.
           </p>
 
           <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
@@ -117,7 +117,17 @@ function BlogIndex() {
                   </p>
                   <span className="mt-4 inline-flex items-center gap-1 text-sm text-white/45 transition-colors group-hover:text-amber">
                     Читать
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
                       <path d="M5 12h14M13 5l7 7-7 7" />
                     </svg>
                   </span>

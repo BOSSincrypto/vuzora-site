@@ -13,7 +13,6 @@ import { BentoCell } from "./features/BentoCell";
 import { CalendarPreview } from "./features/CalendarPreview";
 import { useReveal } from "@/hooks/use-reveal";
 
-
 /** Bento-grid features section. */
 export function FeatureBento() {
   const gridRef = useReveal<HTMLDivElement>();
@@ -31,7 +30,6 @@ export function FeatureBento() {
           ref={gridRef}
           className="reveal-stagger grid grid-flow-dense gap-3 md:auto-rows-[minmax(180px,auto)] md:grid-cols-6"
         >
-
           <BentoCell className="md:col-span-4 md:row-span-2">
             <CellLabel>Календарь</CellLabel>
             <h3
@@ -48,8 +46,7 @@ export function FeatureBento() {
               Неделя. Любая дата.
             </h3>
             <p className="mt-3 max-w-[40ch] text-sm text-white/65">
-              Интерактивный календарь – спроси расписание на 12 марта, получишь
-              на 12 марта.
+              Интерактивный календарь – спроси расписание на 12 марта, получишь на 12 марта.
             </p>
             <CalendarPreview />
           </BentoCell>
@@ -159,9 +156,7 @@ function FeatureTile({
   return (
     <BentoCell className={className}>
       <CellLabel>{label}</CellLabel>
-      <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-white">
-        {title}
-      </h3>
+      <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-white">{title}</h3>
       <p className="mt-2 text-sm text-white/65">{body}</p>
     </BentoCell>
   );

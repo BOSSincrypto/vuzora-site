@@ -52,7 +52,6 @@ export function Logo({
   );
 }
 
-
 /**
  * Wordmark — the "Vuzora" name in the display typeface.
  * Pair with {@link Logo} for the full brand lockup.

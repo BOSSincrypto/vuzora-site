@@ -128,17 +128,39 @@ function Index() {
         <NavBar />
       </DeferredSection>
       <main id="main">
-        <DeferredSection label="hero" defer={false}><Hero /></DeferredSection>
-        <DeferredSection label="morning-loop"><MorningLoop /></DeferredSection>
-        <DeferredSection label="how-it-works"><HowItWorks /></DeferredSection>
-        <DeferredSection label="features"><FeatureBento /></DeferredSection>
-        <DeferredSection label="compare"><Compare /></DeferredSection>
-        <DeferredSection label="calculator"><Calculator /></DeferredSection>
-        <DeferredSection label="universities"><Universities /></DeferredSection>
-        <DeferredSection label="manifest"><Manifest /></DeferredSection>
-        <DeferredSection label="pricing"><Pricing /></DeferredSection>
-        <DeferredSection label="faq"><Faq /></DeferredSection>
-        <DeferredSection label="cta"><CallToWake /></DeferredSection>
+        <DeferredSection label="hero" defer={false}>
+          <Hero />
+        </DeferredSection>
+        <DeferredSection label="morning-loop">
+          <MorningLoop />
+        </DeferredSection>
+        <DeferredSection label="how-it-works">
+          <HowItWorks />
+        </DeferredSection>
+        <DeferredSection label="features">
+          <FeatureBento />
+        </DeferredSection>
+        <DeferredSection label="compare">
+          <Compare />
+        </DeferredSection>
+        <DeferredSection label="calculator">
+          <Calculator />
+        </DeferredSection>
+        <DeferredSection label="universities">
+          <Universities />
+        </DeferredSection>
+        <DeferredSection label="manifest">
+          <Manifest />
+        </DeferredSection>
+        <DeferredSection label="pricing">
+          <Pricing />
+        </DeferredSection>
+        <DeferredSection label="faq">
+          <Faq />
+        </DeferredSection>
+        <DeferredSection label="cta">
+          <CallToWake />
+        </DeferredSection>
         <DeferredSection label="footer" defer={false} fallback={null}>
           <Footer />
         </DeferredSection>

@@ -21,9 +21,7 @@ export function Stat({ value, unit }: StatProps) {
       >
         {value}
       </div>
-      <div className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">
-        {unit}
-      </div>
+      <div className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">{unit}</div>
     </div>
   );
 }

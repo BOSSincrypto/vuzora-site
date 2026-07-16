@@ -19,10 +19,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import {
-  RouteErrorFallback,
-  RouteNotFoundFallback,
-} from "./components/vuzora/ui/RouteFallbacks";
+import { RouteErrorFallback, RouteNotFoundFallback } from "./components/vuzora/ui/RouteFallbacks";
 
 /**
  * Build a configured TanStack Router instance with its own QueryClient.

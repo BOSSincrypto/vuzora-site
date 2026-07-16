@@ -11,12 +11,7 @@
 
 import { SectionHeader } from "./ui/SectionHeader";
 import { CtaButton } from "./ui/CtaButton";
-import {
-  LINKS,
-  UNIVERSITIES,
-  statusLabel,
-  universityPagePath,
-} from "@/content/vuzora";
+import { LINKS, UNIVERSITIES, statusLabel, universityPagePath } from "@/content/vuzora";
 
 /** Supported-universities grid + "suggest a university" CTA. */
 export function Universities() {
@@ -29,8 +24,8 @@ export function Universities() {
           title={<>Список вузов растёт. Дальше – по запросу.</>}
           lede={
             <>
-              Если твоего вуза нет – напиши в Telegram, добавим в очередь.
-              Источник расписаний – официальные системы вузов.
+              Если твоего вуза нет – напиши в Telegram, добавим в очередь. Источник расписаний –
+              официальные системы вузов.
             </>
           }
           titleMaxCh={18}
@@ -76,19 +71,12 @@ export function Universities() {
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-white/10 px-6 py-5">
           <div>
-            <p className="font-display text-base font-semibold text-white">
-              Нет твоего вуза?
-            </p>
+            <p className="font-display text-base font-semibold text-white">Нет твоего вуза?</p>
             <p className="mt-1 text-sm text-white/65">
               Напиши в Telegram – добавим, если есть открытое расписание.
             </p>
           </div>
-          <CtaButton
-            href={LINKS.supportBotUrl}
-            variant="ghost"
-            arrow={false}
-            data-cta="support"
-          >
+          <CtaButton href={LINKS.supportBotUrl} variant="ghost" arrow={false} data-cta="support">
             Предложить вуз
           </CtaButton>
         </div>

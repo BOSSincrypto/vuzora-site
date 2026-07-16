@@ -98,9 +98,20 @@ test("current registry, content, and Telegram destinations stay explicit", async
 test("prerender seeds, public-routes, and release validator share registry route policy", async () => {
   const publicRoutes = await read("src/content/public-routes.ts");
   const validator = await read("scripts/release-validator.mjs");
+  const policy = await read("scripts/route-policy.mjs");
+  const universities = await read("src/content/universities.ts");
   assert.match(publicRoutes, /universityDetailPaths/);
   assert.match(publicRoutes, /PRERENDER_ROUTES/);
-  assert.match(validator, /AFFILIATION_BOUNDARY/);
+  assert.match(policy, /export function readAffiliationBoundary/);
+  assert.match(policy, /AFFILIATION_BOUNDARY/);
+  assert.match(universities, /export const AFFILIATION_BOUNDARY/);
+  assert.match(validator, /affiliationBoundary/);
+  assert.doesNotMatch(
+    validator,
+    /export const AFFILIATION_BOUNDARY\s*=\s*["']Сервис не является официальным сервисом вуза["']/,
+  );
+  const { affiliationBoundary } = await readRegistry();
+  assert.equal(affiliationBoundary, "Сервис не является официальным сервисом вуза");
   assert.match(validator, /ANALYTICS_RE|analytics or collector/);
   assert.match(validator, /JSON-LD breadcrumb positions/);
   assert.match(validator, /description must include the registry name/);

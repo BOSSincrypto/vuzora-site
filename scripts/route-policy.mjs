@@ -7,6 +7,15 @@ const field = (record, name) => {
   return match?.[1];
 };
 
+/** Extract the required affiliation-boundary wording from universities helpers. */
+export function readAffiliationBoundary(universitiesSource) {
+  const match = universitiesSource.match(
+    /export const AFFILIATION_BOUNDARY\s*=\s*\n?\s*["']([^"']+)["']/,
+  );
+  if (!match?.[1]) throw new Error("Could not locate AFFILIATION_BOUNDARY export");
+  return match[1];
+}
+
 export async function readRegistry(root = process.cwd()) {
   const [universitiesSource, blogSource] = await Promise.all([
     read("src/content/universities.ts", root),
@@ -36,8 +45,9 @@ export async function readRegistry(root = process.cwd()) {
     }))
     .filter((record) => record.slug && record.title);
   const posts = postRecords.map((record) => record.slug);
+  const affiliationBoundary = readAffiliationBoundary(universitiesSource);
 
-  return { universities, posts, postRecords };
+  return { universities, posts, postRecords, affiliationBoundary };
 }
 
 export function buildRoutes({ universities, posts }) {
@@ -159,9 +169,7 @@ const CORE_ROUTE_EXPECTATIONS = {
         url: "https://vuzora.ru/legal/privacy",
       },
     ],
-    ctas: [
-      { marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 },
-    ],
+    ctas: [{ marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 }],
   },
 };
 

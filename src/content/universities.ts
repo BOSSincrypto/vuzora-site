@@ -253,8 +253,7 @@ export function statusLabel(status: UniversityStatus): string {
 export const DETAIL_CONTENT_MIN_LENGTH = 120;
 
 /** Required affiliation-boundary wording on every university detail page. */
-export const AFFILIATION_BOUNDARY =
-  "Сервис не является официальным сервисом вуза" as const;
+export const AFFILIATION_BOUNDARY = "Сервис не является официальным сервисом вуза" as const;
 
 /** Entity-specific body copy for the detail page (server-visible). */
 export function universityDetailCopy(university: University): string {

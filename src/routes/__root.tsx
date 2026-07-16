@@ -225,9 +225,7 @@ function RootShell({ children }: { children: ReactNode }) {
  */
 function isMobileMenuFocusTrapActive() {
   if (typeof document === "undefined") return false;
-  const toggle = document.querySelector<HTMLElement>(
-    '[aria-controls="vuzora-mobile-menu"]',
-  );
+  const toggle = document.querySelector<HTMLElement>('[aria-controls="vuzora-mobile-menu"]');
   return toggle?.getAttribute("aria-expanded") === "true";
 }
 
@@ -282,8 +280,7 @@ function RouteFocusManager() {
       }
     };
 
-    const spaChanged =
-      previousPath.current !== null && previousPath.current !== pathname;
+    const spaChanged = previousPath.current !== null && previousPath.current !== pathname;
 
     // sessionStorage survives full reloads (agent-browser hard navigations).
     // Compare *before* writing so a cold first visit (no key yet) stays quiet

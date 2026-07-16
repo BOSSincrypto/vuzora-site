@@ -61,7 +61,6 @@ export function Footer() {
               Что нового
             </a>
           </nav>
-
         </div>
         <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1 font-mono">

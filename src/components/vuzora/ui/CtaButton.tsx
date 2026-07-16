@@ -38,8 +38,7 @@ const STYLES: Record<Variant, string> = {
     "inline-flex items-center gap-2 rounded-full bg-white px-7 py-4 text-base font-medium text-ink transition-all duration-200 ease-out hover:bg-mist focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber active:translate-y-px",
   ghost:
     "inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm text-white transition-colors hover:border-amber hover:text-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber",
-  link:
-    "inline-flex items-center gap-1 text-sm text-white/60 underline decoration-white/20 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm",
+  link: "inline-flex items-center gap-1 text-sm text-white/60 underline decoration-white/20 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm",
 };
 
 /**

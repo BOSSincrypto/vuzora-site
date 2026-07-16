@@ -42,12 +42,13 @@ export function MorningLoop() {
               textWrap: "balance",
             }}
           >
-            Не справочник.<br />
+            Не справочник.
+            <br />
             <span className="text-white/55">Утренний ритуал.</span>
           </h2>
           <p className="mt-6 max-w-[42ch] text-base leading-relaxed text-white/70">
-            Конкуренты заставляют искать. Vuzora открывается уведомлением –
-            расписание уже там, точное и на сегодня.
+            Конкуренты заставляют искать. Vuzora открывается уведомлением – расписание уже там,
+            точное и на сегодня.
           </p>
           <ul className="mt-8 space-y-2 text-sm text-white/55">
             <li className="flex items-center gap-2">
@@ -92,7 +93,11 @@ export function MorningLoop() {
               </div>
               <div
                 className="ml-bigclock mt-2 font-display tabular text-white"
-                style={{ fontSize: "clamp(3.5rem, 9vw, 5rem)", lineHeight: 1, letterSpacing: "-0.04em" }}
+                style={{
+                  fontSize: "clamp(3.5rem, 9vw, 5rem)",
+                  lineHeight: 1,
+                  letterSpacing: "-0.04em",
+                }}
               >
                 06<span className="ml-colon">:</span>59
               </div>
