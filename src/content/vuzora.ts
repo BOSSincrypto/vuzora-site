@@ -22,6 +22,7 @@ export {
   UNIVERSITIES,
   UNIVERSITY_STATUS_LABELS,
   DETAIL_CONTENT_MIN_LENGTH,
+  AFFILIATION_BOUNDARY,
   findUniversity,
   universityPagePath,
   universityPageUrl,
@@ -30,6 +31,8 @@ export {
   statusLabel,
   universityDetailCopy,
   universityDetailPaths,
+  universityDetailTitle,
+  universityDetailDescription,
   type University,
   type UniversityStatus,
 } from "./universities";

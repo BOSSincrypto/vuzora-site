@@ -13,46 +13,21 @@ import { Footer } from "@/components/vuzora/Footer";
 import { CtaButton } from "@/components/vuzora/ui/CtaButton";
 import { RouteErrorFallback, RouteNotFoundFallback } from "@/components/vuzora/ui/RouteFallbacks";
 import {
+  AFFILIATION_BOUNDARY,
   BRAND,
   DETAIL_CONTENT_MIN_LENGTH,
   findUniversity,
   statusLabel,
   universityBotUrl,
   universityDetailCopy,
+  universityDetailDescription,
+  universityDetailTitle,
   universityPagePath,
   universityPageUrl,
   abs,
   SITE_URL,
-  type University,
 } from "@/content/vuzora";
 import ogCover from "@/assets/og-cover.jpg";
-
-function detailTitle(university: University): string {
-  // Bound to 10–70 chars. Always include the registry name (truncated only if needed).
-  const suffix = ` – ${BRAND.name}`;
-  const prefix = "Расписание ";
-  const budget = 70 - prefix.length - suffix.length;
-  if (university.name.length <= budget) {
-    return `${prefix}${university.name}${suffix}`;
-  }
-  const truncated = `${university.name.slice(0, Math.max(12, budget - 1)).trimEnd()}…`;
-  return `${prefix}${truncated}${suffix}`;
-}
-
-function detailDescription(university: University): string {
-  const status = statusLabel(university.status);
-  // Always include the full registry name for entity matching.
-  const primary =
-    `Расписание пар ${university.name} (${university.city}) в Telegram. ` +
-    `Vuzora присылает расписание по утрам. Статус: ${status}. ` +
-    `Сервис не является официальным сервисом вуза.`;
-  if (primary.length >= 50 && primary.length <= 170) return primary;
-  const compact =
-    `Расписание ${university.name}. ${university.city}. Статус ${status}. ` +
-    `Получай расписание пар в Telegram через Vuzora. Не официальный сервис вуза.`;
-  if (compact.length <= 170) return compact;
-  return compact.slice(0, 167).trimEnd() + "…";
-}
 
 export const Route = createFileRoute("/unis_/$slug")({
   loader: ({ params }) => {
@@ -80,8 +55,8 @@ export const Route = createFileRoute("/unis_/$slug")({
         meta: [{ title: `Вуз не найден – ${BRAND.name}` }],
       };
     }
-    const title = detailTitle(university);
-    const description = detailDescription(university);
+    const title = universityDetailTitle(university);
+    const description = universityDetailDescription(university);
     const url = universityPageUrl(university.slug);
     const universityId = `${url}#university`;
     const serviceId = `${SITE_URL}/#service`;
@@ -220,9 +195,9 @@ function UniversityDetailPage() {
           >
             <p>{copy}</p>
             <p>
-              Vuzora не заменяет официальный сайт {university.name} и не является его частью.
-              Используй бота, чтобы получать расписание в удобное утро, а вопросы по учёбе и
-              официальным документам — в каналах вуза.
+              {AFFILIATION_BOUNDARY}: Vuzora не заменяет официальный сайт {university.name} и не
+              является его частью. Используй бота, чтобы получать расписание в удобное утро, а
+              вопросы по учёбе и официальным документам — в каналах вуза.
             </p>
           </div>
 

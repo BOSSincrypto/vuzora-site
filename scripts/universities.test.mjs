@@ -79,3 +79,52 @@ test("directory surface links each supported university name", async () => {
   assert.match(source, /universityPagePath/);
   assert.match(source, /statusLabel/);
 });
+
+test("detail metadata helpers emit bounded unique Russian titles and descriptions", async () => {
+  const source = await readFile(join(root, "src/content/universities.ts"), "utf8");
+  assert.match(source, /export function universityDetailTitle/);
+  assert.match(source, /export function universityDetailDescription/);
+  assert.match(source, /AFFILIATION_BOUNDARY/);
+  assert.match(source, /Сервис не является официальным сервисом вуза/);
+  // Title candidates prefer full name then code+city when length overflows.
+  assert.match(source, /Расписание \$\{university\.name\}/);
+  assert.match(source, /Расписание \$\{university\.code\} · \$\{university\.city\}/);
+  assert.match(source, /Расписание пар \$\{university\.name\}/);
+  const route = await readFile(join(root, "src/routes/unis_.$slug.tsx"), "utf8");
+  assert.match(route, /universityDetailTitle/);
+  assert.match(route, /universityDetailDescription/);
+  assert.match(route, /AFFILIATION_BOUNDARY/);
+  assert.match(route, /CollegeOrUniversity/);
+  assert.match(route, /serviceType/);
+  assert.match(route, /#breadcrumb/);
+});
+
+test("Telegram conversion classes remain distinct and exact", async () => {
+  const site = await readFile(join(root, "src/content/site.ts"), "utf8");
+  assert.match(site, /genericBotUrl:\s*"https:\/\/t\.me\/vuzora_bot\?start=from-site"/);
+  assert.match(site, /botUrl:\s*"https:\/\/t\.me\/vuzora_bot"/);
+  assert.match(site, /supportBotUrl:\s*"https:\/\/t\.me\/vuzora_support_bot"/);
+  const unis = await readFile(join(root, "src/content/universities.ts"), "utf8");
+  assert.match(unis, /from-site_\$\{slug\}|from-site_\$\{/);
+  // Homepage generic conversion anchors stay generic; detail uses university class.
+  const hero = await readFile(join(root, "src/components/vuzora/Hero.tsx"), "utf8");
+  assert.match(hero, /data-cta="generic-conversion"/);
+  assert.match(hero, /LINKS\.genericBotUrl/);
+  const detail = await readFile(join(root, "src/routes/unis_.$slug.tsx"), "utf8");
+  assert.match(detail, /data-cta="university-conversion"/);
+  const support = await readFile(join(root, "src/components/vuzora/Universities.tsx"), "utf8");
+  assert.match(support, /data-cta="support"/);
+  const footer = await readFile(join(root, "src/components/vuzora/Footer.tsx"), "utf8");
+  assert.match(footer, /data-cta="bot-navigation"/);
+});
+
+test("production stack remains analytics-free and CSP has no collector hosts", async () => {
+  const start = await readFile(join(root, "src/start.ts"), "utf8");
+  assert.match(start, /Content-Security-Policy/);
+  assert.doesNotMatch(start, /plausible|google-analytics|googletagmanager|metrika|mc\.yandex/i);
+  assert.doesNotMatch(start, /script-src[^"]*https?:\/\//i);
+  const rootRoute = await readFile(join(root, "src/routes/__root.tsx"), "utf8");
+  assert.doesNotMatch(rootRoute, /plausible|google-analytics|metrika|gtag\(/i);
+  const index = await readFile(join(root, "src/routes/index.tsx"), "utf8");
+  assert.doesNotMatch(index, /plausible|analytics\.js|gtag\(/i);
+});

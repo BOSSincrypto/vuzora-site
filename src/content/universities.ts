@@ -8,7 +8,7 @@
  * @module content/universities
  */
 
-import { LINKS, SITE_URL } from "./site";
+import { BRAND, LINKS, SITE_URL } from "./site";
 
 export type UniversityStatus = "online" | "soon";
 
@@ -252,6 +252,10 @@ export function statusLabel(status: UniversityStatus): string {
  */
 export const DETAIL_CONTENT_MIN_LENGTH = 120;
 
+/** Required affiliation-boundary wording on every university detail page. */
+export const AFFILIATION_BOUNDARY =
+  "Сервис не является официальным сервисом вуза" as const;
+
 /** Entity-specific body copy for the detail page (server-visible). */
 export function universityDetailCopy(university: University): string {
   const availability =
@@ -261,7 +265,7 @@ export function universityDetailCopy(university: University): string {
   return (
     `${availability}: ${university.name} (${university.code}, ${university.city}). ` +
     `Vuzora присылает расписание пар в Telegram по утрам в выбранный слот с 05:00 до 10:00 МСК — ` +
-    `без поиска по сайтам и без рекламного шума. Сервис не является официальным сервисом вуза ` +
+    `без поиска по сайтам и без рекламного шума. ${AFFILIATION_BOUNDARY} ` +
     `и опирается на открытые источники расписания. Открой бота по кнопке ниже, чтобы подключить ` +
     `этот вуз: ссылка передаёт параметр start=from-site_${university.slug}.`
   );
@@ -270,4 +274,60 @@ export function universityDetailCopy(university: University): string {
 /** All public detail paths derived from the registry (prerender / sitemap). */
 export function universityDetailPaths(): readonly string[] {
   return UNIVERSITIES.map((university) => universityPagePath(university.slug));
+}
+
+const TITLE_MIN = 10;
+const TITLE_MAX = 70;
+const DESCRIPTION_MIN = 50;
+const DESCRIPTION_MAX = 170;
+
+function withinBounds(value: string, min: number, max: number): boolean {
+  return value.length >= min && value.length <= max;
+}
+
+/**
+ * Unique Russian detail title (10–70 chars). Prefers the full registry name;
+ * when that overflows, uses code + city so the page stays identifiable.
+ */
+export function universityDetailTitle(university: University): string {
+  const brand = ` – ${BRAND.name}`;
+  const candidates = [
+    `Расписание ${university.name}${brand}`,
+    `${university.name}: расписание в Telegram`,
+    `Расписание ${university.code} · ${university.city}${brand}`,
+    `Расписание ${university.code} в Telegram${brand}`,
+  ];
+  for (const candidate of candidates) {
+    if (withinBounds(candidate, TITLE_MIN, TITLE_MAX)) return candidate;
+  }
+  // Last resort for pathological registry data: keep brand + code, hard-bound.
+  const fallback = `Расписание ${university.code}${brand}`;
+  return withinBounds(fallback, TITLE_MIN, TITLE_MAX)
+    ? fallback
+    : fallback.slice(0, TITLE_MAX - 1).trimEnd() + "…";
+}
+
+/**
+ * Unique Russian detail description (50–170 chars). Always includes the full
+ * registry name, city, mapped status, Telegram schedule intent, and affiliation boundary.
+ */
+export function universityDetailDescription(university: University): string {
+  const status = statusLabel(university.status);
+  const primary =
+    `Расписание пар ${university.name} (${university.city}) в Telegram. ` +
+    `Vuzora присылает расписание по утрам. Статус: ${status}. ` +
+    `${AFFILIATION_BOUNDARY}.`;
+  if (withinBounds(primary, DESCRIPTION_MIN, DESCRIPTION_MAX)) return primary;
+
+  const compact =
+    `Расписание ${university.name}. ${university.city}. Статус ${status}. ` +
+    `Получай расписание пар в Telegram через Vuzora. ${AFFILIATION_BOUNDARY}.`;
+  if (withinBounds(compact, DESCRIPTION_MIN, DESCRIPTION_MAX)) return compact;
+
+  // Preserve the full name; trim only the trailing guidance when needed.
+  if (compact.length > DESCRIPTION_MAX) {
+    return compact.slice(0, DESCRIPTION_MAX - 1).trimEnd() + "…";
+  }
+  // Pad short edge-cases (should not occur with the current registry).
+  return `${compact} Расписание в Telegram.`;
 }

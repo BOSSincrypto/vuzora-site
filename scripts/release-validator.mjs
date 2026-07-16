@@ -11,8 +11,11 @@ import {
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
 export const SUPPORT_CTA = "https://t.me/vuzora_support_bot";
+export const AFFILIATION_BOUNDARY = "Сервис не является официальным сервисом вуза";
 
 const PLACEHOLDER_RE = /\b(?:undefined|null|todo|lorem ipsum|placeholder)\b/i;
+const ANALYTICS_RE =
+  /\b(?:plausible\.io|plausible\.io\/js|data-domain|google-analytics|googletagmanager|gtag\s*\(|GA_MEASUREMENT|yandex(?:\.ru)?\/metrika|mc\.yandex|metrika\.yandex|hotjar|segment\.com|fullstory|mixpanel|amplitude\.com)\b/i;
 const HTML_ENTITY_RE = /&(?:amp|lt|gt|quot|apos|#x[\da-f]+|#\d+);/gi;
 const HTML_ENTITIES = {
   amp: "&",
@@ -315,6 +318,13 @@ export function validateRouteDocument(
         failures.push(`${route}: city identity is missing`);
       if (!document.text.includes(university.status === "online" ? "Онлайн" : "Скоро"))
         failures.push(`${route}: status identity is missing`);
+      const metaPair = `${document.title} ${document.descriptions[0] ?? ""}`;
+      if (!metaPair.includes(university.name))
+        failures.push(`${route}: title/description pair must include the registry name`);
+      if (!(document.descriptions[0] ?? "").includes(university.name))
+        failures.push(`${route}: description must include the registry name`);
+      if (!document.text.includes(AFFILIATION_BOUNDARY))
+        failures.push(`${route}: affiliation-boundary wording is missing`);
       const expectedCta = `https://t.me/vuzora_bot?start=from-site_${university.slug}`;
       const universityCtas = document.anchors.filter((anchor) =>
         anchor.href?.startsWith("https://t.me/vuzora_bot?start=from-site_"),
@@ -324,11 +334,20 @@ export function validateRouteDocument(
         universityCtas.some((anchor) => anchor.href !== expectedCta)
       )
         failures.push(`${route}: university CTA is missing or cross-route`);
-      if (
-        university.officialUrl &&
-        !document.anchors.some((anchor) => anchor.href === university.officialUrl)
-      )
-        failures.push(`${route}: official link does not match registry`);
+      if (university.officialUrl) {
+        if (!document.anchors.some((anchor) => anchor.href === university.officialUrl))
+          failures.push(`${route}: official link does not match registry`);
+      } else {
+        // Registry omission is authoritative: no third-party university homepage link.
+        const unverified = document.anchors.filter(
+          (anchor) =>
+            /^https?:\/\//.test(anchor.href ?? "") &&
+            !anchor.href.startsWith("https://t.me/") &&
+            !anchor.href.startsWith(CANONICAL_ORIGIN),
+        );
+        if (unverified.length)
+          failures.push(`${route}: unverified official link rendered without registry URL`);
+      }
       const nodes = document.jsonLd.flatMap(flattenJsonLd);
       const breadcrumbs = nodes.filter((node) => node["@type"] === "BreadcrumbList");
       const entities = nodes.filter((node) => node["@type"] === "CollegeOrUniversity");
@@ -351,11 +370,27 @@ export function validateRouteDocument(
         service &&
         (service["@id"] !== `${CANONICAL_ORIGIN}/#service` ||
           service.about !== `${CANONICAL_ORIGIN}${route}#university` ||
-          service.provider?.["@id"] !== `${CANONICAL_ORIGIN}/#org`)
+          service.provider?.["@id"] !== `${CANONICAL_ORIGIN}/#org` ||
+          !service.serviceType)
       )
         failures.push(`${route}: JSON-LD service relationship mismatch`);
+      const breadcrumb = breadcrumbs[0];
+      const items = breadcrumb?.itemListElement;
+      if (
+        !Array.isArray(items) ||
+        items.length !== 3 ||
+        items[0]?.name !== "Главная" ||
+        items[0]?.item !== `${CANONICAL_ORIGIN}/` ||
+        items[1]?.name !== "Вузы" ||
+        items[1]?.item !== `${CANONICAL_ORIGIN}/unis` ||
+        items[2]?.name !== university.name ||
+        items[2]?.item !== `${CANONICAL_ORIGIN}${route}`
+      )
+        failures.push(`${route}: JSON-LD breadcrumb positions/URLs mismatch`);
     }
   }
+  if (ANALYTICS_RE.test(document.html))
+    failures.push(`${route}: analytics or collector reference found in initial HTML`);
   if (route === "/unis") {
     for (const university of universities.filter((record) => record.slug)) {
       const href = `/unis/${university.slug}`;
@@ -501,6 +536,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
   const expectedManifest = manifestFor({ universities, posts });
   const knownTitles = new Set();
   const knownCanonicals = new Set();
+  const knownDetailDescriptions = new Set();
   if (!(await exists(dist))) fail("missing dist directory");
   const manifestPath = join(dist, "release-manifest.json");
   if (!(await exists(manifestPath))) fail("missing dist/release-manifest.json");
@@ -533,8 +569,9 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
         continue;
       }
       try {
+        const document = parseHtmlDocument(await read(artifact));
         validateRouteDocument(
-          parseHtmlDocument(await read(artifact)),
+          document,
           route,
           routes,
           universities,
@@ -543,6 +580,12 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
           knownCanonicals,
           routeExpectations,
         );
+        if (route.startsWith("/unis/")) {
+          const description = document.descriptions[0] ?? "";
+          if (knownDetailDescriptions.has(description))
+            fail(`${route}: duplicate detail description`);
+          knownDetailDescriptions.add(description);
+        }
       } catch (error) {
         fail(`${route}: ${error.message}`);
       }
@@ -587,6 +630,49 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       const robots = await read(join(dist, "robots.txt"));
       if ((robots.match(/^Sitemap:\s*https:\/\/vuzora\.ru\/sitemap\.xml$/gim) ?? []).length !== 1)
         fail("robots.txt must expose exactly one canonical sitemap directive");
+      if (/Sitemap:\s*https?:\/\/(?!vuzora\.ru)/i.test(robots))
+        fail("robots.txt must not expose an alternate-origin sitemap directive");
+      // Shared Policy: Disallow: /api/ does not block public indexable routes.
+      for (const route of routes) {
+        if (route.startsWith("/api")) fail(`robots policy blocks indexable route ${route}`);
+      }
+      if (!/^User-agent:\s*\*/im.test(robots))
+        fail("robots.txt must declare a User-agent rule");
+      if (ANALYTICS_RE.test(robots)) fail("robots.txt must not reference analytics collectors");
+    }
+    // First-party public artifact scan for analytics integrations (HTML/JS/CSS/robots/CSP).
+    if (await exists(dist)) {
+      const files = await htmlFiles(dist);
+      for (const path of files) {
+        try {
+          const body = await read(path);
+          if (ANALYTICS_RE.test(body))
+            fail(`analytics or collector reference found in ${relative(dist, path)}`);
+        } catch (error) {
+          fail(`artifact scan failed for ${relative(dist, path)}: ${error.message}`);
+        }
+      }
+      // Scan CSS/JS assets under dist/assets for collector endpoints.
+      try {
+        const assetDir = join(dist, "assets");
+        if (await exists(assetDir)) {
+          const assets = await readdir(assetDir);
+          for (const name of assets) {
+            if (!/\.(js|css|html|txt|xml|json)$/i.test(name)) continue;
+            const body = await read(join(assetDir, name));
+            // React minifiers can produce the substring "gtag" inside unrelated symbols;
+            // require a real collector/domain token rather than bare 4-letter coincidence.
+            if (
+              /\b(?:plausible\.io|google-analytics|googletagmanager\.com|yandex(?:\.ru)?\/metrika|mc\.yandex|metrika\.yandex|hotjar\.com|segment\.com|fullstory\.com|mixpanel\.com|amplitude\.com)\b/i.test(
+                body,
+              )
+            )
+              fail(`analytics collector domain found in assets/${name}`);
+          }
+        }
+      } catch (error) {
+        fail(`asset analytics scan failed: ${error.message}`);
+      }
     }
     if (await exists(join(dist, "sitemap.xml"))) {
       try {

@@ -76,15 +76,32 @@ test("current registry, content, and Telegram destinations stay explicit", async
   const universities = await read("src/content/universities.ts");
   const site = await read("src/content/site.ts");
   const sitemap = await read("src/routes/sitemap[.]xml.tsx");
+  const prepare = await read("scripts/prepare-release.mjs");
   assert.match(universities, /"online"\s*\|\s*"soon"/);
   assert.match(universities, /status: "online"/);
   assert.match(universities, /slug:\s*"[a-z0-9-]+"/);
   assert.match(universities, /export function findUniversity/);
   assert.match(universities, /universityBotUrl/);
+  assert.match(universities, /universityDetailTitle/);
+  assert.match(universities, /universityDetailDescription/);
   assert.match(site, /botUrl:\s*"https:\/\/t\.me\/vuzora_bot"/);
   assert.match(site, /supportBotUrl:\s*"https:\/\/t\.me\/vuzora_support_bot"/);
   assert.match(site, /genericBotUrl:\s*"https:\/\/t\.me\/vuzora_bot\?start=from-site"/);
   assert.match(sitemap, /path: "\/blog\/"/);
   assert.match(sitemap, /UNIVERSITIES\.map|universityPagePath/);
   assert.doesNotMatch(sitemap, /fallback|status:\s*200/);
+  // Post-build sitemap is registry/policy authoritative, not crawler-discovered.
+  assert.match(prepare, /buildAuthoritativeSitemap|buildRoutes/);
+  assert.match(prepare, /sitemap\.xml/);
+});
+
+test("prerender seeds, public-routes, and release validator share registry route policy", async () => {
+  const publicRoutes = await read("src/content/public-routes.ts");
+  const validator = await read("scripts/release-validator.mjs");
+  assert.match(publicRoutes, /universityDetailPaths/);
+  assert.match(publicRoutes, /PRERENDER_ROUTES/);
+  assert.match(validator, /AFFILIATION_BOUNDARY/);
+  assert.match(validator, /ANALYTICS_RE|analytics or collector/);
+  assert.match(validator, /JSON-LD breadcrumb positions/);
+  assert.match(validator, /description must include the registry name/);
 });
