@@ -9,6 +9,8 @@
 const BLOG_DETAIL_RE = /^\/blog\/([a-z0-9-]+)$/;
 const UNIVERSITY_DETAIL_RE = /^\/unis\/([a-z0-9-]+)$/;
 export const EDITORIAL_HUB_SLUG = "raspisanie-vuzov-v-telegram";
+export const FOCUSED_POST_MIN = 8;
+export const FOCUSED_POST_MAX = 12;
 
 function routeHrefs(document, pattern) {
   return document.anchors
@@ -56,7 +58,7 @@ export function assertBlogIndexJoin(document, posts) {
  * Ensure hub, focused posts, and university details form a crawlable graph.
  * @param {{
  *   documents: Map<string, { anchors: Array<{ href?: string }>, text: string }>,
- *   posts: Array<{ slug: string }>,
+ *   posts: Array<{ slug: string, universitySlug?: string | null }>,
  *   universities: Array<{ slug: string }>
  * }} input
  */
@@ -78,14 +80,38 @@ export function assertEditorialGraph({ documents, posts, universities }) {
   for (const slug of hubBlogSlugs) {
     if (!postSlugs.has(slug)) throw new Error(`editorial hub links unknown post: ${slug}`);
   }
-  const focusedSlugs = posts
-    .filter((post) => post.slug !== EDITORIAL_HUB_SLUG)
-    .filter((post) => {
-      const document = documents.get(`/blog/${post.slug}`);
-      return document && routeHrefs(document, UNIVERSITY_DETAIL_RE).length === 1;
-    })
-    .map((post) => post.slug);
-  if (!focusedSlugs.length) throw new Error("editorial hub has no focused post links");
+  const focusedPosts = posts.filter(
+    (post) => post.slug !== EDITORIAL_HUB_SLUG && post.universitySlug,
+  );
+  if (
+    focusedPosts.length < FOCUSED_POST_MIN ||
+    focusedPosts.length > FOCUSED_POST_MAX
+  ) {
+    throw new Error(
+      `focused post count must be between ${FOCUSED_POST_MIN} and ${FOCUSED_POST_MAX}: ${focusedPosts.length}`,
+    );
+  }
+  const expectedUniversitySet = new Set(expectedUniversitySlugs);
+  const targetToPost = new Map();
+  for (const post of focusedPosts) {
+    const target = post.universitySlug;
+    if (!expectedUniversitySet.has(target)) {
+      throw new Error(`focused post links unknown university in metadata: ${post.slug} -> ${target}`);
+    }
+    const previous = targetToPost.get(target);
+    if (previous) {
+      throw new Error(`focused posts share university target: ${previous} and ${post.slug} -> ${target}`);
+    }
+    targetToPost.set(target, post.slug);
+  }
+  const focusedSlugs = focusedPosts.map((post) => post.slug);
+  for (const post of posts) {
+    if (post.slug === EDITORIAL_HUB_SLUG || post.universitySlug) continue;
+    const links = routeHrefs(documents.get(`/blog/${post.slug}`), UNIVERSITY_DETAIL_RE);
+    if (links.length) {
+      throw new Error(`post with a university detail link lacks focused metadata: ${post.slug}`);
+    }
+  }
   assertExactSet(
     hubBlogSlugs.filter((slug) => focusedSlugs.includes(slug)),
     focusedSlugs,
@@ -102,16 +128,23 @@ export function assertEditorialGraph({ documents, posts, universities }) {
     const postUniversitySlugs = routeHrefs(postDocument, UNIVERSITY_DETAIL_RE);
     if (postUniversitySlugs.length !== 1)
       throw new Error(`focused post must link to exactly one university detail: ${slug}`);
-    if (!expectedUniversitySlugs.includes(postUniversitySlugs[0]))
-      throw new Error(`focused post links unknown university: ${slug}`);
-    const detailDocument = documents.get(`/unis/${postUniversitySlugs[0]}`);
+    const configuredUniversitySlug = posts.find((post) => post.slug === slug).universitySlug;
+    if (!expectedUniversitySet.has(postUniversitySlugs[0])) {
+      throw new Error(`focused post links unknown university: ${slug} -> ${postUniversitySlugs[0]}`);
+    }
+    if (postUniversitySlugs[0] !== configuredUniversitySlug) {
+      throw new Error(
+        `focused post links wrong university: ${slug} -> ${postUniversitySlugs[0]} (expected ${configuredUniversitySlug})`,
+      );
+    }
+    const detailDocument = documents.get(`/unis/${configuredUniversitySlug}`);
     if (!detailDocument)
-      throw new Error(`focused post target artifact is missing: ${postUniversitySlugs[0]}`);
+      throw new Error(`focused post target artifact is missing: ${configuredUniversitySlug}`);
     const detailEditorialLinks = routeHrefs(detailDocument, BLOG_DETAIL_RE).filter((linkedSlug) =>
       linkedSlug === EDITORIAL_HUB_SLUG || focusedSlugs.includes(linkedSlug),
     );
     if (!detailEditorialLinks.length)
-      throw new Error(`university detail lacks an editorial link: ${postUniversitySlugs[0]}`);
+      throw new Error(`university detail lacks an editorial link: ${configuredUniversitySlug}`);
   }
 
   return {

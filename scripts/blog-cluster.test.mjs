@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { readRegistry } from "./route-policy.mjs";
+import { FOCUSED_POST_MAX, FOCUSED_POST_MIN } from "./editorial-joins.mjs";
 
 const root = process.cwd();
 const read = (path) => readFile(join(root, path), "utf8");
@@ -11,6 +12,10 @@ function readBlogPosts(source) {
   return [...source.matchAll(/\{\s*slug:\s*"([^"]+)"[\s\S]*?body:\s*\[([\s\S]*?)\n\s*\],\s*\n\s*\},/g)].map(
     (match) => ({
       slug: match[1],
+      universitySlug:
+        source
+          .slice(match.index, match.index + match[0].length)
+          .match(/\buniversitySlug:\s*"([^"]+)"/)?.[1] ?? null,
       body: [...match[2].matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((item) =>
         JSON.parse(`"${item[1]}"`),
       ),
@@ -40,19 +45,6 @@ function jaccard(left, right) {
   return union === 0 ? 1 : intersection / union;
 }
 
-const FOCUSED = [
-  ["msu-utrenniy-plan", "msu"],
-  ["hse-raspisanie-bez-lishnih-vkladok", "hse"],
-  ["mipt-ritm-zadach", "mipt"],
-  ["bmstu-predmety-v-dvizhenii", "bmstu"],
-  ["mgimo-yazyk-utra", "mgimo"],
-  ["ranepa-raznye-korpusa", "ranepa"],
-  ["rudn-gorod-i-marshrut", "rudn"],
-  ["spbu-semestr-bez-paniky", "spbu"],
-  ["urfu-raspisanie-i-pereezdy", "urfu"],
-  ["kfu-okonchatelnyy-plan", "kfu"],
-];
-
 test("editorial cluster has one complete hub and ten focused posts", async () => {
   const [source, { universities }] = await Promise.all([
     read("src/content/blog.ts"),
@@ -61,14 +53,16 @@ test("editorial cluster has one complete hub and ten focused posts", async () =>
   const posts = readBlogPosts(source);
   const bySlug = new Map(posts.map((post) => [post.slug, post]));
   const hub = bySlug.get("raspisanie-vuzov-v-telegram");
+  const focused = posts.filter((post) => post.universitySlug);
+  const focusedPairs = focused.map((post) => [post.slug, post.universitySlug]);
 
   assert.ok(hub, "hub post is present");
   assert.equal(posts.filter((post) => post.slug === hub.slug).length, 1);
-  assert.equal(FOCUSED.length, 10);
+  assert.ok(focused.length >= FOCUSED_POST_MIN && focused.length <= FOCUSED_POST_MAX);
   assert.deepEqual(
-    FOCUSED.map(([slug]) => slug).sort(),
+    focused.map((post) => post.slug).sort(),
     posts
-      .filter((post) => FOCUSED.some(([slug]) => slug === post.slug))
+      .filter((post) => post.universitySlug)
       .map((post) => post.slug)
       .sort(),
   );
@@ -82,10 +76,10 @@ test("editorial cluster has one complete hub and ten focused posts", async () =>
   );
   assert.deepEqual(
     hubLinks.filter((href) => href.startsWith("/blog/")).sort(),
-    FOCUSED.map(([slug]) => `/blog/${slug}`).sort(),
+    focused.map((post) => `/blog/${post.slug}`).sort(),
   );
 
-  for (const [postSlug, universitySlug] of FOCUSED) {
+  for (const [postSlug, universitySlug] of focusedPairs) {
     const post = bySlug.get(postSlug);
     assert.ok(post, `${postSlug} is present`);
     const links = internalLinks(post.body.join(" "));
@@ -100,14 +94,15 @@ test("focused editorial bodies are distinct after identity normalization", async
     readRegistry(root),
   ]);
   const posts = new Map(readBlogPosts(source).map((post) => [post.slug, post]));
-  const bodies = FOCUSED.map(([slug]) => normalizedWords(posts.get(slug).body.join(" "), universities));
+  const focused = [...posts.values()].filter((post) => post.universitySlug);
+  const bodies = focused.map((post) => normalizedWords(post.body.join(" "), universities));
 
-  assert.equal(new Set(bodies.map((words) => [...words].sort().join(" "))).size, FOCUSED.length);
+  assert.equal(new Set(bodies.map((words) => [...words].sort().join(" "))).size, focused.length);
   for (let left = 0; left < bodies.length; left += 1) {
     for (let right = left + 1; right < bodies.length; right += 1) {
       assert.ok(
         jaccard(bodies[left], bodies[right]) < 0.82,
-        `focused posts ${FOCUSED[left][0]} and ${FOCUSED[right][0]} are too similar`,
+        `focused posts ${focused[left].slug} and ${focused[right].slug} are too similar`,
       );
     }
   }

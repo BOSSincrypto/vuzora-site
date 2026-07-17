@@ -92,6 +92,56 @@ test("validate:release rejects editorial index and hub drift", async () => {
   }
 });
 
+test("validate:release rejects missing, swapped, and unknown focused-post targets", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-focused-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const blogPath = join(fixtureRoot, "src/content/blog.ts");
+    const focusedPath = join(
+      fixtureRoot,
+      "dist/blog/msu-utrenniy-plan/index.html",
+    );
+    const originalBlog = await readFile(blogPath, "utf8");
+    const originalFocused = await readFile(focusedPath, "utf8");
+
+    await writeFile(
+      blogPath,
+      originalBlog.replace('universitySlug: "msu"', 'universitySlug: "not-a-real-university"'),
+      "utf8",
+    );
+    await assert.rejects(
+      () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      /Editorial graph:.*unknown university in metadata: msu-utrenniy-plan/,
+    );
+    await writeFile(blogPath, originalBlog, "utf8");
+
+    await writeFile(
+      focusedPath,
+      originalFocused.replace('href="/unis/msu"', 'href="/unis"'),
+      "utf8",
+    );
+    await assert.rejects(
+      () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      /Editorial graph:.*focused post must link to exactly one university detail: msu-utrenniy-plan/,
+    );
+
+    await writeFile(
+      focusedPath,
+      originalFocused.replace('href="/unis/msu"', 'href="/unis/hse"'),
+      "utf8",
+    );
+    await assert.rejects(
+      () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      /Editorial graph:.*focused post links wrong university: msu-utrenniy-plan -> hse \(expected msu\)/,
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test("validate:release rejects sitemap omissions for committed posts", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-sitemap-"));
   try {

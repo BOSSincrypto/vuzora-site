@@ -44,12 +44,14 @@ export async function readRegistry(root = process.cwd()) {
       title: field(record, "title"),
       date: field(record, "date"),
       summary: field(record, "summary"),
+      universitySlug: field(record, "universitySlug") ?? null,
     }))
     .filter((record) => record.slug && record.title);
   const posts = postRecords.map((record) => record.slug);
+  const focusedPosts = postRecords.filter((record) => record.universitySlug);
   const affiliationBoundary = readAffiliationBoundary(universitiesSource);
 
-  return { universities, posts, postRecords, affiliationBoundary };
+  return { universities, posts, postRecords, focusedPosts, affiliationBoundary };
 }
 
 export function buildRoutes({ universities, posts }) {
