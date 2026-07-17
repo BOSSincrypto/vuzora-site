@@ -20,6 +20,7 @@ import {
   statusLabel,
   universityBotUrl,
   universityDetailCopy,
+  universityFaq,
   universityDetailDescription,
   universityDetailTitle,
   universityPagePath,
@@ -148,6 +149,7 @@ export const Route = createFileRoute("/unis_/$slug")({
 function UniversityDetailPage() {
   const { university } = Route.useLoaderData();
   const copy = universityDetailCopy(university);
+  const faq = universityFaq(university);
   const ctaHref = universityBotUrl(university.slug);
   const label = statusLabel(university.status);
   const returnHref = "/unis";
@@ -176,6 +178,10 @@ function UniversityDetailPage() {
             {university.name}
           </h1>
 
+          <h2 className="mt-5 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
+            Расписание {university.name} в Telegram
+          </h2>
+
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <span
               className={
@@ -194,11 +200,56 @@ function UniversityDetailPage() {
             className="mt-8 space-y-4 text-base leading-relaxed text-white/75"
           >
             <p>{copy}</p>
-            <p>
-              {AFFILIATION_BOUNDARY}: Vuzora не заменяет официальный сайт {university.name} и не
-              является его частью. Используй бота, чтобы получать расписание в удобное утро, а
-              вопросы по учёбе и официальным документам — в каналах вуза.
-            </p>
+            <section data-section="connect" className="border-t border-white/10 pt-7">
+              <h3 className="font-display text-xl font-semibold text-white">Как подключиться</h3>
+              <p className="mt-3">
+                Нажми кнопку подключения, открой Vuzora в Telegram и выбери {university.code}.
+                Параметр ссылки сохраняет привязку к странице {university.name}, поэтому начать
+                можно без поиска по списку.
+              </p>
+            </section>
+            <section data-section="morning-delivery" className="border-t border-white/10 pt-7">
+              <h3 className="font-display text-xl font-semibold text-white">Что приходит утром</h3>
+              <p className="mt-3">
+                Бот присылает уведомление с доступным расписанием в выбранный утренний слот с
+                05:00 до 10:00 по Москве. Это формат доставки в Telegram, а не опубликованная на
+                сайте таблица занятий: за актуальными изменениями всегда следи в официальных
+                каналах {university.name}.
+              </p>
+            </section>
+            <section data-section="status-city" className="border-t border-white/10 pt-7">
+              <h3 className="font-display text-xl font-semibold text-white">Статус и город</h3>
+              <p className="mt-3">
+                В реестре Vuzora: статус «{label}», город {university.city}. Эти поля описывают
+                доступность функции и территорию университета, а не расписание конкретной группы.
+              </p>
+            </section>
+            <section data-section="affiliation" className="border-t border-white/10 pt-7">
+              <h3 className="font-display text-xl font-semibold text-white">О сервисе</h3>
+              <p className="mt-3">
+                {AFFILIATION_BOUNDARY}. Vuzora не заменяет официальный сайт {university.name} и не
+                является его частью. Вопросы об учёбе, документах и подтверждении занятий нужно
+                задавать официальным каналам университета.
+              </p>
+            </section>
+            <section data-section="faq" className="border-t border-white/10 pt-7">
+              <h3 className="font-display text-xl font-semibold text-white">Частые вопросы</h3>
+              <ul className="mt-4 divide-y divide-white/10 border-y border-white/10">
+                {faq.map((item) => (
+                  <li key={item.question}>
+                    <details className="group py-4">
+                      <summary className="flex cursor-pointer list-none items-start justify-between gap-5 font-display text-base font-medium text-white/90 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber">
+                        <span>{item.question}</span>
+                        <span aria-hidden className="shrink-0 text-amber transition-transform group-open:rotate-45">
+                          +
+                        </span>
+                      </summary>
+                      <p className="mt-3 pr-8 text-sm leading-relaxed text-white/65">{item.answer}</p>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">

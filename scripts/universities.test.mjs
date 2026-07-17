@@ -101,6 +101,23 @@ test("detail metadata helpers emit bounded unique Russian titles and description
   assert.match(route, /#breadcrumb/);
 });
 
+test("detail content exposes query intent, required sections, and registry FAQ helper", async () => {
+  const content = await readFile(join(root, "src/content/universities.ts"), "utf8");
+  const route = await readFile(join(root, "src/routes/unis_.$slug.tsx"), "utf8");
+  const directory = await readFile(join(root, "src/routes/unis.tsx"), "utf8");
+  assert.match(content, /export type UniversityFaq/);
+  assert.match(content, /export function universityFaq/);
+  assert.match(content, /Как подключить расписание \$\{university\.code\} в Telegram/);
+  assert.match(route, /Расписание \{university\.name\} в Telegram/);
+  for (const marker of ["connect", "morning-delivery", "status-city", "affiliation", "faq"]) {
+    assert.match(route, new RegExp(`data-section=\\"${marker}\\"`));
+  }
+  assert.match(route, /<details className=/);
+  assert.match(route, /<summary className=/);
+  assert.match(directory, /утреннюю доставку/);
+  assert.match(directory, /AFFILIATION_BOUNDARY/);
+});
+
 test("Telegram conversion classes remain distinct and exact", async () => {
   const site = await readFile(join(root, "src/content/site.ts"), "utf8");
   assert.match(site, /genericBotUrl:\s*"https:\/\/t\.me\/vuzora_bot\?start=from-site"/);

@@ -30,10 +30,12 @@ export {
   genericBotUrl,
   statusLabel,
   universityDetailCopy,
+  universityFaq,
   universityDetailPaths,
   universityDetailTitle,
   universityDetailDescription,
   type University,
+  type UniversityFaq,
   type UniversityStatus,
 } from "./universities";
 export { PLANS, TIMELINE, formatPrice, type Plan, type TimelineEntry } from "./pricing";

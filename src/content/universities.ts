@@ -27,6 +27,11 @@ export type University = {
   officialUrl?: string;
 };
 
+export type UniversityFaq = {
+  question: string;
+  answer: string;
+};
+
 /** Central status → Russian UI label mapping (single source for all surfaces). */
 export const UNIVERSITY_STATUS_LABELS = {
   online: "Онлайн",
@@ -255,6 +260,34 @@ export const DETAIL_CONTENT_MIN_LENGTH = 120;
 /** Required affiliation-boundary wording on every university detail page. */
 export const AFFILIATION_BOUNDARY = "Сервис не является официальным сервисом вуза" as const;
 
+const DETAIL_FOCUS_BY_SLUG: Readonly<Record<string, string>> = {
+  "reu-plekhanov": "На этой странице удобно проверить привязку РЭУ к утренней выдаче и сразу перейти к подключению.",
+  "financial-university": "Карточка Финансового университета собрана для быстрого перехода от поиска вуза к настройке уведомлений.",
+  spbu: "Для СПбГУ здесь отдельно вынесены город, статус поддержки и путь к Telegram-подключению.",
+  sinergiya: "Страница Синергии помогает сверить запись реестра перед первым переходом в бот.",
+  spbstu: "Для СПбПУ полезно начать с блока статуса, а затем открыть ссылку с привязкой к этому вузу.",
+  urfu: "В карточке УрФУ собраны ориентиры для утреннего сценария без публикации таблиц занятий на сайте.",
+  rudn: "Страница РУДН отделяет информацию о доставке от официальных вопросов университета.",
+  mgimo: "Для МГИМО эта страница служит коротким маршрутом к Telegram и обратно в каталог поддерживаемых вузов.",
+  dgtu: "Карточка ДГТУ показывает, какие данные относятся к реестру Vuzora, а какие нужно уточнять у вуза.",
+  kfu: "Для КФУ в одном месте собраны город, состояние подключения и утренний формат сообщений.",
+  mirea: "Страница МИРЭА объясняет сценарий доставки без обещаний о полноте официального расписания.",
+  ranepa: "Для РАНХиГС добавлен отдельный ответ о привязке перехода, чтобы не перепутать его с общим CTA сайта.",
+  miit: "Карточка МИИТ помогает найти нужный маршрут по коду и проверить его перед запуском Telegram-бота.",
+  hse: "Для ВШЭ город отображается в реестровом виде, а подробности доставки остаются в честных пределах сервиса.",
+  mephi: "Страница МИФИ делает акцент на утреннем уведомлении и не подменяет официальные источники университета.",
+  mipt: "Для МФТИ здесь легко сверить код, статус и точную ссылку с параметром этого slug.",
+  mpei: "Карточка МЭИ показывает путь от каталога к уведомлениям, сохраняя границу между Vuzora и вузом.",
+  "tgu-tolyatti": "Для ТГУ в Тольятти блоки страницы помогают быстро отличить город реестра от настроек Telegram-доставки.",
+  unecon: "Страница СПбГЭУ связывает карточку каталога с утренним сценарием и понятным возвратом к списку вузов.",
+  rggu: "Для РГГУ здесь собраны ответы о подключении и статусе, без выдуманных деталей учебного процесса.",
+  msu: "Карточка МГУ даёт отдельный маршрут к Telegram-подключению и сохраняет официальные вопросы за каналами университета.",
+  sfu: "Для СФУ описание сфокусировано на доставке уведомлений, а не на копировании расписания в публичную страницу.",
+  nngu: "Страница ННГУ помогает найти запись по коду и городу, затем перейти к утреннему формату Vuzora.",
+  bmstu: "Для МГТУ им. Баумана FAQ уточняет границы сервиса и оставляет официальные изменения университету.",
+  susu: "Карточка ЮУрГУ собрана как самостоятельная точка входа: статус, город, подключение и ответы находятся рядом.",
+};
+
 /** Entity-specific body copy for the detail page (server-visible). */
 export function universityDetailCopy(university: University): string {
   const availability =
@@ -265,9 +298,37 @@ export function universityDetailCopy(university: University): string {
     `${availability}: ${university.name} (${university.code}, ${university.city}). ` +
     `Vuzora присылает расписание пар в Telegram по утрам в выбранный слот с 05:00 до 10:00 МСК — ` +
     `без поиска по сайтам и без рекламного шума. ${AFFILIATION_BOUNDARY} ` +
-    `и опирается на открытые источники расписания. Открой бота по кнопке ниже, чтобы подключить ` +
+    `${DETAIL_FOCUS_BY_SLUG[university.slug] ?? `Для ${university.code} здесь собраны статус, город и путь к подключению.`} ` +
+    `Vuzora опирается на открытые источники расписания. Открой бота по кнопке ниже, чтобы подключить ` +
     `этот вуз: ссылка передаёт параметр start=from-site_${university.slug}.`
   );
+}
+
+/**
+ * Entity-specific FAQ content for the detail page and its structured-data
+ * extension. Every answer carries registry identity so pages remain useful
+ * when read independently from the directory.
+ */
+export function universityFaq(university: University): readonly UniversityFaq[] {
+  const availability = statusLabel(university.status).toLowerCase();
+  return [
+    {
+      question: `Как подключить расписание ${university.code} в Telegram?`,
+      answer: `Открой кнопку подключения на странице ${university.name}, перейди в Vuzora и выбери ${university.code}. Ссылка страницы передаёт start=from-site_${university.slug}, чтобы запрос не потерял привязку к вузу.`,
+    },
+    {
+      question: `Когда приходит расписание ${university.name}?`,
+      answer: `Для ${university.name} доставка настроена на утренний слот: сообщения с расписанием приходят в Telegram в выбранное время между 05:00 и 10:00 по Москве. Точное расписание занятий на странице не публикуется и не заменяет проверку в официальных каналах.`,
+    },
+    {
+      question: `Какой статус у ${university.code} и для какого города он указан?`,
+      answer: `${university.code} имеет статус «${statusLabel(university.status)}», а в реестре Vuzora указан город: ${university.city}. ${availability === "онлайн" ? "Подключение доступно сейчас." : "Поддержка готовится, поэтому подключение может быть недоступно."}`,
+    },
+    {
+      question: `Является ли Vuzora официальным сервисом ${university.name}?`,
+      answer: `${AFFILIATION_BOUNDARY}. Vuzora только помогает получать сообщения в Telegram. За подтверждением занятий, документов и любых официальных изменений обращайся к ${university.name}.`,
+    },
+  ];
 }
 
 /** All public detail paths derived from the registry (prerender / sitemap). */

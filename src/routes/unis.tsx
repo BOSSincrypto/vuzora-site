@@ -10,7 +10,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { NavBar } from "@/components/vuzora/NavBar";
 import { Universities } from "@/components/vuzora/Universities";
 import { Footer } from "@/components/vuzora/Footer";
-import { UNIVERSITIES, abs, SITE_URL } from "@/content/vuzora";
+import { AFFILIATION_BOUNDARY, UNIVERSITIES, abs, SITE_URL } from "@/content/vuzora";
 import ogCover from "@/assets/og-cover.jpg";
 
 const TITLE = "Поддерживаемые вузы – Vuzora";
@@ -83,7 +83,21 @@ function UnisPage() {
     <div className="min-h-screen bg-ink text-white">
       <NavBar />
       <main id="main">
-        <h1 className="sr-only">Поддерживаемые вузы</h1>
+        <section className="px-6 pb-2 pt-24 md:px-12 md:pb-4 md:pt-32">
+          <div className="mx-auto max-w-6xl">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-amber">
+              Каталог Vuzora
+            </p>
+            <h1 className="mt-4 max-w-3xl font-display text-4xl font-bold leading-tight tracking-tight text-white md:text-6xl">
+              Поддерживаемые вузы
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/65 md:text-lg">
+              Выбери университет, чтобы узнать статус подключения и настроить утреннюю доставку
+              расписания в Telegram. На странице каждого вуза есть понятный способ начать и ссылка
+              обратно в полный каталог. {AFFILIATION_BOUNDARY}.
+            </p>
+          </div>
+        </section>
         <Universities />
       </main>
       <Footer />
