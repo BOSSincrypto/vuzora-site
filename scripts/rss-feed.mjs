@@ -85,31 +85,181 @@ export function extractRssPostUrls(xml) {
   return [...xml.matchAll(POST_URL_RE)].map((match) => ({ url: match[0], slug: match[1] }));
 }
 
+const XML_NAME_RE = /^[A-Za-z_][A-Za-z0-9_.:-]*$/;
+const XML_ENTITY_RE = /^#(?:x[0-9A-Fa-f]+|[0-9]+)$/;
+
+function isXmlWhitespace(character) {
+  return character === " " || character === "\t" || character === "\n" || character === "\r";
+}
+
+function isValidXmlCodePoint(codePoint) {
+  return (
+    codePoint === 0x9 ||
+    codePoint === 0xa ||
+    codePoint === 0xd ||
+    (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
+    (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
+    (codePoint >= 0x10000 && codePoint <= 0x10ffff)
+  );
+}
+
+function assertXmlCharacters(value, context) {
+  for (const character of value) {
+    if (!isValidXmlCodePoint(character.codePointAt(0)))
+      throw new Error(`RSS feed contains an invalid XML character in ${context}`);
+  }
+}
+
+function assertXmlEntities(value, context) {
+  let cursor = 0;
+  while (cursor < value.length) {
+    const ampersand = value.indexOf("&", cursor);
+    if (ampersand === -1) break;
+    const semicolon = value.indexOf(";", ampersand + 1);
+    if (semicolon === -1) throw new Error(`RSS feed contains an unterminated XML entity in ${context}`);
+    const entity = value.slice(ampersand + 1, semicolon);
+    if (
+      !["amp", "lt", "gt", "quot", "apos"].includes(entity) &&
+      !XML_ENTITY_RE.test(entity)
+    )
+      throw new Error(`RSS feed contains an invalid XML entity in ${context}`);
+    if (entity.startsWith("#")) {
+      const codePoint = entity[1].toLowerCase() === "x"
+        ? Number.parseInt(entity.slice(2), 16)
+        : Number.parseInt(entity.slice(1), 10);
+      if (!Number.isInteger(codePoint) || codePoint > 0x10ffff)
+        throw new Error(`RSS feed contains an invalid XML entity in ${context}`);
+      assertXmlCharacters(String.fromCodePoint(codePoint), "entity");
+    }
+    cursor = semicolon + 1;
+  }
+}
+
+function assertXmlText(value, context) {
+  assertXmlCharacters(value, context);
+  assertXmlEntities(value, context);
+  if (value.includes("<")) throw new Error(`RSS feed contains an unescaped less-than character in ${context}`);
+}
+
+function parseXmlAttributes(source) {
+  const attributes = new Set();
+  let cursor = 0;
+  while (cursor < source.length) {
+    while (cursor < source.length && isXmlWhitespace(source[cursor])) cursor += 1;
+    if (cursor >= source.length) break;
+    const nameStart = cursor;
+    while (cursor < source.length && !isXmlWhitespace(source[cursor]) && !"=/>".includes(source[cursor]))
+      cursor += 1;
+    const name = source.slice(nameStart, cursor);
+    if (!XML_NAME_RE.test(name) || attributes.has(name))
+      throw new Error("RSS feed contains malformed or duplicate XML attributes");
+    attributes.add(name);
+    while (cursor < source.length && isXmlWhitespace(source[cursor])) cursor += 1;
+    if (source[cursor] !== "=") throw new Error("RSS feed contains an unquoted XML attribute");
+    cursor += 1;
+    while (cursor < source.length && isXmlWhitespace(source[cursor])) cursor += 1;
+    const quote = source[cursor];
+    if (quote !== '"' && quote !== "'") throw new Error("RSS feed contains an unquoted XML attribute");
+    cursor += 1;
+    const valueStart = cursor;
+    while (cursor < source.length && source[cursor] !== quote) cursor += 1;
+    if (cursor >= source.length) throw new Error("RSS feed contains an unterminated XML attribute");
+    const value = source.slice(valueStart, cursor);
+    assertXmlCharacters(value, "attribute");
+    assertXmlEntities(value, "attribute");
+    if (value.includes("<")) throw new Error("RSS feed contains an unescaped less-than character in an attribute");
+    cursor += 1;
+  }
+}
+
+function assertXmlDeclaration(token) {
+  const body = token.slice(5, -2).trim();
+  if (!body.startsWith("version") || !/^(?:version)\s*=\s*["']1\.0["'](?:\s|$)/.test(body))
+    throw new Error("RSS feed contains a malformed XML declaration");
+  parseXmlAttributes(body);
+  const attributes = [...body.matchAll(/([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*(["'])/g)].map(
+    (match) => match[1],
+  );
+  if (attributes[0] !== "version" || attributes.some((name, index) => attributes.indexOf(name) !== index))
+    throw new Error("RSS feed contains a malformed XML declaration");
+  if (attributes.some((name) => !["version", "encoding", "standalone"].includes(name)))
+    throw new Error("RSS feed contains a malformed XML declaration");
+  if (attributes.includes("standalone") && !/\sstandalone\s*=\s*["'](?:yes|no)["']/.test(body))
+    throw new Error("RSS feed contains a malformed XML declaration");
+}
+
 function assertWellFormedXml(xml) {
-  const tokens = /<!--[^]*?-->|<\?xml[^]*?\?>|<!\[CDATA\[[^]*?\]\]>|<\/?[A-Za-z][^>]*>|[^<]+/g;
   const stack = [];
   let cursor = 0;
   let root;
-  for (const match of xml.matchAll(tokens)) {
-    if (match.index !== cursor) throw new Error("RSS feed contains malformed XML");
-    const token = match[0];
-    cursor += token.length;
-    if (!token.startsWith("<") || token.startsWith("<!--") || token.startsWith("<![CDATA[")) continue;
-    if (token.startsWith("<?xml")) continue;
-    if (token.startsWith("</")) {
-      const name = token.match(/^<\/([A-Za-z][\w:.-]*)\s*>$/)?.[1];
-      if (!name || stack.pop() !== name) throw new Error("RSS feed contains mismatched XML tags");
+  let hasRoot = false;
+  let declarationSeen = false;
+  const fail = (message) => {
+    throw new Error(`RSS feed ${message}`);
+  };
+  while (cursor < xml.length) {
+    if (xml[cursor] !== "<") {
+      const textStart = cursor;
+      const nextTag = xml.indexOf("<", cursor);
+      cursor = nextTag === -1 ? xml.length : nextTag;
+      const text = xml.slice(textStart, cursor);
+      assertXmlText(text, stack.length ? `text in ${stack.at(-1)}` : "outside the root");
+      if (!stack.length && text.trim()) fail("contains text outside the root element");
       continue;
     }
-    const name = token.match(/^<([A-Za-z][\w:.-]*)\b/)?.[1];
-    if (!name) throw new Error("RSS feed contains malformed XML tag");
-    if (root) {
-      if (!stack.length) throw new Error("RSS feed contains multiple XML roots");
-    } else root = name;
-    if (!/\/\s*>$/.test(token)) stack.push(name);
+
+    if (xml.startsWith("<!--", cursor)) {
+      const end = xml.indexOf("-->", cursor + 4);
+      if (end === -1 || xml.slice(cursor + 4, end).includes("--")) fail("contains a malformed XML comment");
+      cursor = end + 3;
+      continue;
+    }
+    if (xml.startsWith("<![CDATA[", cursor)) {
+      const end = xml.indexOf("]]>", cursor + 9);
+      if (end === -1 || !stack.length) fail("contains a malformed XML CDATA section");
+      assertXmlCharacters(xml.slice(cursor + 9, end), "CDATA");
+      cursor = end + 3;
+      continue;
+    }
+    if (xml.startsWith("<?", cursor)) {
+      const end = xml.indexOf("?>", cursor + 2);
+      if (end === -1) fail("contains a malformed XML declaration or processing instruction");
+      const token = xml.slice(cursor, end + 2);
+      if (token.startsWith("<?xml")) {
+        if (cursor !== 0 || declarationSeen || hasRoot) fail("contains a misplaced XML declaration");
+        assertXmlDeclaration(token);
+        declarationSeen = true;
+      } else if (!/^<\?[A-Za-z_][A-Za-z0-9_.:-]*(?:\s[^?]*)?\?>$/.test(token)) {
+        fail("contains a malformed processing instruction");
+      }
+      cursor = end + 2;
+      continue;
+    }
+    if (xml.startsWith("<!", cursor)) fail("contains a malformed XML declaration");
+
+    const end = xml.indexOf(">", cursor + 1);
+    if (end === -1) fail("contains an unterminated XML tag");
+    const token = xml.slice(cursor, end + 1);
+    if (token.startsWith("</")) {
+      const match = token.match(/^<\/([A-Za-z_][A-Za-z0-9_.:-]*)\s*>$/);
+      if (!match || stack.pop() !== match[1]) fail("contains mismatched XML tags");
+      cursor = end + 1;
+      continue;
+    }
+    const opening = token.match(/^<([A-Za-z_][A-Za-z0-9_.:-]*)([\s\S]*?)(\/?)>$/);
+    if (!opening) fail("contains a malformed XML tag");
+    const [, name, attributes, selfClosing] = opening;
+    if (!root) {
+      root = name;
+      hasRoot = true;
+    } else if (!stack.length) {
+      fail("contains multiple XML roots");
+    }
+    parseXmlAttributes(selfClosing ? attributes.slice(0, -1) : attributes);
+    if (!selfClosing) stack.push(name);
+    cursor = end + 1;
   }
-  if (cursor !== xml.length || stack.length || root !== "rss")
-    throw new Error("RSS feed XML is incomplete or has an invalid root");
+  if (!hasRoot || stack.length || root !== "rss") fail("is incomplete or has an invalid root");
 }
 
 function decodeXmlText(value) {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
 import { readRegistry } from "./route-policy.mjs";
 import {
@@ -96,4 +97,59 @@ test("RSS join fails closed on missing, malformed, insecure, and duplicate items
     () => assertRssJoin(full.replace("<title>Первый пост</title>", "<title>Подмененный пост</title>"), fixturePosts),
     /title mismatch/i,
   );
+});
+
+test("RSS XML validation rejects malformed text, entities, attributes, declarations, and nesting", () => {
+  const full = buildRssFeed(fixturePosts);
+  const malformedFixtures = {
+    "raw ampersand in text": full.replace("Блог Vuzora", "Блог & Vuzora"),
+    "unescaped less-than in text": full.replace("Блог Vuzora", "Блог < Vuzora"),
+    "invalid entity": full.replace("Блог Vuzora", "Блог &bogus; Vuzora"),
+    "malformed attribute quoting": full.replace(
+      'href="https://vuzora.ru/blog/rss.xml"',
+      'href="https://vuzora.ru/blog/rss.xml',
+    ),
+    "unquoted attribute": full.replace('<rss version="2.0">', "<rss version=2.0>"),
+    "malformed declaration": full.replace(
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<?xml version="1.0" encoding="UTF-8"',
+    ),
+    "mismatched tags": full.replace("</item>", "</channel>"),
+    "improperly nested tags": full.replace("<title>Первый пост</title>", "<title>Первый пост</description>"),
+  };
+  for (const [name, malformed] of Object.entries(malformedFixtures)) {
+    assert.throws(() => assertRssJoin(malformed, fixturePosts), undefined, name);
+  }
+  assert.doesNotThrow(() => assertRssJoin(full, fixturePosts));
+});
+
+test("validate:release rejects each malformed RSS release fixture", async () => {
+  const { validateRelease } = await import("./release-validator.mjs");
+  const valid = await read("dist/blog/rss.xml");
+  const malformedFixtures = {
+    "raw ampersand": valid.replace("Блог Vuzora", "Блог & Vuzora"),
+    "unescaped less-than": valid.replace("Блог Vuzora", "Блог < Vuzora"),
+    "invalid entity": valid.replace("Блог Vuzora", "Блог &bogus; Vuzora"),
+    "malformed quoting": valid.replace(
+      'href="https://vuzora.ru/blog/rss.xml"',
+      'href="https://vuzora.ru/blog/rss.xml',
+    ),
+    "unquoted attribute": valid.replace('<rss version="2.0">', "<rss version=2.0>"),
+    "malformed declaration": valid.replace(
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<?xml version="1.0" encoding="UTF-8"',
+    ),
+    "mismatched tags": valid.replace("</item>", "</channel>"),
+    "improperly nested tags": valid.replace("<title>Блог Vuzora</title>", "<title>Блог Vuzora</description>"),
+  };
+  for (const [name, malformed] of Object.entries(malformedFixtures)) {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-rss-") );
+    try {
+      await cp(root, fixtureRoot, { recursive: true, filter: (source) => !source.includes("node_modules") });
+      await writeFile(join(fixtureRoot, "dist/blog/rss.xml"), malformed, "utf8");
+      await assert.rejects(() => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }), undefined, name);
+    } finally {
+      await rm(fixtureRoot, { recursive: true, force: true });
+    }
+  }
 });
