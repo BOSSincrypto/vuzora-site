@@ -272,6 +272,12 @@ function UniversityDetailPage() {
               Получать расписание в Telegram
             </CtaButton>
             <a
+              href="/blog/raspisanie-vuzov-v-telegram"
+              className="inline-flex items-center gap-1 text-sm text-white/65 underline decoration-white/20 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm"
+            >
+              Как устроена доставка расписания
+            </a>
+            <a
               href="/unis"
               className="inline-flex items-center gap-1 text-sm text-white/65 underline decoration-white/20 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm"
             >

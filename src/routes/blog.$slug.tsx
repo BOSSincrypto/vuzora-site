@@ -6,7 +6,7 @@
  * @module routes/blog.$slug
  */
 
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { NavBar } from "@/components/vuzora/NavBar";
 import { Footer } from "@/components/vuzora/Footer";
@@ -18,6 +18,34 @@ import { useReadProgress } from "@/hooks/use-read-progress";
 import { findPost, formatPostDate, POSTS } from "@/content/blog";
 import { BRAND, LINKS, SITE_URL, abs } from "@/content/vuzora";
 import ogCover from "@/assets/og-cover.jpg";
+
+const BLOG_LINK_RE = /\[\[([^\]|]+)\|([^\]]+)\]\]/g;
+
+function renderBlogParagraph(paragraph: string): ReactNode {
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let linkIndex = 0;
+
+  for (const match of paragraph.matchAll(BLOG_LINK_RE)) {
+    const [token, href, label] = match;
+    const start = match.index ?? 0;
+    if (start > cursor) nodes.push(paragraph.slice(cursor, start));
+    nodes.push(
+      <a
+        key={`${href}-${linkIndex}`}
+        href={href}
+        className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-white"
+      >
+        {label}
+      </a>,
+    );
+    cursor = start + token.length;
+    linkIndex += 1;
+  }
+
+  if (cursor < paragraph.length) nodes.push(paragraph.slice(cursor));
+  return nodes;
+}
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: ({ params }) => {
@@ -144,7 +172,7 @@ function BlogPost() {
             {post.body.map((para: string, i: number) => (
               // Include the slug + index so keys are stable across route
               // transitions between two posts of similar length.
-              <p key={`${post.slug}-${i}`}>{para}</p>
+              <p key={`${post.slug}-${i}`}>{renderBlogParagraph(para)}</p>
             ))}
           </div>
 
