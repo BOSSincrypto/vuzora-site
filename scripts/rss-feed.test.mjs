@@ -163,14 +163,18 @@ test("validate:release rejects each malformed RSS release fixture", async () => 
     "mismatched tags": valid.replace("</item>", "</channel>"),
     "improperly nested tags": valid.replace("<title>Блог Vuzora</title>", "<title>Блог Vuzora</description>"),
   };
-  for (const [name, malformed] of Object.entries(malformedFixtures)) {
-    const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-rss-") );
-    try {
-      await cp(root, fixtureRoot, { recursive: true, filter: (source) => !source.includes("node_modules") });
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-rss-"));
+  try {
+    await cp(root, fixtureRoot, { recursive: true, filter: (source) => !source.includes("node_modules") });
+    for (const [name, malformed] of Object.entries(malformedFixtures)) {
       await writeFile(join(fixtureRoot, "dist/blog/rss.xml"), malformed, "utf8");
-      await assert.rejects(() => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }), undefined, name);
-    } finally {
-      await rm(fixtureRoot, { recursive: true, force: true });
+      await assert.rejects(
+        () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+        undefined,
+        name,
+      );
     }
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
   }
 });
