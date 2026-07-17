@@ -16,6 +16,14 @@ import { parseHtmlDocument, validateRelease } from "./release-validator.mjs";
 
 const root = process.cwd();
 
+function duplicateAnchor(html, href) {
+  const anchor = html.match(
+    new RegExp(`<a\\b[^>]*href="${href}"[^>]*>[\\s\\S]*?<\\/a>`, "i"),
+  )?.[0];
+  assert.ok(anchor, `fixture anchor is present: ${href}`);
+  return html.replace(anchor, `${anchor}${anchor}`);
+}
+
 async function readEditorialDocuments(base = root) {
   const { universities, postRecords } = await readRegistry(base);
   const routes = buildRoutes({ universities, posts: postRecords.map((post) => post.slug) });
@@ -136,6 +144,46 @@ test("validate:release rejects missing, swapped, and unknown focused-post target
     await assert.rejects(
       () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
       /Editorial graph:.*focused post links wrong university: msu-utrenniy-plan -> hse \(expected msu\)/,
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("validate:release rejects duplicate hub backlinks and detail editorial links", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-editorial-duplicates-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const focusedPath = join(
+      fixtureRoot,
+      "dist/blog/msu-utrenniy-plan/index.html",
+    );
+    const detailPath = join(fixtureRoot, "dist/unis/msu/index.html");
+    const originalFocused = await readFile(focusedPath, "utf8");
+    const originalDetail = await readFile(detailPath, "utf8");
+
+    await writeFile(
+      focusedPath,
+      duplicateAnchor(originalFocused, "/blog/raspisanie-vuzov-v-telegram"),
+      "utf8",
+    );
+    await assert.rejects(
+      () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      /Editorial graph:.*focused post must link back to hub exactly once: msu-utrenniy-plan/,
+    );
+
+    await writeFile(focusedPath, originalFocused, "utf8");
+    await writeFile(
+      detailPath,
+      duplicateAnchor(originalDetail, "/blog/raspisanie-vuzov-v-telegram"),
+      "utf8",
+    );
+    await assert.rejects(
+      () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      /Editorial graph:.*university detail has duplicate editorial links: msu/,
     );
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });

@@ -12,8 +12,9 @@ export const EDITORIAL_HUB_SLUG = "raspisanie-vuzov-v-telegram";
 export const FOCUSED_POST_MIN = 8;
 export const FOCUSED_POST_MAX = 12;
 
-function routeHrefs(document, pattern) {
+function routeHrefs(document, pattern, predicate = () => true) {
   return document.anchors
+    .filter(predicate)
     .map((anchor) => anchor.href ?? "")
     .map((href) => href.match(pattern)?.[1])
     .filter(Boolean);
@@ -120,11 +121,17 @@ export function assertEditorialGraph({ documents, posts, universities }) {
   for (const slug of focusedSlugs) {
     const postDocument = documents.get(`/blog/${slug}`);
     if (!postDocument) throw new Error(`focused post artifact is missing: /blog/${slug}`);
-    const postHubLinks = routeHrefs(postDocument, BLOG_DETAIL_RE).filter(
+    // Ignore the generated previous/next navigation. The authored editorial
+    // body links use the amber link class and must contain exactly one hub edge.
+    const postHubLinks = routeHrefs(
+      postDocument,
+      BLOG_DETAIL_RE,
+      (anchor) => anchor.class?.includes("text-amber"),
+    ).filter(
       (linkedSlug) => linkedSlug === EDITORIAL_HUB_SLUG,
     );
-    if (!postHubLinks.length)
-      throw new Error(`focused post must link back to hub: ${slug}`);
+    if (postHubLinks.length !== 1)
+      throw new Error(`focused post must link back to hub exactly once: ${slug}`);
     const postUniversitySlugs = routeHrefs(postDocument, UNIVERSITY_DETAIL_RE);
     if (postUniversitySlugs.length !== 1)
       throw new Error(`focused post must link to exactly one university detail: ${slug}`);
@@ -145,6 +152,10 @@ export function assertEditorialGraph({ documents, posts, universities }) {
     );
     if (!detailEditorialLinks.length)
       throw new Error(`university detail lacks an editorial link: ${configuredUniversitySlug}`);
+    if (detailEditorialLinks.length !== 1)
+      throw new Error(
+        `university detail has duplicate editorial links: ${configuredUniversitySlug}`,
+      );
   }
 
   return {
