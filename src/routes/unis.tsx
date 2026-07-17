@@ -83,12 +83,25 @@ function UnisPage() {
     <div className="min-h-screen bg-ink text-white">
       <NavBar />
       <main id="main">
-        <section className="px-6 pb-2 pt-24 md:px-12 md:pb-4 md:pt-32">
-          <div className="mx-auto max-w-6xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-amber">
+        {/*
+          Mobile box model: keep side padding modest and use fluid H1 sizing so
+          long single tokens (e.g. «Поддерживаемые») stay within the content
+          width at 320px. Fixed text-4xl (36px) + px-6 inflated body.scrollWidth
+          to 336 and failed VAL-UNI-018.
+        */}
+        <section className="px-4 pb-2 pt-24 sm:px-6 md:px-12 md:pb-4 md:pt-32">
+          <div className="mx-auto min-w-0 max-w-6xl">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-amber sm:tracking-[0.22em]">
               Каталог Vuzora
             </p>
-            <h1 className="mt-4 max-w-3xl font-display text-4xl font-bold leading-tight tracking-tight text-white md:text-6xl">
+            <h1
+              className="mt-4 max-w-3xl min-w-0 font-display font-bold text-white"
+              style={{
+                fontSize: "clamp(1.75rem, 7.5vw, 3.75rem)",
+                lineHeight: 1.1,
+                letterSpacing: "-0.03em",
+              }}
+            >
               Поддерживаемые вузы
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/65 md:text-lg">
