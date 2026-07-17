@@ -13,6 +13,7 @@ import {
   buildLlmsPacket,
 } from "./llms-packet.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
+import { assertBlogIndexJoin, assertEditorialGraph } from "./editorial-joins.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -632,6 +633,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
   const knownTitles = new Set();
   const knownCanonicals = new Set();
   const knownDetailDescriptions = new Set();
+  const routeDocuments = new Map();
   if (!(await exists(dist))) fail("missing dist directory");
   const manifestPath = join(dist, "release-manifest.json");
   if (!(await exists(manifestPath))) fail("missing dist/release-manifest.json");
@@ -665,6 +667,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       }
       try {
         const document = parseHtmlDocument(await read(artifact));
+        routeDocuments.set(route, document);
         validateRouteDocument(
           document,
           route,
@@ -685,6 +688,16 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       } catch (error) {
         fail(`${route}: ${error.message}`);
       }
+    }
+    try {
+      assertBlogIndexJoin(routeDocuments.get("/blog/"), postRecords);
+    } catch (error) {
+      fail(`Editorial blog index: ${error.message}`);
+    }
+    try {
+      assertEditorialGraph({ documents: routeDocuments, posts: postRecords, universities });
+    } catch (error) {
+      fail(`Editorial graph: ${error.message}`);
     }
     const unexpected = htmlArtifacts.filter(
       (artifact) => artifact !== "404.html" && !routeArtifacts.has(artifact),
