@@ -164,3 +164,20 @@ test("university rows require local name or code identity", async () => {
     /row identity|identity mismatch/i,
   );
 });
+
+test("university rows reject multiple canonical detail URLs", async () => {
+  const { universities, affiliationBoundary } = await readRegistry(root);
+  const first = universities[0];
+  const second = universities[1];
+  const canonical = buildLlmsPacket(universities, { affiliationBoundary });
+  const firstRow = `- ${first.name} (${first.code}): ${detailUrl(first.slug)}`;
+  const secondRow = `- ${second.name} (${second.code}): ${detailUrl(second.slug)}`;
+  const multiUrlRow = canonical.replace(
+    `${firstRow}\n${secondRow}`,
+    `${firstRow}; ${second.name} (${second.code}): ${detailUrl(second.slug)}`,
+  );
+  assert.throws(
+    () => assertLlmsJoin(multiUrlRow, universities, { affiliationBoundary }),
+    /row|multiple|exactly one|detail URL/i,
+  );
+});

@@ -43,13 +43,19 @@ export function extractDetailUrls(body) {
 
 function extractDetailRows(body) {
   const rows = [];
-  for (const match of body.matchAll(DETAIL_URL_RE)) {
-    const lineStart = body.lastIndexOf("\n", match.index) + 1;
-    const lineEnd = body.indexOf("\n", match.index);
+  for (const row of body.split(/\r?\n/)) {
+    const matches = [...row.matchAll(DETAIL_URL_RE)];
+    if (matches.length > 1) {
+      throw new Error(
+        `llms.txt university row must contain exactly one canonical detail URL; found ${matches.length}`,
+      );
+    }
+    if (matches.length === 0) continue;
+    const [match] = matches;
     rows.push({
       url: match[0],
       slug: match[1],
-      row: body.slice(lineStart, lineEnd === -1 ? body.length : lineEnd),
+      row,
     });
   }
   return rows;
