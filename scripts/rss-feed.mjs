@@ -169,18 +169,24 @@ function parseXmlAttributes(source) {
     assertXmlEntities(value, "attribute");
     if (value.includes("<")) throw new Error("RSS feed contains an unescaped less-than character in an attribute");
     cursor += 1;
+    if (cursor < source.length && !isXmlWhitespace(source[cursor]))
+      throw new Error("RSS feed contains XML attributes without a whitespace separator");
   }
+  return [...attributes];
 }
 
 function assertXmlDeclaration(token) {
   const body = token.slice(5, -2).trim();
   if (!body.startsWith("version") || !/^(?:version)\s*=\s*["']1\.0["'](?:\s|$)/.test(body))
     throw new Error("RSS feed contains a malformed XML declaration");
-  parseXmlAttributes(body);
-  const attributes = [...body.matchAll(/([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*(["'])/g)].map(
-    (match) => match[1],
-  );
-  if (attributes[0] !== "version" || attributes.some((name, index) => attributes.indexOf(name) !== index))
+  const attributes = parseXmlAttributes(body);
+  const allowedOrders = [
+    ["version"],
+    ["version", "encoding"],
+    ["version", "standalone"],
+    ["version", "encoding", "standalone"],
+  ];
+  if (!allowedOrders.some((order) => order.length === attributes.length && order.every((name, index) => name === attributes[index])))
     throw new Error("RSS feed contains a malformed XML declaration");
   if (attributes.some((name) => !["version", "encoding", "standalone"].includes(name)))
     throw new Error("RSS feed contains a malformed XML declaration");

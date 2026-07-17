@@ -109,10 +109,18 @@ test("RSS XML validation rejects malformed text, entities, attributes, declarati
       'href="https://vuzora.ru/blog/rss.xml"',
       'href="https://vuzora.ru/blog/rss.xml',
     ),
+    "adjacent attributes without whitespace": full.replace(
+      'rel="self" type="application/rss+xml"',
+      'rel="self"type="application/rss+xml"',
+    ),
     "unquoted attribute": full.replace('<rss version="2.0">', "<rss version=2.0>"),
     "malformed declaration": full.replace(
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<?xml version="1.0" encoding="UTF-8"',
+    ),
+    "declaration standalone before encoding": full.replace(
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<?xml version="1.0" standalone="no" encoding="UTF-8"?>',
     ),
     "mismatched tags": full.replace("</item>", "</channel>"),
     "improperly nested tags": full.replace("<title>Первый пост</title>", "<title>Первый пост</description>"),
@@ -121,6 +129,11 @@ test("RSS XML validation rejects malformed text, entities, attributes, declarati
     assert.throws(() => assertRssJoin(malformed, fixturePosts), undefined, name);
   }
   assert.doesNotThrow(() => assertRssJoin(full, fixturePosts));
+  const declaration = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>';
+  assert.doesNotThrow(
+    () => assertRssJoin(full.replace('<?xml version="1.0" encoding="UTF-8"?>', declaration), fixturePosts),
+    declaration,
+  );
 });
 
 test("validate:release rejects each malformed RSS release fixture", async () => {
@@ -134,10 +147,18 @@ test("validate:release rejects each malformed RSS release fixture", async () => 
       'href="https://vuzora.ru/blog/rss.xml"',
       'href="https://vuzora.ru/blog/rss.xml',
     ),
+    "adjacent attributes without whitespace": valid.replace(
+      'rel="self" type="application/rss+xml"',
+      'rel="self"type="application/rss+xml"',
+    ),
     "unquoted attribute": valid.replace('<rss version="2.0">', "<rss version=2.0>"),
     "malformed declaration": valid.replace(
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<?xml version="1.0" encoding="UTF-8"',
+    ),
+    "declaration standalone before encoding": valid.replace(
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<?xml version="1.0" standalone="no" encoding="UTF-8"?>',
     ),
     "mismatched tags": valid.replace("</item>", "</channel>"),
     "improperly nested tags": valid.replace("<title>Блог Vuzora</title>", "<title>Блог Vuzora</description>"),
