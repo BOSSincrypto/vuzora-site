@@ -7,6 +7,11 @@ import {
   readRegistry,
   routeExpectationFor,
 } from "./route-policy.mjs";
+import {
+  assertLlmsJoin,
+  assertRobotsAllowsLlms,
+  buildLlmsPacket,
+} from "./llms-packet.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -597,8 +602,39 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       (artifact) => artifact !== "404.html" && !routeArtifacts.has(artifact),
     );
     if (unexpected.length) fail(`unexpected route HTML artifacts: ${unexpected.join(", ")}`);
-    for (const file of ["CNAME", ".nojekyll", "404.html", "robots.txt", "sitemap.xml"])
+    for (const file of ["CNAME", ".nojekyll", "404.html", "robots.txt", "sitemap.xml", "llms.txt"])
       if (!(await exists(join(dist, file)))) fail(`missing release artifact: dist/${file}`);
+    if (await exists(join(dist, "llms.txt"))) {
+      try {
+        const llmsBody = await read(join(dist, "llms.txt"));
+        assertLlmsJoin(llmsBody, universities, { affiliationBoundary });
+        const expectedPacket = buildLlmsPacket(universities, { affiliationBoundary });
+        if (llmsBody !== expectedPacket) {
+          fail(
+            "dist/llms.txt does not match registry-driven buildLlmsPacket output; run node scripts/generate-llms.mjs",
+          );
+        }
+        const publicLlmsPath = join(root, "public/llms.txt");
+        if (await exists(publicLlmsPath)) {
+          const publicLlms = await read(publicLlmsPath);
+          if (publicLlms !== llmsBody) {
+            fail("public/llms.txt and dist/llms.txt must match the same registry-driven packet");
+          }
+        }
+      } catch (error) {
+        fail(`llms.txt: ${error.message}`);
+      }
+    }
+    // Optional companion must not undercut the primary packet when present.
+    if (await exists(join(dist, "llms-full.txt"))) {
+      try {
+        assertLlmsJoin(await read(join(dist, "llms-full.txt")), universities, {
+          affiliationBoundary,
+        });
+      } catch (error) {
+        fail(`llms-full.txt: ${error.message}`);
+      }
+    }
     if (await exists(join(dist, "CNAME"))) {
       const cname = await read(join(dist, "CNAME"));
       if (cname.charCodeAt(0) === 0xfeff || cname !== "vuzora.ru\n")
@@ -641,6 +677,11 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       }
       if (!/^User-agent:\s*\*/im.test(robots)) fail("robots.txt must declare a User-agent rule");
       if (ANALYTICS_RE.test(robots)) fail("robots.txt must not reference analytics collectors");
+      try {
+        assertRobotsAllowsLlms(robots, "/llms.txt");
+      } catch (error) {
+        fail(error.message);
+      }
     }
     // First-party public artifact scan for analytics integrations (HTML/JS/CSS/robots/CSP).
     if (await exists(dist)) {

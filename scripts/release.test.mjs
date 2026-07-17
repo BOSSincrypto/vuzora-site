@@ -70,6 +70,20 @@ test("canonical sitemap policy is exposed by robots", async () => {
     1,
   );
   assert.doesNotMatch(robots, /plausible|google-analytics|metrika/i);
+  assert.doesNotMatch(robots, /^Disallow:\s*\/llms/im);
+});
+
+test("release validator enforces registry-driven llms packet", async () => {
+  const validator = await read("scripts/release-validator.mjs");
+  const packet = await read("scripts/llms-packet.mjs");
+  const generate = await read("scripts/generate-llms.mjs");
+  assert.match(validator, /assertLlmsJoin/);
+  assert.match(validator, /assertRobotsAllowsLlms/);
+  assert.match(validator, /llms\.txt/);
+  assert.match(packet, /buildLlmsPacket/);
+  assert.match(packet, /from-site_/);
+  assert.match(generate, /buildLlmsPacket/);
+  assert.match(generate, /public\/llms\.txt/);
 });
 
 test("current registry, content, and Telegram destinations stay explicit", async () => {

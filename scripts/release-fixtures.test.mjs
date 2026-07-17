@@ -8,6 +8,7 @@ import {
   parseHtmlDocument,
   parseSitemapXml,
 } from "./release-validator.mjs";
+import { assertLlmsJoin, buildLlmsPacket, detailUrl } from "./llms-packet.mjs";
 import { routeExpectationFor } from "./route-policy.mjs";
 import { hashReleaseBytes, normalizeSitemapLastmodBytes } from "./compare-release.mjs";
 
@@ -201,6 +202,21 @@ test("404 isolation rejects homepage, canonical, and university CTA leakage", ()
     () => assertIndependent404(leaking, routes, [{ slug: "msu", name: "МГУ" }], homepage),
     /canonical|CTA|homepage|title/,
   );
+});
+
+test("llms join fails closed on underlist and overlist fixtures", () => {
+  const universities = [
+    { slug: "msu", code: "МГУ", name: "МГУ имени М. В. Ломоносова" },
+    { slug: "hse", code: "ВШЭ", name: "НИУ ВШЭ" },
+  ];
+  const full = buildLlmsPacket(universities);
+  assert.doesNotThrow(() => assertLlmsJoin(full, universities));
+
+  const under = buildLlmsPacket(universities.slice(0, 1));
+  assert.throws(() => assertLlmsJoin(under, universities), /underlist|missing/i);
+
+  const over = `${full}\n- Phantom: ${detailUrl("not-a-real-slug")}\n`;
+  assert.throws(() => assertLlmsJoin(over, universities), /overlist|phantom/i);
 });
 
 test("sitemap parser rejects malformed, duplicate, alternate-origin, and artifact-mismatched locators", () => {
