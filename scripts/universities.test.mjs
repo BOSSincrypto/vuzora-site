@@ -52,11 +52,19 @@ test("registry omits guessed official URLs and keeps optional field explicit", a
   assert.match(source, /officialUrl\?:\s*string/);
   // Any non-empty officialUrl must be an absolute https URL in the registry object form.
   const { universities } = await readRegistry(root);
+  let verified = 0;
+  let omitted = 0;
   for (const university of universities) {
     if (university.officialUrl) {
-      assert.match(university.officialUrl, /^https:\/\//);
+      verified += 1;
+      assert.match(university.officialUrl, /^https:\/\/[^\s"']+\/?$/);
+    } else {
+      omitted += 1;
     }
   }
+  // Verified subset is intentional; omission remains valid product behavior.
+  assert.ok(verified >= 20, `expected verified official URLs, found ${verified}`);
+  assert.ok(omitted >= 1, "at least one omitted officialUrl keeps the absent matrix testable");
 });
 
 test("detail route module exists and rejects unknown slugs", async () => {
@@ -71,6 +79,10 @@ test("detail route module exists and rejects unknown slugs", async () => {
   assert.match(source, /CollegeOrUniversity/);
   assert.match(source, /#university/);
   assert.match(source, /#service/);
+  assert.match(source, /"@type": "FAQPage"/);
+  assert.match(source, /universityFaq\(university\)/);
+  assert.match(source, /sameAs: university\.officialUrl/);
+  assert.match(source, /university\.officialUrl \? \(/);
 });
 
 test("directory surface links each supported university name", async () => {
@@ -105,6 +117,8 @@ test("detail content exposes query intent, required sections, and registry FAQ h
   const content = await readFile(join(root, "src/content/universities.ts"), "utf8");
   const route = await readFile(join(root, "src/routes/unis_.$slug.tsx"), "utf8");
   const directory = await readFile(join(root, "src/routes/unis.tsx"), "utf8");
+  const policy = await readFile(join(root, "scripts/route-policy.mjs"), "utf8");
+  const validator = await readFile(join(root, "scripts/release-validator.mjs"), "utf8");
   assert.match(content, /export type UniversityFaq/);
   assert.match(content, /export function universityFaq/);
   assert.match(content, /Как подключить расписание \$\{university\.code\} в Telegram/);
@@ -114,6 +128,9 @@ test("detail content exposes query intent, required sections, and registry FAQ h
   }
   assert.match(route, /<details className=/);
   assert.match(route, /<summary className=/);
+  assert.match(policy, /"FAQPage"/);
+  assert.match(validator, /FAQPage Q&A does not match visible FAQ/);
+  assert.match(validator, /sameAs must equal the registry officialUrl/);
   assert.match(directory, /утреннюю доставку/);
   assert.match(directory, /AFFILIATION_BOUNDARY/);
 });

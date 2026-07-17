@@ -60,6 +60,7 @@ export const Route = createFileRoute("/unis_/$slug")({
     const description = universityDetailDescription(university);
     const url = universityPageUrl(university.slug);
     const universityId = `${url}#university`;
+    const faq = universityFaq(university);
     const serviceId = `${SITE_URL}/#service`;
     const orgId = `${SITE_URL}/#org`;
 
@@ -116,6 +117,7 @@ export const Route = createFileRoute("/unis_/$slug")({
                 "@id": universityId,
                 name: university.name,
                 url,
+                ...(university.officialUrl ? { sameAs: university.officialUrl } : {}),
                 address: {
                   "@type": "PostalAddress",
                   addressLocality: university.city,
@@ -136,6 +138,19 @@ export const Route = createFileRoute("/unis_/$slug")({
                 about: universityId,
                 url: SITE_URL + "/",
                 areaServed: university.city,
+              },
+              {
+                "@type": "FAQPage",
+                "@id": `${url}#faq`,
+                url,
+                mainEntity: faq.map((item) => ({
+                  "@type": "Question",
+                  name: item.question,
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: item.answer,
+                  },
+                })),
               },
             ],
           }),

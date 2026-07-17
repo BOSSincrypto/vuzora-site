@@ -45,6 +45,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "РЭУ им. Г. В. Плеханова",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.rea.ru/",
   },
   {
     slug: "financial-university",
@@ -52,6 +53,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Финансовый университет при Правительстве РФ",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.fa.ru/",
   },
   {
     slug: "spbu",
@@ -59,6 +61,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Санкт-Петербургский государственный университет",
     city: "Санкт-Петербург",
     status: "online",
+    officialUrl: "https://spbu.ru/",
   },
   {
     slug: "sinergiya",
@@ -66,6 +69,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Университет «Синергия»",
     city: "Москва",
     status: "online",
+    officialUrl: "https://synergy.ru/",
   },
   {
     slug: "spbstu",
@@ -73,6 +77,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Санкт-Петербургский политехнический университет Петра Великого",
     city: "Санкт-Петербург",
     status: "online",
+    officialUrl: "https://www.spbstu.ru/",
   },
   {
     slug: "urfu",
@@ -80,6 +85,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Уральский федеральный университет им. первого Президента России Б. Н. Ельцина",
     city: "Екатеринбург",
     status: "online",
+    officialUrl: "https://urfu.ru/",
   },
   {
     slug: "rudn",
@@ -87,6 +93,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Российский университет дружбы народов",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.rudn.ru/",
   },
   {
     slug: "mgimo",
@@ -94,6 +101,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Московский государственный институт международных отношений",
     city: "Москва",
     status: "online",
+    officialUrl: "https://mgimo.ru/",
   },
   {
     slug: "dgtu",
@@ -101,6 +109,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Донской государственный технический университет",
     city: "Ростов-на-Дону",
     status: "online",
+    officialUrl: "https://donstu.ru/",
   },
   {
     slug: "kfu",
@@ -108,6 +117,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Казанский федеральный университет",
     city: "Казань",
     status: "online",
+    officialUrl: "https://kpfu.ru/",
   },
   {
     slug: "mirea",
@@ -115,6 +125,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Российский технологический университет МИРЭА",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.mirea.ru/",
   },
   {
     slug: "ranepa",
@@ -122,6 +133,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Российская академия народного хозяйства и государственной службы",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.ranepa.ru/",
   },
   {
     slug: "miit",
@@ -129,6 +141,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Российский университет транспорта (МИИТ)",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.rut-miit.ru/",
   },
   {
     slug: "hse",
@@ -136,6 +149,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Национальный исследовательский университет «Высшая школа экономики»",
     city: "Москва · СПб · Нижний · Пермь",
     status: "online",
+    officialUrl: "https://www.hse.ru/",
   },
   {
     slug: "mephi",
@@ -143,6 +157,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Национальный исследовательский ядерный университет «МИФИ»",
     city: "Москва",
     status: "online",
+    officialUrl: "https://mephi.ru/",
   },
   {
     slug: "mipt",
@@ -150,6 +165,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Московский физико-технический институт",
     city: "Долгопрудный",
     status: "online",
+    officialUrl: "https://mipt.ru/",
   },
   {
     slug: "mpei",
@@ -157,6 +173,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Национальный исследовательский университет «МЭИ»",
     city: "Москва",
     status: "online",
+    officialUrl: "https://mpei.ru/",
   },
   {
     slug: "tgu-tolyatti",
@@ -164,6 +181,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Тольяттинский государственный университет",
     city: "Тольятти",
     status: "online",
+    officialUrl: "https://www.tltsu.ru/",
   },
   {
     slug: "unecon",
@@ -171,6 +189,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Санкт-Петербургский государственный экономический университет",
     city: "Санкт-Петербург",
     status: "online",
+    officialUrl: "https://unecon.ru/",
   },
   {
     slug: "rggu",
@@ -178,6 +197,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Российский государственный гуманитарный университет",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.rsuh.ru/",
   },
   {
     slug: "msu",
@@ -185,6 +205,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Московский государственный университет им. М. В. Ломоносова",
     city: "Москва",
     status: "online",
+    officialUrl: "https://www.msu.ru/",
   },
   {
     slug: "sfu",
@@ -192,6 +213,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Сибирский федеральный университет",
     city: "Красноярск",
     status: "online",
+    officialUrl: "https://www.sfu-kras.ru/",
   },
   {
     slug: "nngu",
@@ -199,6 +221,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Нижегородский государственный университет им. Н. И. Лобачевского",
     city: "Нижний Новгород",
     status: "online",
+    // officialUrl omitted: public https endpoint redirects to insecure http://www.unn.ru/.
   },
   {
     slug: "bmstu",
@@ -206,6 +229,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Московский государственный технический университет им. Н. Э. Баумана",
     city: "Москва",
     status: "online",
+    // officialUrl omitted: bmstu.ru currently redirects to mirror.bmstu.ru; keep omitted until stable.
   },
   {
     slug: "susu",
@@ -213,6 +237,7 @@ export const UNIVERSITIES: readonly University[] = [
     name: "Южно-Уральский государственный университет",
     city: "Челябинск",
     status: "online",
+    // officialUrl omitted: root redirects to language-specific /en; Russian homepage not stable enough.
   },
 ] as const;
 

@@ -185,7 +185,7 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
       return {
         heading: university.name,
         internalLinks: ["/unis"],
-        jsonLdTypes: ["BreadcrumbList", "CollegeOrUniversity", "Service"],
+        jsonLdTypes: ["BreadcrumbList", "CollegeOrUniversity", "Service", "FAQPage"],
         jsonLdIdentity: [
           {
             type: "CollegeOrUniversity",

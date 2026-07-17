@@ -80,6 +80,18 @@ export function parseHtmlDocument(html) {
   const headings = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((match) =>
     textContent(match[1]),
   );
+  const faqSection = html.match(/<section\b[^>]*data-section=["']faq["'][^>]*>([\s\S]*?)<\/section>/i)?.[1] ?? "";
+  const faq = [...faqSection.matchAll(/<details\b[^>]*>([\s\S]*?)<\/details>/gi)].map((match) => {
+    const item = match[1];
+    const summary = item.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/i)?.[1] ?? "";
+    // Prefer the first content span so decorative accordion markers ("+") are ignored.
+    const questionSource =
+      summary.match(/<span\b[^>]*>([\s\S]*?)<\/span>/i)?.[1] ?? summary;
+    return {
+      question: textContent(questionSource),
+      answer: textContent(item.match(/<p\b[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? ""),
+    };
+  });
   const anchors = findAll("a").map((element) => element.attrs);
   const jsonLd = [
     ...html.matchAll(
@@ -101,6 +113,7 @@ export function parseHtmlDocument(html) {
     elements,
     anchors,
     headings,
+    faq,
     text: textContent(html),
     title: titleMatch ? textContent(titleMatch[1]) : "",
     descriptions: description.map((element) => element.attrs.content ?? ""),
@@ -342,27 +355,45 @@ export function validateRouteDocument(
         universityCtas.some((anchor) => anchor.href !== expectedCta)
       )
         failures.push(`${route}: university CTA is missing or cross-route`);
+      const externalUniversityAnchors = document.anchors.filter(
+        (anchor) =>
+          /^https?:\/\//.test(anchor.href ?? "") &&
+          !anchor.href.startsWith("https://t.me/") &&
+          !anchor.href.startsWith(CANONICAL_ORIGIN),
+      );
       if (university.officialUrl) {
-        if (!document.anchors.some((anchor) => anchor.href === university.officialUrl))
-          failures.push(`${route}: official link does not match registry`);
-      } else {
-        // Registry omission is authoritative: no third-party university homepage link.
-        const unverified = document.anchors.filter(
-          (anchor) =>
-            /^https?:\/\//.test(anchor.href ?? "") &&
-            !anchor.href.startsWith("https://t.me/") &&
-            !anchor.href.startsWith(CANONICAL_ORIGIN),
+        const officialAnchors = document.anchors.filter(
+          (anchor) => anchor.href === university.officialUrl,
         );
-        if (unverified.length)
-          failures.push(`${route}: unverified official link rendered without registry URL`);
+        if (officialAnchors.length !== 1)
+          failures.push(`${route}: official link does not match registry`);
+        if (
+          officialAnchors.some(
+            (anchor) => anchor.target !== "_blank" || anchor.rel !== "noopener noreferrer",
+          )
+        )
+          failures.push(`${route}: official link has unsafe external attributes`);
+        if (externalUniversityAnchors.some((anchor) => anchor.href !== university.officialUrl))
+          failures.push(`${route}: external university link is not the registry official URL`);
+      } else if (externalUniversityAnchors.length) {
+        // Registry omission is authoritative: no third-party university homepage link.
+        failures.push(`${route}: unverified official link rendered without registry URL`);
       }
       const nodes = document.jsonLd.flatMap(flattenJsonLd);
-      const breadcrumbs = nodes.filter((node) => node["@type"] === "BreadcrumbList");
-      const entities = nodes.filter((node) => node["@type"] === "CollegeOrUniversity");
-      const services = nodes.filter((node) => node["@type"] === "Service");
-      if (breadcrumbs.length !== 1 || entities.length !== 1 || services.length !== 1)
+      const typeOf = (node) =>
+        Array.isArray(node?.["@type"]) ? node["@type"] : node?.["@type"] ? [node["@type"]] : [];
+      const breadcrumbs = nodes.filter((node) => typeOf(node).includes("BreadcrumbList"));
+      const entities = nodes.filter((node) => typeOf(node).includes("CollegeOrUniversity"));
+      const services = nodes.filter((node) => typeOf(node).includes("Service"));
+      const faqPages = nodes.filter((node) => typeOf(node).includes("FAQPage"));
+      if (
+        breadcrumbs.length !== 1 ||
+        entities.length !== 1 ||
+        services.length !== 1 ||
+        faqPages.length !== 1
+      )
         failures.push(
-          `${route}: JSON-LD must contain exactly one BreadcrumbList, CollegeOrUniversity, and Service`,
+          `${route}: JSON-LD must contain exactly one BreadcrumbList, CollegeOrUniversity, Service, and FAQPage`,
         );
       const entity = entities[0];
       if (
@@ -373,6 +404,19 @@ export function validateRouteDocument(
           entity.address?.addressLocality !== university.city)
       )
         failures.push(`${route}: JSON-LD university identity mismatch`);
+      if (entity) {
+        const sameAsValues = Array.isArray(entity.sameAs)
+          ? entity.sameAs
+          : entity.sameAs
+            ? [entity.sameAs]
+            : [];
+        if (university.officialUrl) {
+          if (sameAsValues.length !== 1 || sameAsValues[0] !== university.officialUrl)
+            failures.push(`${route}: JSON-LD sameAs must equal the registry officialUrl`);
+        } else if (sameAsValues.length) {
+          failures.push(`${route}: JSON-LD sameAs invented without registry officialUrl`);
+        }
+      }
       const service = services[0];
       if (
         service &&
@@ -395,6 +439,42 @@ export function validateRouteDocument(
         items[2]?.item !== `${CANONICAL_ORIGIN}${route}`
       )
         failures.push(`${route}: JSON-LD breadcrumb positions/URLs mismatch`);
+      const visibleFaq = document.faq.filter((item) => item.question && item.answer);
+      if (visibleFaq.length < 3 || visibleFaq.length > 5)
+        failures.push(`${route}: visible FAQ must contain 3–5 Q&A pairs`);
+      const faqPage = faqPages[0];
+      const mainEntity = faqPage?.mainEntity;
+      if (!Array.isArray(mainEntity) || mainEntity.length < 3 || mainEntity.length > 5)
+        failures.push(`${route}: FAQPage mainEntity must contain 3–5 Question nodes`);
+      else if (mainEntity.length !== visibleFaq.length)
+        failures.push(`${route}: FAQPage Q&A count does not match visible FAQ`);
+      else {
+        for (let index = 0; index < mainEntity.length; index += 1) {
+          const question = mainEntity[index];
+          const answerText =
+            question?.acceptedAnswer?.text ??
+            question?.acceptedAnswer?.["@value"] ??
+            (typeof question?.acceptedAnswer === "string" ? question.acceptedAnswer : "");
+          const questionName = typeof question?.name === "string" ? question.name.trim() : "";
+          const answerNormalized = typeof answerText === "string" ? answerText.trim() : "";
+          if (
+            !typeOf(question).includes("Question") ||
+            !questionName ||
+            !answerNormalized ||
+            !question?.acceptedAnswer ||
+            (question.acceptedAnswer["@type"] &&
+              !typeOf(question.acceptedAnswer).includes("Answer"))
+          ) {
+            failures.push(`${route}: FAQPage Question/Answer shape is invalid at index ${index}`);
+            continue;
+          }
+          if (
+            questionName !== visibleFaq[index].question ||
+            answerNormalized !== visibleFaq[index].answer
+          )
+            failures.push(`${route}: FAQPage Q&A does not match visible FAQ at index ${index}`);
+        }
+      }
     }
   }
   if (ANALYTICS_RE.test(document.html))
