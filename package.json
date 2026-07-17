@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --test scripts/*.test.mjs",
+    "test": "node scripts/ensure-test-artifacts.mjs && node --test scripts/*.test.mjs",
     "generate:llms": "node scripts/generate-llms.mjs",
     "generate:rss": "node scripts/generate-rss.mjs",
     "validate:release": "node scripts/validate-release.mjs",
