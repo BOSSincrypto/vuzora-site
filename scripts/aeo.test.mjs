@@ -99,15 +99,68 @@ test("robots does not Disallow /llms.txt", async () => {
   assert.equal(robotsDisallowsPath("User-agent: *\nDisallow: /api/\n", "/llms.txt"), false);
 });
 
-test("extractDetailUrls only accepts absolute production hosts", () => {
+test("extractDetailUrls only accepts exact canonical detail URLs", () => {
   const body = [
     "https://vuzora.ru/unis/msu",
-    "http://vuzora.ru/unis/hse",
-    "https://example.com/unis/mipt",
-    "/unis/bmstu",
+    "https://vuzora.ru/unis/hse/overview",
+    "https://vuzora.ru/unis/mipt?tab=about",
+    "https://vuzora.ru/unis/bmstu#faq",
+    "http://vuzora.ru/unis/sfu",
+    "https://example.com/unis/rggu",
+    "/unis/susu",
   ].join("\n");
   assert.deepEqual(
     extractDetailUrls(body).map((entry) => entry.slug),
     ["msu"],
+  );
+});
+
+test("non-canonical detail URL variants fail closed", async () => {
+  const { universities, affiliationBoundary } = await readRegistry(root);
+  const canonical = buildLlmsPacket(universities, { affiliationBoundary });
+  for (const suffix of ["/overview", "?tab=about", "#faq"]) {
+    const body = canonical.replace(
+      detailUrl(universities[0].slug),
+      `${detailUrl(universities[0].slug)}${suffix}`,
+    );
+    assert.throws(
+      () => assertLlmsJoin(body, universities, { affiliationBoundary }),
+      /non-canonical|detail URL|underlist/i,
+      `variant ${suffix} must be rejected`,
+    );
+  }
+});
+
+test("swapped university identities fail the URL-row bijective join", async () => {
+  const { universities, affiliationBoundary } = await readRegistry(root);
+  const canonical = buildLlmsPacket(universities, { affiliationBoundary });
+  const first = universities[0];
+  const second = universities[1];
+  const swapped = canonical
+    .replace(
+      `- ${first.name} (${first.code}): ${detailUrl(first.slug)}`,
+      `- ${second.name} (${second.code}): ${detailUrl(first.slug)}`,
+    )
+    .replace(
+      `- ${second.name} (${second.code}): ${detailUrl(second.slug)}`,
+      `- ${first.name} (${first.code}): ${detailUrl(second.slug)}`,
+    );
+  assert.throws(
+    () => assertLlmsJoin(swapped, universities, { affiliationBoundary }),
+    /row identity|identity mismatch/i,
+  );
+});
+
+test("university rows require local name or code identity", async () => {
+  const { universities, affiliationBoundary } = await readRegistry(root);
+  const university = universities[0];
+  const canonical = buildLlmsPacket(universities, { affiliationBoundary });
+  const withoutLocalIdentity = canonical.replace(
+    `- ${university.name} (${university.code}): ${detailUrl(university.slug)}`,
+    `- Поддерживаемый вуз: ${detailUrl(university.slug)}`,
+  );
+  assert.throws(
+    () => assertLlmsJoin(withoutLocalIdentity, universities, { affiliationBoundary }),
+    /row identity|identity mismatch/i,
   );
 });

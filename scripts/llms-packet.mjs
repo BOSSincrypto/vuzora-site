@@ -8,7 +8,10 @@
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const BOT_URL = "https://t.me/vuzora_bot";
 export const GENERIC_START = "from-site";
-export const DETAIL_URL_RE = /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)/g;
+export const DETAIL_URL_RE =
+  /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?=$|[\s)\]}>.,;:`])/g;
+const NON_CANONICAL_DETAIL_URL_RE =
+  /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?:[/?#][^\s<>"'`]*)/g;
 
 /** Loose secret / credential patterns that must never appear in public AEO text. */
 export const SECRET_PATTERN_RE =
@@ -36,6 +39,20 @@ export function extractDetailUrls(body) {
     found.push({ url: match[0], slug: match[1] });
   }
   return found;
+}
+
+function extractDetailRows(body) {
+  const rows = [];
+  for (const match of body.matchAll(DETAIL_URL_RE)) {
+    const lineStart = body.lastIndexOf("\n", match.index) + 1;
+    const lineEnd = body.indexOf("\n", match.index);
+    rows.push({
+      url: match[0],
+      slug: match[1],
+      row: body.slice(lineStart, lineEnd === -1 ? body.length : lineEnd),
+    });
+  }
+  return rows;
 }
 
 /**
@@ -105,7 +122,14 @@ export function assertLlmsJoin(body, universities, options = {}) {
   const registry = universities.filter((university) => university?.slug);
   const expectedSlugs = registry.map((university) => university.slug);
   const expectedSet = new Set(expectedSlugs);
-  const found = extractDetailUrls(body);
+  const nonCanonical = [...body.matchAll(NON_CANONICAL_DETAIL_URL_RE)].map((match) => match[0]);
+  if (nonCanonical.length) {
+    throw new Error(
+      `llms.txt contains non-canonical university detail URL(s): ${nonCanonical.join(", ")}`,
+    );
+  }
+  const rows = extractDetailRows(body);
+  const found = rows.map(({ url, slug }) => ({ url, slug }));
   const foundSlugs = found.map((entry) => entry.slug);
   const foundSet = new Set(foundSlugs);
 
@@ -148,12 +172,14 @@ export function assertLlmsJoin(body, universities, options = {}) {
     }
   }
 
-  for (const university of registry) {
-    const hasName = university.name && body.includes(university.name);
-    const hasCode = university.code && body.includes(university.code);
+  for (const row of rows) {
+    const university = registry.find((candidate) => candidate.slug === row.slug);
+    if (!university) continue;
+    const hasName = university.name && row.row.includes(university.name);
+    const hasCode = university.code && row.row.includes(university.code);
     if (!hasName && !hasCode) {
       throw new Error(
-        `llms.txt missing identity for slug ${university.slug}: need name and/or code near listing`,
+        `llms.txt row identity mismatch for slug ${university.slug}: need its name and/or code on the URL row`,
       );
     }
   }
