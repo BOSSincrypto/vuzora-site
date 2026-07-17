@@ -42,6 +42,8 @@ export async function readRegistry(root = process.cwd()) {
     .map((record) => ({
       slug: field(record, "slug"),
       title: field(record, "title"),
+      date: field(record, "date"),
+      summary: field(record, "summary"),
     }))
     .filter((record) => record.slug && record.title);
   const posts = postRecords.map((record) => record.slug);
@@ -61,6 +63,7 @@ export function buildRoutes({ universities, posts }) {
 
 export function artifactFor(route) {
   if (route === "/") return "index.html";
+  if (route === "/blog/rss.xml") return "blog/rss.xml";
   return `${route.replace(/\/$/, "")}/index.html`.replace(/^\//, "");
 }
 

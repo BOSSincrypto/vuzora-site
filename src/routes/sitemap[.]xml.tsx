@@ -12,6 +12,7 @@ function buildEntries(): Entry[] {
     { path: "/pricing", lastmod: today, changefreq: "weekly", priority: "0.9" },
     { path: "/unis", lastmod: today, changefreq: "monthly", priority: "0.7" },
     { path: "/blog/", lastmod: latestPost, changefreq: "weekly", priority: "0.8" },
+    { path: "/blog/rss.xml", lastmod: latestPost, changefreq: "weekly", priority: "0.4" },
     { path: "/changelog", lastmod: today, changefreq: "weekly", priority: "0.5" },
     ...POSTS.map<Entry>((p) => ({
       path: `/blog/${p.slug}`,

@@ -1,6 +1,7 @@
 import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { buildRoutes, manifestFor, readRegistry } from "./route-policy.mjs";
+import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 
 const root = process.cwd();
 const dist = join(root, "dist");
@@ -18,7 +19,7 @@ async function htmlFiles(directory) {
 }
 
 function buildAuthoritativeSitemap(routes, lastmod) {
-  const body = routes
+  const body = [...routes, RSS_PATH]
     .map(
       (route) => `  <url><loc>${CANONICAL_ORIGIN}${route}</loc><lastmod>${lastmod}</lastmod></url>`,
     )
@@ -40,8 +41,11 @@ for (const path of await htmlFiles(dist)) {
   if (normalized !== html) await writeFile(path, normalized);
 }
 
-const { universities, posts } = await readRegistry();
+const { universities, posts, postRecords } = await readRegistry();
 const routes = buildRoutes({ universities, posts });
+const rss = buildRssFeed(postRecords);
+assertRssJoin(rss, postRecords);
+await writeFile(join(dist, RSS_PATH.replace(/^\//, "")), rss, "utf8");
 // Freeze lastmod to the UTC calendar day of the build. Repeat-build comparison
 // normalizes lastmod further, so only the route set and non-date bytes must match.
 const lastmod = new Date().toISOString().slice(0, 10);

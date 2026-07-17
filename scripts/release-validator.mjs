@@ -12,6 +12,7 @@ import {
   assertRobotsAllowsLlms,
   buildLlmsPacket,
 } from "./llms-packet.mjs";
+import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -466,10 +467,11 @@ export function parseSitemapXml(xml) {
   return entries.map(({ _field, _fields, ...entry }) => entry);
 }
 
-export function assertSitemap(xml, routes, artifactExists = () => true) {
+export function assertSitemap(xml, routes, artifactExists = () => true, includeRss = false) {
   const entries = parseSitemapXml(xml);
   const locs = entries.map((entry) => entry.loc);
-  const expected = routes.map((route) => `${CANONICAL_ORIGIN}${route}`);
+  const expectedRoutes = includeRss ? [...routes, RSS_PATH] : routes;
+  const expected = expectedRoutes.map((route) => `${CANONICAL_ORIGIN}${route}`);
   if (new Set(locs).size !== locs.length)
     throw new Error("sitemap.xml contains duplicate loc entries");
   if (locs.some((loc) => !/^https:\/\/vuzora\.ru\/(?:[^?#]+)?$/.test(loc)))
@@ -566,7 +568,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       fail(`incomplete university registry record: ${university.slug ?? university.code}`);
   }
   if (await exists(dist)) {
-    const routeArtifacts = new Set(routes.map((route) => artifactFor(route)));
+    const routeArtifacts = new Set([...routes, RSS_PATH].map((route) => artifactFor(route)));
     const files = await htmlFiles(dist);
     const htmlArtifacts = files.map((path) => relative(dist, path));
     for (const route of routes) {
@@ -602,8 +604,33 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       (artifact) => artifact !== "404.html" && !routeArtifacts.has(artifact),
     );
     if (unexpected.length) fail(`unexpected route HTML artifacts: ${unexpected.join(", ")}`);
-    for (const file of ["CNAME", ".nojekyll", "404.html", "robots.txt", "sitemap.xml", "llms.txt"])
+    for (const file of [
+      "CNAME",
+      ".nojekyll",
+      "404.html",
+      "robots.txt",
+      "sitemap.xml",
+      "llms.txt",
+      RSS_PATH.replace(/^\//, ""),
+    ])
       if (!(await exists(join(dist, file)))) fail(`missing release artifact: dist/${file}`);
+    if (await exists(join(dist, RSS_PATH.replace(/^\//, "")))) {
+      try {
+        const rssBody = await read(join(dist, RSS_PATH.replace(/^\//, "")));
+        assertRssJoin(rssBody, postRecords);
+        const expectedRss = buildRssFeed(postRecords);
+        if (rssBody !== expectedRss) {
+          fail(`dist${RSS_PATH} does not match registry-driven RSS output; run node scripts/generate-rss.mjs`);
+        }
+        const publicRssPath = join(root, `public${RSS_PATH}`);
+        if (await exists(publicRssPath)) {
+          const publicRss = await read(publicRssPath);
+          if (publicRss !== rssBody) fail(`public${RSS_PATH} and dist${RSS_PATH} must match`);
+        }
+      } catch (error) {
+        fail(`RSS feed: ${error.message}`);
+      }
+    }
     if (await exists(join(dist, "llms.txt"))) {
       try {
         const llmsBody = await read(join(dist, "llms.txt"));
@@ -719,8 +746,11 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
     }
     if (await exists(join(dist, "sitemap.xml"))) {
       try {
-        assertSitemap(await read(join(dist, "sitemap.xml")), routes, (artifact) =>
-          routeArtifacts.has(artifact),
+        assertSitemap(
+          await read(join(dist, "sitemap.xml")),
+          routes,
+          (artifact) => routeArtifacts.has(artifact),
+          true,
         );
       } catch (error) {
         fail(error.message);

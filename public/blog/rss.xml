@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Блог Vuzora</title>
+    <link>https://vuzora.ru/blog/</link>
+    <description>Материалы Vuzora о расписании в Telegram и утренней доставке для студентов.</description>
+    <lastBuildDate>Mon, 15 Jun 2026 00:00:00 GMT</lastBuildDate>
+    <atom:link xmlns:atom="http://www.w3.org/2005/Atom" href="https://vuzora.ru/blog/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Почему именно утро (и почему время выбираешь ты)</title>
+      <link>https://vuzora.ru/blog/pochemu-utro</link>
+      <guid isPermaLink="true">https://vuzora.ru/blog/pochemu-utro</guid>
+      <pubDate>Mon, 15 Jun 2026 00:00:00 GMT</pubDate>
+      <description>Не маркетинговый ход и не симпатичная цифра. Разбор, почему расписание имеет смысл только до выхода из дома — и почему слот доставки выбирает сам студент.</description>
+    </item>
+    <item>
+      <title>Как мы парсим ВШЭ (и почему это не страшно)</title>
+      <link>https://vuzora.ru/blog/kak-my-parsim-vshe</link>
+      <guid isPermaLink="true">https://vuzora.ru/blog/kak-my-parsim-vshe</guid>
+      <pubDate>Fri, 22 May 2026 00:00:00 GMT</pubDate>
+      <description>Открытое расписание ВШЭ – публичные данные. Рассказываем, как Vuzora их забирает, нормализует и сверяет – без обходных путей.</description>
+    </item>
+    <item>
+      <title>Что будет после 31 октября 2026</title>
+      <link>https://vuzora.ru/blog/chto-budet-posle-31-oktyabrya</link>
+      <guid isPermaLink="true">https://vuzora.ru/blog/chto-budet-posle-31-oktyabrya</guid>
+      <pubDate>Fri, 10 Apr 2026 00:00:00 GMT</pubDate>
+      <description>Бесплатный период заканчивается. Что меняется, что – нет, и сколько на самом деле стоит держать проект живым.</description>
+    </item>
+  </channel>
+</rss>

@@ -63,14 +63,29 @@ test("Pages release artifacts have independent 404 and nojekyll sources", async 
   assert.doesNotMatch(notFound, /Vuzora\s*[–-]\s*расписание вуза/i);
 });
 
-test("canonical sitemap policy is exposed by robots", async () => {
+test("canonical sitemap policy discovers RSS without blocking it", async () => {
   const robots = await read("public/robots.txt");
+  const sitemap = await read("src/routes/sitemap[.]xml.tsx");
+  assert.match(sitemap, /path: "\/blog\/rss\.xml"/);
+  assert.doesNotMatch(robots, /^Disallow:\s*\/blog(?:\/rss\.xml)?/im);
   assert.equal(
     (robots.match(/^Sitemap:\s*https:\/\/vuzora\.ru\/sitemap\.xml$/gim) ?? []).length,
     1,
   );
   assert.doesNotMatch(robots, /plausible|google-analytics|metrika/i);
   assert.doesNotMatch(robots, /^Disallow:\s*\/llms/im);
+});
+
+test("release validator enforces registry-driven RSS feed", async () => {
+  const validator = await read("scripts/release-validator.mjs");
+  const rss = await read("scripts/rss-feed.mjs");
+  const prepare = await read("scripts/prepare-release.mjs");
+  assert.match(validator, /assertRssJoin/);
+  assert.match(validator, /RSS_PATH/);
+  assert.match(rss, /buildRssFeed/);
+  assert.match(rss, /CANONICAL_ORIGIN.*blog/s);
+  assert.match(prepare, /buildRssFeed/);
+  assert.match(prepare, /RSS_PATH/);
 });
 
 test("release validator enforces registry-driven llms packet", async () => {
