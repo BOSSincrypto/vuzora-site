@@ -94,16 +94,35 @@ test("directory surface links each supported university name", async () => {
 
 test("detail metadata helpers emit bounded unique Russian titles and descriptions", async () => {
   const source = await readFile(join(root, "src/content/universities.ts"), "utf8");
-  const { affiliationBoundary } = await readRegistry(root);
+  const { affiliationBoundary, universities } = await readRegistry(root);
   assert.match(source, /export function universityDetailTitle/);
   assert.match(source, /export function universityDetailDescription/);
   assert.match(source, /AFFILIATION_BOUNDARY/);
   assert.match(source, /Сервис не является официальным сервисом вуза/);
   assert.equal(affiliationBoundary, "Сервис не является официальным сервисом вуза");
-  // Title candidates prefer full name then code+city when length overflows.
-  assert.match(source, /Расписание \$\{university\.name\}/);
-  assert.match(source, /Расписание \$\{university\.code\} · \$\{university\.city\}/);
+  // Title candidates always keep the full registry name; no code-only fallback.
+  assert.match(source, /Расписание \$\{name\}/);
+  assert.match(source, /\$\{name\}: расписание в Telegram/);
+  assert.match(source, /\$\{name\}\$\{brand\}/);
+  assert.match(source, /candidate\.includes\(name\)/);
+  assert.doesNotMatch(
+    source,
+    /Расписание \$\{university\.code\} · \$\{university\.city\}/,
+    "code+city title fallback omits the full registry name",
+  );
+  assert.doesNotMatch(
+    source,
+    /Расписание \$\{university\.code\} в Telegram/,
+    "code-only Telegram title fallback omits the full registry name",
+  );
   assert.match(source, /Расписание пар \$\{university\.name\}/);
+  // Registry names themselves must fit the title bound so name-only titles work.
+  for (const university of universities) {
+    assert.ok(
+      university.name && university.name.length >= 10 && university.name.length <= 70,
+      `registry name for ${university.slug} must be 10–70 chars (got ${university.name?.length})`,
+    );
+  }
   const route = await readFile(join(root, "src/routes/unis_.$slug.tsx"), "utf8");
   assert.match(route, /universityDetailTitle/);
   assert.match(route, /universityDetailDescription/);
@@ -111,6 +130,57 @@ test("detail metadata helpers emit bounded unique Russian titles and description
   assert.match(route, /CollegeOrUniversity/);
   assert.match(route, /serviceType/);
   assert.match(route, /#breadcrumb/);
+});
+
+test("every detail title includes the full registry name within 10–70 chars", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const script = `
+import { UNIVERSITIES, universityDetailTitle, universityDetailDescription } from "./src/content/universities.ts";
+const TITLE_MIN = 10, TITLE_MAX = 70, DESC_MIN = 50, DESC_MAX = 170;
+const titles = new Set();
+const descriptions = new Set();
+for (const u of UNIVERSITIES) {
+  const title = universityDetailTitle(u);
+  const description = universityDetailDescription(u);
+  if (!title.includes(u.name)) {
+    console.error("TITLE_OMITS_NAME", u.slug, title);
+    process.exit(2);
+  }
+  if (title.length < TITLE_MIN || title.length > TITLE_MAX) {
+    console.error("TITLE_BOUNDS", u.slug, title.length, title);
+    process.exit(3);
+  }
+  // Reject code-only titles that mention the code but not the full name (already covered),
+  // and reject titles that are only the bare code with brand/city.
+  const codeOnly = new RegExp(\`^Расписание \${u.code.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&")}(?: · | в | – )\`);
+  if (codeOnly.test(title) && !title.includes(u.name)) {
+    console.error("TITLE_CODE_ONLY", u.slug, title);
+    process.exit(4);
+  }
+  if (!description.includes(u.name) || description.length < DESC_MIN || description.length > DESC_MAX) {
+    console.error("DESCRIPTION", u.slug, description.length, description);
+    process.exit(5);
+  }
+  if (titles.has(title)) {
+    console.error("DUP_TITLE", title);
+    process.exit(6);
+  }
+  if (descriptions.has(description)) {
+    console.error("DUP_DESCRIPTION", description);
+    process.exit(7);
+  }
+  titles.add(title);
+  descriptions.add(description);
+  console.log(JSON.stringify({ slug: u.slug, title, titleLen: title.length }));
+}
+console.log("OK", UNIVERSITIES.length);
+`;
+  const result = spawnSync("npx", ["--yes", "bun@1.3.14", "-e", script], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /OK 25/);
 });
 
 test("detail content exposes query intent, required sections, and registry FAQ helper", async () => {

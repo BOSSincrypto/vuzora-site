@@ -82,7 +82,8 @@ export const UNIVERSITIES: readonly University[] = [
   {
     slug: "urfu",
     code: "УрФУ",
-    name: "Уральский федеральный университет им. первого Президента России Б. Н. Ельцина",
+    // Keep the registry name ≤70 chars so detail <title> can include the full name.
+    name: "Уральский федеральный университет им. Б. Н. Ельцина",
     city: "Екатеринбург",
     status: "online",
     officialUrl: "https://urfu.ru/",
@@ -371,25 +372,29 @@ function withinBounds(value: string, min: number, max: number): boolean {
 }
 
 /**
- * Unique Russian detail title (10–70 chars). Prefers the full registry name;
- * when that overflows, uses code + city so the page stays identifiable.
+ * Unique Russian detail title (10–70 chars). Always includes the full registry
+ * name. Prefer shorter name-bearing templates before any truncation; never emit
+ * a code-only title that omits `university.name`.
  */
 export function universityDetailTitle(university: University): string {
   const brand = ` – ${BRAND.name}`;
+  const name = university.name;
   const candidates = [
-    `Расписание ${university.name}${brand}`,
-    `${university.name}: расписание в Telegram`,
-    `Расписание ${university.code} · ${university.city}${brand}`,
-    `Расписание ${university.code} в Telegram${brand}`,
+    `Расписание ${name}${brand}`,
+    `${name}: расписание в Telegram`,
+    `${name}${brand}`,
+    `${name} · Telegram`,
+    `Расписание ${name}`,
+    name,
   ];
   for (const candidate of candidates) {
-    if (withinBounds(candidate, TITLE_MIN, TITLE_MAX)) return candidate;
+    if (withinBounds(candidate, TITLE_MIN, TITLE_MAX) && candidate.includes(name)) {
+      return candidate;
+    }
   }
-  // Last resort for pathological registry data: keep brand + code, hard-bound.
-  const fallback = `Расписание ${university.code}${brand}`;
-  return withinBounds(fallback, TITLE_MIN, TITLE_MAX)
-    ? fallback
-    : fallback.slice(0, TITLE_MAX - 1).trimEnd() + "…";
+  // Pathological registry name longer than TITLE_MAX: still surface the full
+  // name (bounds are enforced by release/unit gates so registry stays honest).
+  return name;
 }
 
 /**

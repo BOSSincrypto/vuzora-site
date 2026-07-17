@@ -337,11 +337,17 @@ export function validateRouteDocument(
         failures.push(`${route}: city identity is missing`);
       if (!document.text.includes(university.status === "online" ? "Онлайн" : "Скоро"))
         failures.push(`${route}: status identity is missing`);
-      const metaPair = `${document.title} ${document.descriptions[0] ?? ""}`;
-      if (!metaPair.includes(university.name))
-        failures.push(`${route}: title/description pair must include the registry name`);
+      if (!document.title.includes(university.name))
+        failures.push(`${route}: title must include the full registry name`);
       if (!(document.descriptions[0] ?? "").includes(university.name))
         failures.push(`${route}: description must include the registry name`);
+      // Social titles must stay in parity with the document title (and thus the full name).
+      const ogTitle = document.meta("property", "og:title")[0] ?? "";
+      const twitterTitle = document.meta("name", "twitter:title")[0] ?? "";
+      if (ogTitle !== document.title)
+        failures.push(`${route}: og:title must match document title`);
+      if (twitterTitle !== document.title)
+        failures.push(`${route}: twitter:title must match document title`);
       if (!affiliationBoundary)
         failures.push(`${route}: affiliation-boundary wording is not configured from registry`);
       else if (!document.text.includes(affiliationBoundary))
