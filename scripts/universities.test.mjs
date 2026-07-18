@@ -73,6 +73,11 @@ test("detail route module exists and rejects unknown slugs", async () => {
   assert.match(source, /createFileRoute\("\/unis_\/\$slug"\)/);
   assert.match(source, /notFound\(\)/);
   assert.match(source, /findUniversity/);
+  assert.match(source, /<header data-identity-status>/);
+  assert.match(
+    source,
+    /<\/header>\s*\n\s*<CtaButton[\s\S]*data-cta="university-conversion"[\s\S]*<\/CtaButton>\s*\n\s*<div\s*\n\s*data-detail-content/,
+  );
   assert.match(source, /data-detail-content/);
   assert.match(source, /data-cta="university-conversion"/);
   assert.match(source, /href="\/unis"/);

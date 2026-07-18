@@ -124,6 +124,47 @@ export function parseHtmlDocument(html) {
   };
 }
 
+export function assertUniversityCtaOrder(document, university, route) {
+  const identityMatch = document.html.match(
+    /<header\b[^>]*\bdata-identity-status(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?[^>]*>[\s\S]*?<\/header>/i,
+  );
+  const detailContentMatch = document.html.match(/<div\b[^>]*\bdata-detail-content(?:\s|=|>)[^>]*>/i);
+  if (!identityMatch) throw new Error(`${route}: missing identity/status marker`);
+  if (!detailContentMatch) throw new Error(`${route}: missing detail-content marker`);
+
+  const identityEnd = (identityMatch.index ?? 0) + identityMatch[0].length;
+  const detailStart = detailContentMatch.index ?? -1;
+  if (detailStart < identityEnd)
+    throw new Error(`${route}: detail content precedes identity/status block`);
+
+  const interval = document.html.slice(identityEnd, detailStart);
+  const intervalAnchors = [...interval.matchAll(/<a\b([^>]*)>/gi)].map((match) =>
+    parseAttributes(match[1] ?? ""),
+  );
+  const marked = intervalAnchors.filter(
+    (anchor) => anchor["data-cta"] === "university-conversion",
+  );
+  const universityScoped = intervalAnchors.filter((anchor) =>
+    (anchor.href ?? "").startsWith("https://t.me/vuzora_bot?start=from-site_"),
+  );
+  const expectedHref = `https://t.me/vuzora_bot?start=from-site_${university.slug}`;
+  if (!/^\s*<a\b/i.test(interval))
+    throw new Error(`${route}: university CTA does not immediately follow identity/status block`);
+  if (marked.length !== 1)
+    throw new Error(`${route}: primary university CTA expected exactly once, found ${marked.length}`);
+  if (universityScoped.length !== 1)
+    throw new Error(
+      `${route}: primary content surface contains ${universityScoped.length} university-scoped CTAs`,
+    );
+  const [cta] = marked;
+  if (
+    cta.href !== expectedHref ||
+    cta.target !== "_blank" ||
+    cta.rel !== "noopener noreferrer"
+  )
+    throw new Error(`${route}: primary university CTA has incorrect destination or safe attributes`);
+}
+
 function sameValue(left, right) {
   if (Object.is(left, right)) return true;
   if (typeof left !== typeof right || left === null || right === null) return false;
@@ -362,6 +403,11 @@ export function validateRouteDocument(
         universityCtas.some((anchor) => anchor.href !== expectedCta)
       )
         failures.push(`${route}: university CTA is missing or cross-route`);
+      try {
+        assertUniversityCtaOrder(document, university, route);
+      } catch (error) {
+        failures.push(error.message);
+      }
       const externalUniversityAnchors = document.anchors.filter(
         (anchor) =>
           /^https?:\/\//.test(anchor.href ?? "") &&

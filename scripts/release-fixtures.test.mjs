@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   assertIndependent404,
   assertManifest,
+  assertUniversityCtaOrder,
   validateRouteDocument,
   assertSitemap,
   parseHtmlDocument,
@@ -16,6 +17,37 @@ const baseHtml = (body, head = "") =>
   `<!doctype html><html><head><title>Страница Vuzora для проверки</title><meta name="description" content="Достаточно длинное описание страницы Vuzora для детерминированной проверки релизного контракта без заглушек."/><link rel="canonical" href="https://vuzora.ru/test"/><meta property="og:url" content="https://vuzora.ru/test"/><meta property="og:type" content="website"/>${head}</head><body><main><h1>Страница Vuzora для проверки</h1>${body}</main></body></html>`;
 
 const routes = ["/", "/pricing"];
+
+test("university CTA order requires one immediate above-content anchor", () => {
+  const university = { slug: "msu" };
+  const valid = parseHtmlDocument(
+    '<header data-identity-status><h1>МГУ</h1><span>Онлайн Москва</span></header>' +
+      '<a href="https://t.me/vuzora_bot?start=from-site_msu" data-cta="university-conversion" target="_blank" rel="noopener noreferrer">Подключить</a>' +
+      '<div data-detail-content>Контент</div>',
+  );
+  assert.doesNotThrow(() => assertUniversityCtaOrder(valid, university, "/unis/msu"));
+
+  const misplaced = parseHtmlDocument(
+    '<header data-identity-status><h1>МГУ</h1><span>Онлайн Москва</span></header>' +
+      '<div data-detail-content>Контент</div>' +
+      '<a href="https://t.me/vuzora_bot?start=from-site_msu" data-cta="university-conversion" target="_blank" rel="noopener noreferrer">Подключить</a>',
+  );
+  assert.throws(
+    () => assertUniversityCtaOrder(misplaced, university, "/unis/msu"),
+    /does not immediately follow|missing detail-content/,
+  );
+
+  const duplicated = parseHtmlDocument(
+    '<header data-identity-status><h1>МГУ</h1><span>Онлайн Москва</span></header>' +
+      '<a href="https://t.me/vuzora_bot?start=from-site_msu" data-cta="university-conversion" target="_blank" rel="noopener noreferrer">Подключить</a>' +
+      '<a href="https://t.me/vuzora_bot?start=from-site_msu" target="_blank" rel="noopener noreferrer">Ещё раз</a>' +
+      '<div data-detail-content>Контент</div>',
+  );
+  assert.throws(
+    () => assertUniversityCtaOrder(duplicated, university, "/unis/msu"),
+    /contains 2 university-scoped CTAs/,
+  );
+});
 
 test("manifest is mandatory and field-for-field authoritative", () => {
   assert.throws(

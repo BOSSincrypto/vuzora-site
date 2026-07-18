@@ -181,36 +181,47 @@ function UniversityDetailPage() {
       <NavBar />
       <main id="main" className="px-6 py-24 md:px-12 md:py-28">
         <div className="mx-auto max-w-3xl">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/50">
-            {university.code} · {university.city}
-          </p>
-          <h1
-            className="mt-4 font-display font-extrabold tracking-tight text-white"
-            style={{
-              fontSize: "clamp(1.85rem, 4.5vw, 2.75rem)",
-              lineHeight: 1.12,
-              letterSpacing: "-0.03em",
-            }}
-          >
-            {university.name}
-          </h1>
-
-          <h2 className="mt-5 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
-            Расписание {genitiveName} в Telegram
-          </h2>
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <span
-              className={
-                university.status === "online"
-                  ? "inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-emerald-300"
-                  : "inline-flex items-center rounded-full border border-amber/30 bg-amber/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-amber"
-              }
+          <header data-identity-status>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/50">
+              {university.code} · {university.city}
+            </p>
+            <h1
+              className="mt-4 font-display font-extrabold tracking-tight text-white"
+              style={{
+                fontSize: "clamp(1.85rem, 4.5vw, 2.75rem)",
+                lineHeight: 1.12,
+                letterSpacing: "-0.03em",
+              }}
             >
-              {label}
-            </span>
-            <span className="text-sm text-white/55">{university.city}</span>
-          </div>
+              {university.name}
+            </h1>
+
+            <h2 className="mt-5 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
+              Расписание {genitiveName} в Telegram
+            </h2>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <span
+                className={
+                  university.status === "online"
+                    ? "inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-emerald-300"
+                    : "inline-flex items-center rounded-full border border-amber/30 bg-amber/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-amber"
+                }
+              >
+                {label}
+              </span>
+              <span className="text-sm text-white/55">{university.city}</span>
+            </div>
+          </header>
+
+          <CtaButton
+            href={ctaHref}
+            variant="primary"
+            data-cta="university-conversion"
+            className="mt-8"
+          >
+            Получать расписание в Telegram
+          </CtaButton>
 
           <div
             data-detail-content
@@ -272,9 +283,6 @@ function UniversityDetailPage() {
           </div>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
-            <CtaButton href={ctaHref} variant="primary" data-cta="university-conversion">
-              Получать расписание в Telegram
-            </CtaButton>
             <a
               href="/blog/raspisanie-vuzov-v-telegram"
               className="inline-flex items-center gap-1 text-sm text-white/65 underline decoration-white/20 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm"
