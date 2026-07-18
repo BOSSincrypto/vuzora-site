@@ -36,7 +36,7 @@ export const MobileMenu = forwardRef<HTMLDivElement, Props>(function MobileMenu(
       ref={ref}
       data-motion-surface="menu"
       className={`absolute left-0 right-0 top-full z-50 mt-2 lg:hidden ${
-        open ? "block" : "hidden"
+        open ? "block pointer-events-auto" : "hidden pointer-events-none"
       }`}
       aria-hidden={!open}
       {...(!open ? { inert: "" as unknown as boolean } : {})}

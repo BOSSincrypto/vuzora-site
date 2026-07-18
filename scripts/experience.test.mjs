@@ -92,6 +92,24 @@ test("mobile menu is absolutely positioned under the nav pill", async () => {
   );
 });
 
+test("opened mobile menu restores pointer input without removing header pass-through", async () => {
+  const menu = await read("src/components/vuzora/nav/MobileMenu.tsx");
+  const nav = await read("src/components/vuzora/NavBar.tsx");
+  // The fixed header stays pass-through outside the nav and opened panel.
+  assert.match(nav, /className="nav-drop pointer-events-none/);
+  assert.match(nav, /className="pointer-events-auto flex items-center/);
+  // Open state must explicitly opt the panel back into hit testing. Closed
+  // state remains hidden and pointer-inert while its anchors stay in the DOM.
+  assert.match(
+    menu,
+    /open \? "block pointer-events-auto" : "hidden pointer-events-none"/,
+  );
+  assert.match(menu, /href=\{l\.href\}/);
+  assert.match(menu, /href="\/blog"/);
+  assert.match(menu, /href=\{LINKS\.botUrl\}/);
+  assert.match(menu, /onClick=\{onClose\}/);
+});
+
 /**
  * Pure contract for VAL-BROWSER-007: when viewport crosses into desktop (lg+),
  * the compact menu must close and body scroll-lock must clear. Mirrors
@@ -142,7 +160,7 @@ test("NavBar wires matchMedia lg+ to force-close mobile menu", async () => {
   assert.match(nav, /document\.body\.style\.overflow\s*=\s*""/);
   // Closed MobileMenu still keeps crawlable data-cta anchors in the tree.
   assert.match(menu, /data-cta="bot-navigation"/);
-  assert.match(menu, /open \? "block" : "hidden"/);
+  assert.match(menu, /open \? "block pointer-events-auto" : "hidden pointer-events-none"/);
 });
 
 test("not-found recovery UI has known-route recovery without university CTA", async () => {
