@@ -63,6 +63,12 @@ Custom domain: **vuzora.ru**.
 
 Also prerendered: `sitemap.xml`, `404.html`.
 
+## Editorial and answer surfaces
+
+- `/blog/` is the editorial hub with ten university-focused posts and supporting product articles.
+- `/blog/rss.xml` provides the blog feed; `/llms.txt` summarizes the public site for answer-oriented crawlers.
+- Landing and university detail FAQs use `FAQPage` JSON-LD plus native `<details>/<summary>` controls, keeping answers available to crawlers and keyboard users.
+
 ## Telegram CTAs
 
 Attribution uses Telegram bot start params only (no Plausible or other third-party analytics):
