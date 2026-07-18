@@ -47,11 +47,30 @@ test("Pages workflow runs every gate before upload", async () => {
   assert.match(workflow, /bun-version:\s*["']1\.3\.14["']/);
   const buildPosition = workflow.indexOf("run: bun run build");
   const uploadPosition = workflow.indexOf("actions/upload-pages-artifact");
-  for (const gate of ["typecheck", "lint", "test", "build", "validate:release"]) {
+  for (const gate of [
+    "typecheck",
+    "lint",
+    "test",
+    "build",
+    "validate:release",
+    "test:browser:mobile-menu",
+  ]) {
     assert.ok(workflow.indexOf(`bun run ${gate}`) < uploadPosition, `${gate} must precede upload`);
   }
   assert.ok(buildPosition < uploadPosition);
   assert.match(workflow, /needs:\s*build/);
+});
+
+test("browser release gate uses the hit-tested regression after serving dist", async () => {
+  const workflow = await read(".github/workflows/deploy.yml");
+  const browserScript = await read("scripts/mobile-menu-browser-regression.mjs");
+  assert.match(workflow, /npm install --global agent-browser/);
+  assert.match(workflow, /python3 -m http\.server 3100/);
+  assert.match(workflow, /VUZORA_ORIGIN:\s*http:\/\/127\.0\.0\.1:3100/);
+  assert.match(browserScript, /"mouse", "move"/);
+  assert.match(browserScript, /"mouse", "down"/);
+  assert.match(browserScript, /"mouse", "up"/);
+  assert.doesNotMatch(browserScript, /dispatchEvent|\.click\(/);
 });
 
 test("Pages release artifacts have independent 404 and nojekyll sources", async () => {

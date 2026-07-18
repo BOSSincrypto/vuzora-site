@@ -5,9 +5,11 @@
  *   bun run build
  *   bun run test:browser:mobile-menu
  *
- * The browser session is always explicit and external Telegram links are
- * verified by their activated href without making availability of Telegram a
- * requirement for the local navigation regression.
+ * The browser session is always explicit. Every control and anchor is
+ * activated through rendered mouse coordinates, so CSS hit-testing and
+ * pointer-events are part of the assertion. External Telegram links are
+ * checked for target=_blank and observed browser-tab behavior without making
+ * Telegram availability a requirement for the local navigation regression.
  */
 
 import assert from "node:assert/strict";
@@ -22,13 +24,12 @@ const MOBILE_VIEWPORTS = [
 ];
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
 const MOBILE_MENU = "#vuzora-mobile-menu";
-const MENU_BUTTON = 'button[aria-label="Открыть меню"]';
-const CLOSE_BUTTON = 'button[aria-label="Закрыть меню"]';
+const MENU_TOGGLE = 'button[aria-controls="vuzora-mobile-menu"]';
 
 function browser(args, { timeout = 30_000 } = {}) {
   const output = execFileSync(
     "agent-browser",
-    ["--session", SESSION, "--json", ...args],
+    ["--session", SESSION, "--headed", "false", "--json", ...args],
     { encoding: "utf8", timeout },
   );
   const response = JSON.parse(output);
@@ -49,8 +50,8 @@ function evaluate(expression) {
   }
 }
 
-function waitFor(expression) {
-  browser(["wait", "--fn", expression], { timeout: 30_000 });
+function tabList() {
+  return browser(["tab", "list"]).tabs;
 }
 
 function waitForPage() {
@@ -67,6 +68,24 @@ function normalizeDestination(rawHref) {
 
 function visibleAnchorData(selector) {
   return evaluate(`(() => {
+    const selectorPath = (element) => {
+      const segments = [];
+      let current = element;
+      while (current && current !== document.body) {
+        let segment = current.tagName.toLowerCase();
+        if (current.id) {
+          segments.unshift("#" + CSS.escape(current.id));
+          break;
+        }
+        const siblings = [...(current.parentElement?.children ?? [])].filter(
+          (sibling) => sibling.tagName === current.tagName,
+        );
+        segment += ":nth-of-type(" + (siblings.indexOf(current) + 1) + ")";
+        segments.unshift(segment);
+        current = current.parentElement;
+      }
+      return segments.join(" > ");
+    };
     const isVisible = (anchor) => {
       const rect = anchor.getBoundingClientRect();
       const style = getComputedStyle(anchor);
@@ -81,6 +100,12 @@ function visibleAnchorData(selector) {
       .map((anchor) => ({
         href: anchor.getAttribute("href"),
         text: anchor.textContent.trim(),
+        target: anchor.getAttribute("target"),
+        selector: selectorPath(anchor),
+        rect: (() => {
+          const { x, y, width, height } = anchor.getBoundingClientRect();
+          return { x, y, width, height };
+        })(),
       }));
   })()`);
 }
@@ -98,66 +123,71 @@ function openHome(width, height) {
   waitForPage();
 }
 
-function openMenu() {
-  evaluate(`document.querySelector(${JSON.stringify(MENU_BUTTON)})?.click()`);
-  waitFor(
-    `document.querySelector(${JSON.stringify(MOBILE_MENU)})?.className.includes("block")`,
-  );
-}
-
-function closeMenu() {
-  evaluate(`document.querySelector(${JSON.stringify(CLOSE_BUTTON)})?.click()`);
-  waitFor(
-    `document.querySelector(${JSON.stringify(MOBILE_MENU)})?.className.includes("hidden")`,
-  );
-}
-
-function activateVisibleAnchor(selector, index, pointerType) {
+function renderedTarget(selector, index = 0) {
   return evaluate(`(() => {
-    const isVisible = (anchor) => {
-      const rect = anchor.getBoundingClientRect();
-      const style = getComputedStyle(anchor);
+    const isVisible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
       return rect.width > 0 &&
         rect.height > 0 &&
         style.display !== "none" &&
         style.visibility !== "hidden" &&
         style.pointerEvents !== "none";
     };
-    const anchor = [...document.querySelectorAll(${JSON.stringify(selector)})]
+    const element = [...document.querySelectorAll(${JSON.stringify(selector)})]
       .filter(isVisible)[${index}];
-    if (!anchor) throw new Error("visible anchor missing at index ${index}");
-
-    const external = new URL(anchor.href).origin !== location.origin;
-    if (external) {
-      anchor.addEventListener("click", (event) => event.preventDefault(), {
-        capture: true,
-        once: true,
-      });
-    }
-    anchor.dispatchEvent(new PointerEvent("pointerdown", {
-      bubbles: true,
-      cancelable: true,
-      pointerType: ${JSON.stringify(pointerType)},
-      isPrimary: true,
-    }));
-    anchor.dispatchEvent(new PointerEvent("pointerup", {
-      bubbles: true,
-      cancelable: true,
-      pointerType: ${JSON.stringify(pointerType)},
-      isPrimary: true,
-    }));
-    const clickDispatched = anchor.dispatchEvent(new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-    }));
-    return {
-      href: anchor.getAttribute("href"),
-      activated: true,
-      clickDispatched,
-      external,
-    };
+    if (!element) throw new Error(
+      \`visible target missing for \${${JSON.stringify(selector)}} at index ${index}\`,
+    );
+    const { x, y, width, height } = element.getBoundingClientRect();
+    return { x, y, width, height };
   })()`);
+}
+
+function clickRenderedTarget(selector, index = 0) {
+  const target = renderedTarget(selector, index);
+  const x = Math.round(target.x + target.width / 2);
+  const y = Math.round(target.y + target.height / 2);
+  browser(["mouse", "move", String(x), String(y)]);
+  browser(["mouse", "down"]);
+  browser(["mouse", "up"]);
+  return { ...target, x, y, input: "rendered-coordinate-mouse" };
+}
+
+function openMenu() {
+  const input = clickRenderedTarget(MENU_TOGGLE);
+  browser(["wait", "100"], { timeout: 10_000 });
+  assert.equal(
+    evaluate(
+      `document.querySelector(${JSON.stringify(MENU_TOGGLE)})?.getAttribute("aria-expanded") === "true"`,
+    ),
+    true,
+    "rendered menu control did not open the mobile menu",
+  );
+  return input;
+}
+
+function closeMenu() {
+  const input = clickRenderedTarget(MENU_TOGGLE);
+  browser(["wait", "100"], { timeout: 10_000 });
+  assert.equal(
+    evaluate(
+      `document.querySelector(${JSON.stringify(MENU_TOGGLE)})?.getAttribute("aria-expanded") === "false"`,
+    ),
+    true,
+    "rendered menu control did not close the mobile menu",
+  );
+  return input;
+}
+
+function activateVisibleAnchor(anchor) {
+  const input = clickRenderedTarget(anchor.selector);
+  return {
+    ...input,
+    href: anchor.href,
+    external: new URL(anchor.href, `${ORIGIN}/`).origin !== new URL(ORIGIN).origin,
+    target: anchor.target,
+  };
 }
 
 function assertHrefSetsEqual(before, after, label) {
@@ -169,28 +199,21 @@ function assertHrefSetsEqual(before, after, label) {
 }
 
 function activateAndVerify({
-  selector,
   anchor,
-  index,
-  pointerType,
   viewport,
   report,
 }) {
   const expected = normalizeDestination(anchor.href);
-  const activation = activateVisibleAnchor(selector, index, pointerType);
-  assert.equal(
-    activation.href,
-    anchor.href,
-    `${viewport}: anchor ${index} href changed before activation`,
-  );
-  assert.equal(
-    activation.activated,
-    true,
-    `${viewport}: anchor ${index} did not receive an activation event`,
+  const beforeTabs = tabList();
+  const activation = activateVisibleAnchor(anchor);
+  browser(["wait", "1000"], { timeout: 10_000 });
+  const afterTabs = tabList();
+  const newTabs = afterTabs.filter(
+    (tab) => !beforeTabs.some((beforeTab) => beforeTab.tabId === tab.tabId),
   );
 
   if (!activation.external) {
-    browser(["wait", "2000"], { timeout: 10_000 });
+    waitForPage();
     const reached = normalizeDestination(browser(["get", "url"]).url);
     assert.equal(
       reached,
@@ -202,39 +225,55 @@ function activateAndVerify({
       href: anchor.href,
       expected,
       reached,
-      activation: pointerType,
+      activation: activation.input,
     });
     return;
   }
 
-  // External availability is intentionally out of scope. The click event was
-  // delivered to the ordinary anchor and its exact href is the destination.
+  assert.equal(
+    anchor.target,
+    "_blank",
+    `${viewport}: external anchor ${anchor.text} must retain target=_blank`,
+  );
+  assert.ok(
+    newTabs.length > 0 || activation.target === "_blank",
+    `${viewport}: external anchor ${anchor.text} did not expose target=_blank or open a new tab`,
+  );
   report.push({
     text: anchor.text,
     href: anchor.href,
     expected,
-    reached: expected,
-    activation: pointerType,
+    reached: newTabs[0]?.url ?? null,
+    activation: activation.input,
+    target: anchor.target,
+    openedNewTab: newTabs.length > 0,
+    browserTabs: afterTabs.map(({ tabId, url }) => ({ tabId, url })),
     external: true,
   });
+
+  // Keep each subsequent activation isolated to the original page tab. When
+  // a browser opens target=_blank, close only the newly-created tab and
+  // restore the tab that contained the rendered menu.
+  for (const tab of newTabs) {
+    browser(["tab", "close", tab.tabId]);
+  }
+  const originalTab = beforeTabs.find((tab) => tab.active);
+  if (originalTab) browser(["tab", originalTab.tabId]);
 }
 
 function runMobileViewport(viewport) {
   openHome(viewport.width, viewport.height);
   const before = crawlableHrefSet();
-  openMenu();
+  const openInput = openMenu();
   const anchors = visibleAnchorData(`${MOBILE_MENU} a[href]`);
   assert.ok(anchors.length > 0, `${viewport.width}: opened mobile menu is empty`);
 
   const traces = [];
-  for (const [index, anchor] of anchors.entries()) {
+  for (const anchor of anchors) {
     openHome(viewport.width, viewport.height);
     openMenu();
     activateAndVerify({
-      selector: `${MOBILE_MENU} a[href]`,
       anchor,
-      index,
-      pointerType: "touch",
       viewport: `${viewport.width}x${viewport.height}`,
       report: traces,
     });
@@ -242,7 +281,7 @@ function runMobileViewport(viewport) {
 
   openHome(viewport.width, viewport.height);
   openMenu();
-  closeMenu();
+  const closeInput = closeMenu();
   const after = crawlableHrefSet();
   assertHrefSetsEqual(
     before,
@@ -253,6 +292,8 @@ function runMobileViewport(viewport) {
     viewport: `${viewport.width}x${viewport.height}`,
     inventory: anchors,
     traces,
+    openInput,
+    closeInput,
     crawlableHrefCount: before.length,
     hrefSetsEqual: true,
   };
@@ -264,13 +305,10 @@ function runDesktopViewport() {
   assert.ok(anchors.length > 0, "desktop navigation inventory is empty");
   const traces = [];
 
-  for (const [index, anchor] of anchors.entries()) {
+  for (const anchor of anchors) {
     openHome(DESKTOP_VIEWPORT.width, DESKTOP_VIEWPORT.height);
     activateAndVerify({
-      selector: 'nav[aria-label="Главная навигация"] a[href]',
       anchor,
-      index,
-      pointerType: "mouse",
       viewport: "1440x900",
       report: traces,
     });
