@@ -255,13 +255,15 @@ function UniversityDetailPage() {
                 {faq.map((item) => (
                   <li key={item.question}>
                     <details className="group py-4">
-                      <summary className="flex cursor-pointer list-none items-start justify-between gap-5 font-display text-base font-medium text-white/90 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber">
+                      <summary className="flex cursor-pointer list-none items-start justify-between gap-5 rounded-sm font-display text-base font-medium text-white/90 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber" data-faq-control="true" tabIndex={0}>
                         <span>{item.question}</span>
                         <span aria-hidden className="shrink-0 text-amber transition-transform group-open:rotate-45">
                           +
                         </span>
                       </summary>
-                      <p className="mt-3 pr-8 text-sm leading-relaxed text-white/65">{item.answer}</p>
+                      <p data-faq-answer className="mt-3 pr-8 text-sm leading-relaxed text-white/65">
+                        {item.answer}
+                      </p>
                     </details>
                   </li>
                 ))}
