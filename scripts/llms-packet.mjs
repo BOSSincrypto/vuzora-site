@@ -8,6 +8,16 @@
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const BOT_URL = "https://t.me/vuzora_bot";
 export const GENERIC_START = "from-site";
+export const NAMED_AI_CRAWLERS = [
+  "GPTBot",
+  "ClaudeBot",
+  "Claude-SearchBot",
+  "PerplexityBot",
+  "ChatGPT-User",
+  "Google-Extended",
+  "Meta-ExternalAgent",
+  "Gemini",
+];
 export const DETAIL_URL_RE =
   /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?=$|[\s)\]}>.,;:`])/g;
 const NON_CANONICAL_DETAIL_URL_RE =
@@ -226,25 +236,19 @@ export function assertLlmsJoin(body, universities, options = {}) {
 }
 
 /**
- * True when a robots.txt Disallow rule blocks the given path under User-agent: *.
- * Uses robots-style path-prefix matching against Disallow values.
+ * Parse robots.txt groups and their ordered Allow/Disallow rules.
  * @param {string} robots
- * @param {string} path absolute path beginning with /
+ * @returns {{ agents: string[], rules: { type: "allow" | "disallow", path: string }[] }[]}
  */
-export function robotsDisallowsPath(robots, path) {
-  /** @type {{ agents: string[], disallows: string[] }[]} */
+export function parseRobotsGroups(robots) {
+  /** @type {{ agents: string[], rules: { type: "allow" | "disallow", path: string }[] }[]} */
   const groups = [];
-  /** @type {string[] | null} */
-  let agents = null;
-  /** @type {string[]} */
-  let disallows = [];
-  let sawRule = false;
+  /** @type {{ agents: string[], rules: { type: "allow" | "disallow", path: string }[] } | null} */
+  let current = null;
 
   const pushGroup = () => {
-    if (agents?.length) groups.push({ agents: [...agents], disallows: [...disallows] });
-    agents = null;
-    disallows = [];
-    sawRule = false;
+    if (current?.agents.length) groups.push(current);
+    current = null;
   };
 
   for (const raw of robots.split(/\r?\n/)) {
@@ -252,40 +256,119 @@ export function robotsDisallowsPath(robots, path) {
     if (!line) continue;
     const ua = line.match(/^User-agent:\s*(.+)$/i);
     if (ua) {
-      if (sawRule) pushGroup();
-      if (!agents) agents = [];
-      agents.push(ua[1].trim());
+      if (current?.rules.length) pushGroup();
+      if (!current) current = { agents: [], rules: [] };
+      current.agents.push(ua[1].trim());
       continue;
     }
-    const disallow = line.match(/^Disallow:\s*(.*)$/i);
-    if (disallow) {
-      if (!agents) agents = ["*"];
-      disallows.push(disallow[1].trim());
-      sawRule = true;
-      continue;
-    }
-    if (/^Allow:\s*/i.test(line)) {
-      if (!agents) agents = ["*"];
-      sawRule = true;
-      continue;
-    }
-    if (/^Sitemap:/i.test(line)) {
+    const rule = line.match(/^(Allow|Disallow):\s*(.*)$/i);
+    if (rule) {
+      if (!current) current = { agents: ["*"], rules: [] };
+      current.rules.push({
+        type: rule[1].toLowerCase(),
+        path: rule[2].trim(),
+      });
+    } else if (/^Sitemap:/i.test(line)) {
       pushGroup();
     }
   }
   pushGroup();
+  return groups;
+}
 
-  const starGroups = groups.filter((group) => group.agents.includes("*"));
-  const rules =
-    starGroups.length > 0
-      ? starGroups.flatMap((group) => group.disallows)
-      : [...robots.matchAll(/^Disallow:\s*(.*)$/gim)].map((match) => match[1].trim());
+function matchingRobotsGroups(groups, userAgent) {
+  const normalizedAgent = userAgent.trim().toLowerCase();
+  const specific = groups.filter((group) =>
+    group.agents.some((agent) => agent.toLowerCase() === normalizedAgent),
+  );
+  if (specific.length) return specific;
+  return groups.filter((group) => group.agents.some((agent) => agent === "*"));
+}
 
-  for (const rule of rules) {
-    if (rule === "") continue; // empty Disallow means allow all for that line
-    if (path === rule || path.startsWith(rule)) return true;
+function pathRuleMatches(rule, path) {
+  if (!rule) return false;
+  if (rule.endsWith("$")) return path === rule.slice(0, -1);
+  return path.startsWith(rule);
+}
+
+/**
+ * Resolve a robots path using the longest matching rule, with Allow winning ties.
+ * @param {string} robots
+ * @param {string} path absolute path beginning with /
+ * @param {string} [userAgent]
+ */
+export function robotsAllowsPath(robots, path, userAgent = "*") {
+  const groups = parseRobotsGroups(robots);
+  const rules = matchingRobotsGroups(groups, userAgent).flatMap((group) => group.rules);
+  const matching = rules.filter((rule) => pathRuleMatches(rule.path, path));
+  if (!matching.length) return true;
+  const longest = Math.max(...matching.map((rule) => rule.path.length));
+  return matching
+    .filter((rule) => rule.path.length === longest)
+    .some((rule) => rule.type === "allow");
+}
+
+/**
+ * True when a robots.txt rule blocks the given path for the requested user agent.
+ * @param {string} robots
+ * @param {string} path absolute path beginning with /
+ * @param {string} [userAgent]
+ */
+export function robotsDisallowsPath(robots, path, userAgent = "*") {
+  return !robotsAllowsPath(robots, path, userAgent);
+}
+
+/**
+ * Assert the named crawler policy and public AEO path decisions.
+ * @param {string} robots
+ */
+export function assertRobotsPolicy(robots) {
+  if (typeof robots !== "string" || !robots.trim()) {
+    throw new Error("robots.txt is empty or missing");
   }
-  return false;
+  const groups = parseRobotsGroups(robots);
+  const namedAgents = NAMED_AI_CRAWLERS.filter((agent) =>
+    groups.some((group) =>
+      group.agents.some((candidate) => candidate.toLowerCase() === agent.toLowerCase()),
+    ),
+  );
+  const missing = NAMED_AI_CRAWLERS.filter((agent) => !namedAgents.includes(agent));
+  if (missing.length) {
+    throw new Error(`robots.txt missing named AI crawler group(s): ${missing.join(", ")}`);
+  }
+
+  const wildcard = groups.filter((group) => group.agents.includes("*"));
+  if (!wildcard.length) throw new Error("robots.txt must declare a User-agent: * rule");
+  const wildcardRules = wildcard.flatMap((group) => group.rules);
+  if (!wildcardRules.some((rule) => rule.type === "allow" && rule.path === "/"))
+    throw new Error("robots.txt wildcard group must retain Allow: /");
+  if (!wildcardRules.some((rule) => rule.type === "disallow" && rule.path === "/api/"))
+    throw new Error("robots.txt wildcard group must retain Disallow: /api/");
+
+  const publicPaths = ["/", "/llms.txt", "/blog/rss.xml", "/sitemap.xml", "/blog/"];
+  for (const agent of NAMED_AI_CRAWLERS) {
+    const groupsForAgent = matchingRobotsGroups(groups, agent);
+    const rules = groupsForAgent.flatMap((group) => group.rules);
+    if (!rules.some((rule) => rule.type === "allow" && rule.path === "/"))
+      throw new Error(`${agent} group must explicitly contain Allow: /`);
+    if (!rules.some((rule) => rule.type === "disallow" && rule.path === "/api/"))
+      throw new Error(`${agent} group must retain Disallow: /api/`);
+    for (const path of publicPaths) {
+      if (!robotsAllowsPath(robots, path, agent))
+        throw new Error(`${agent} group blocks public AEO path ${path}`);
+    }
+    if (robotsAllowsPath(robots, "/api/", agent))
+      throw new Error(`${agent} group must block /api/`);
+  }
+  for (const path of publicPaths) {
+    if (!robotsAllowsPath(robots, path, "*"))
+      throw new Error(`wildcard group blocks public AEO path ${path}`);
+  }
+  if (robotsAllowsPath(robots, "/api/", "*"))
+    throw new Error("wildcard group must block /api/");
+  if (/citation|ranking|guarantee/i.test(robots))
+    throw new Error("robots.txt must not claim AI citation or ranking guarantees");
+  return { namedAgents, groups };
 }
 
 /**

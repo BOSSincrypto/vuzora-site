@@ -1,13 +1,17 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
 import {
   assertLlmsJoin,
   assertRobotsAllowsLlms,
+  assertRobotsPolicy,
   buildLlmsPacket,
   detailUrl,
   extractDetailUrls,
+  NAMED_AI_CRAWLERS,
+  robotsAllowsPath,
   robotsDisallowsPath,
   SECRET_PATTERN_RE,
 } from "./llms-packet.mjs";
@@ -97,6 +101,47 @@ test("robots does not Disallow /llms.txt", async () => {
   assert.equal(robotsDisallowsPath("User-agent: *\nDisallow: /llms.txt\n", "/llms.txt"), true);
   assert.equal(robotsDisallowsPath("User-agent: *\nDisallow: /llms\n", "/llms.txt"), true);
   assert.equal(robotsDisallowsPath("User-agent: *\nDisallow: /api/\n", "/llms.txt"), false);
+});
+
+test("robots explicitly allows named AI crawlers across public AEO paths", async () => {
+  const robots = await read("public/robots.txt");
+  const policy = assertRobotsPolicy(robots);
+  assert.deepEqual(policy.namedAgents, NAMED_AI_CRAWLERS);
+  for (const agent of NAMED_AI_CRAWLERS) {
+    for (const path of ["/", "/llms.txt", "/blog/rss.xml", "/sitemap.xml", "/blog/"]) {
+      assert.equal(
+        robotsAllowsPath(robots, path, agent),
+        true,
+        `${agent} should be allowed to crawl ${path}`,
+      );
+    }
+    assert.equal(robotsAllowsPath(robots, "/api/", agent), false, `${agent} must not crawl /api/`);
+  }
+  for (const path of ["/", "/llms.txt", "/blog/rss.xml", "/sitemap.xml", "/blog/"]) {
+    assert.equal(robotsAllowsPath(robots, path, "*"), true, `wildcard should allow ${path}`);
+  }
+  assert.equal(robotsAllowsPath(robots, "/api/", "*"), false);
+  assert.doesNotMatch(robots, /citation|ranking|guarantee/i);
+});
+
+test("validate:release rejects robots policies that drift from named crawler access", async () => {
+  const { validateRelease } = await import("./release-validator.mjs");
+  const original = await read("dist/robots.txt");
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-robots-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const missingNamedAgent = original.replace(/^User-agent:\s*Gemini[\s\S]*?^Allow:\s*\/\s*$/im, "");
+    await writeFile(join(fixtureRoot, "dist/robots.txt"), missingNamedAgent, "utf8");
+    await assert.rejects(
+      () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      /robots\.txt.*(?:named|Gemini|AI crawler)|GPTBot|Gemini/i,
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
 });
 
 test("extractDetailUrls only accepts exact canonical detail URLs", () => {

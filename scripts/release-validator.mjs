@@ -9,6 +9,7 @@ import {
 } from "./route-policy.mjs";
 import {
   assertLlmsJoin,
+  assertRobotsPolicy,
   assertRobotsAllowsLlms,
   buildLlmsPacket,
 } from "./llms-packet.mjs";
@@ -850,9 +851,20 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       if (!/^User-agent:\s*\*/im.test(robots)) fail("robots.txt must declare a User-agent rule");
       if (ANALYTICS_RE.test(robots)) fail("robots.txt must not reference analytics collectors");
       try {
+        assertRobotsPolicy(robots);
+      } catch (error) {
+        fail(error.message);
+      }
+      try {
         assertRobotsAllowsLlms(robots, "/llms.txt");
       } catch (error) {
         fail(error.message);
+      }
+      const publicRobotsPath = join(root, "public/robots.txt");
+      if (await exists(publicRobotsPath)) {
+        const publicRobots = await read(publicRobotsPath);
+        if (publicRobots !== robots)
+          fail("public/robots.txt and dist/robots.txt must match the authoritative policy");
       }
     }
     // First-party public artifact scan for analytics integrations (HTML/JS/CSS/robots/CSP).
