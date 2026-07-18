@@ -32,6 +32,8 @@ export type UniversityFaq = {
   answer: string;
 };
 
+type UniversityFaqCluster = "capital" | "regional" | "multi-campus";
+
 /** Central status → Russian UI label mapping (single source for all surfaces). */
 export const UNIVERSITY_STATUS_LABELS = {
   online: "Онлайн",
@@ -330,6 +332,12 @@ export function universityDetailCopy(university: University): string {
   );
 }
 
+function universityFaqCluster(university: University): UniversityFaqCluster {
+  if (university.city.includes("·")) return "multi-campus";
+  if (university.city === "Москва") return "capital";
+  return "regional";
+}
+
 /**
  * Entity-specific FAQ content for the detail page and its structured-data
  * extension. Every answer carries registry identity so pages remain useful
@@ -337,15 +345,28 @@ export function universityDetailCopy(university: University): string {
  */
 export function universityFaq(university: University): readonly UniversityFaq[] {
   const availability = statusLabel(university.status).toLowerCase();
+  const cluster = universityFaqCluster(university);
+  const framing =
+    cluster === "multi-campus"
+      ? {
+          question: `Как учитывать несколько городов в карточке ${university.code}?`,
+          answer: `В реестре Vuzora для ${university.code} указаны площадки: ${university.city}. Это городская привязка карточки, а не готовая таблица занятий: за деталями конкретной группы следи в официальных каналах ${university.name}.`,
+        }
+      : cluster === "capital"
+        ? {
+            question: `Когда приходит расписание ${university.name}?`,
+            answer: `Для ${university.name} доставка настроена на утренний слот: сообщения с расписанием приходят в Telegram в выбранное время между 05:00 и 10:00 по Москве. Точное расписание занятий на странице не публикуется и не заменяет проверку в официальных каналах.`,
+          }
+        : {
+            question: `Что проверить перед подключением ${university.code} в своём городе?`,
+            answer: `Перед подключением ${university.code} сверяй город ${university.city} и название ${university.name} в карточке Vuzora. Сервис доставляет сообщения в Telegram, а детали занятий и официальные изменения нужно проверять в каналах университета.`,
+          };
   return [
     {
       question: `Как подключить расписание ${university.code} в Telegram?`,
       answer: `Открой кнопку подключения на странице ${university.name}, перейди в Vuzora и выбери ${university.code}. Ссылка страницы передаёт start=from-site_${university.slug}, чтобы запрос не потерял привязку к вузу.`,
     },
-    {
-      question: `Когда приходит расписание ${university.name}?`,
-      answer: `Для ${university.name} доставка настроена на утренний слот: сообщения с расписанием приходят в Telegram в выбранное время между 05:00 и 10:00 по Москве. Точное расписание занятий на странице не публикуется и не заменяет проверку в официальных каналах.`,
-    },
+    framing,
     {
       question: `Какой статус у ${university.code} и для какого города он указан?`,
       answer: `${university.code} имеет статус «${statusLabel(university.status)}», а в реестре Vuzora указан город: ${university.city}. ${availability === "онлайн" ? "Подключение доступно сейчас." : "Поддержка готовится, поэтому подключение может быть недоступно."}`,

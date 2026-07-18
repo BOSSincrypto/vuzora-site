@@ -205,6 +205,50 @@ test("detail content exposes query intent, required sections, and registry FAQ h
   assert.match(directory, /AFFILIATION_BOUNDARY/);
 });
 
+test("university FAQ framing varies by city cluster", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const script = `
+import { UNIVERSITIES, universityFaq } from "./src/content/universities.ts";
+
+const bySlug = (slug) => UNIVERSITIES.find((university) => university.slug === slug);
+const faqFor = (slug) => {
+  const university = bySlug(slug);
+  if (!university) throw new Error("missing fixture university " + slug);
+  return universityFaq(university);
+};
+const capitalFaq = faqFor("msu");
+const regionalFaq = faqFor("spbu");
+const multiCampusFaq = faqFor("hse");
+const allFaq = UNIVERSITIES.map((university) => universityFaq(university));
+
+if (!capitalFaq.some((item) => item.question.startsWith("Когда приходит расписание"))) {
+  throw new Error("capital FAQ lost its delivery-time framing");
+}
+if (!regionalFaq.some((item) => item.question.startsWith("Что проверить перед подключением"))) {
+  throw new Error("regional FAQ lacks its city-check framing");
+}
+if (!multiCampusFaq.some((item) => item.question.startsWith("Как учитывать несколько городов"))) {
+  throw new Error("multi-campus FAQ lacks its multi-city framing");
+}
+for (const faq of allFaq) {
+  if (faq.length < 3 || faq.length > 5) throw new Error("FAQ count outside 3–5");
+  if (new Set(faq.map((item) => item.question)).size !== faq.length) {
+    throw new Error("FAQ questions must be unique within each university");
+  }
+  if (faq.some((item) => !item.question.trim() || !item.answer.trim())) {
+    throw new Error("FAQ questions and answers must be non-empty");
+  }
+}
+console.log("OK FAQ clusters");
+`;
+  const result = spawnSync("npx", ["--yes", "bun@1.3.14", "-e", script], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /OK FAQ clusters/);
+});
+
 test("Telegram conversion classes remain distinct and exact", async () => {
   const site = await readFile(join(root, "src/content/site.ts"), "utf8");
   assert.match(site, /genericBotUrl:\s*"https:\/\/t\.me\/vuzora_bot\?start=from-site"/);
