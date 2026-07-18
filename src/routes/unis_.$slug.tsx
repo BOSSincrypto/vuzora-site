@@ -21,6 +21,7 @@ import {
   universityBotUrl,
   universityDetailCopy,
   universityFaq,
+  universityGenitiveName,
   universityDetailDescription,
   universityDetailTitle,
   universityPagePath,
@@ -165,6 +166,7 @@ function UniversityDetailPage() {
   const { university } = Route.useLoaderData();
   const copy = universityDetailCopy(university);
   const faq = universityFaq(university);
+  const genitiveName = universityGenitiveName(university);
   const ctaHref = universityBotUrl(university.slug);
   const label = statusLabel(university.status);
   const returnHref = "/unis";
@@ -194,7 +196,7 @@ function UniversityDetailPage() {
           </h1>
 
           <h2 className="mt-5 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-tight text-white md:text-3xl">
-            Расписание {university.name} в Telegram
+            Расписание {genitiveName} в Telegram
           </h2>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">

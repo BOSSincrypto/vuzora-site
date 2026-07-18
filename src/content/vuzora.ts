@@ -31,6 +31,7 @@ export {
   statusLabel,
   universityDetailCopy,
   universityFaq,
+  universityGenitiveName,
   universityDetailPaths,
   universityDetailTitle,
   universityDetailDescription,

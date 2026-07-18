@@ -192,7 +192,10 @@ test("detail content exposes query intent, required sections, and registry FAQ h
   assert.match(content, /export type UniversityFaq/);
   assert.match(content, /export function universityFaq/);
   assert.match(content, /Как подключить расписание \$\{university\.code\} в Telegram/);
-  assert.match(route, /Расписание \{university\.name\} в Telegram/);
+  assert.match(content, /export function universityGenitiveName/);
+  assert.match(route, /universityGenitiveName/);
+  assert.match(route, /Расписание \{genitiveName\} в Telegram/);
+  assert.match(route, /\{university\.name\}/);
   for (const marker of ["connect", "morning-delivery", "status-city", "affiliation", "faq"]) {
     assert.match(route, new RegExp(`data-section=\\"${marker}\\"`));
   }
@@ -247,6 +250,57 @@ console.log("OK FAQ clusters");
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /OK FAQ clusters/);
+});
+
+test("Russian schedule copy uses genitive university names without changing registry identity", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const script = `
+import { UNIVERSITIES, universityFaq, universityGenitiveName } from "./src/content/universities.ts";
+
+const expected = {
+  "msu": "Московского государственного университета им. М. В. Ломоносова",
+  "spbu": "Санкт-Петербургского государственного университета",
+  "hse": "Национального исследовательского университета «Высшая школа экономики»",
+  "sinergiya": "Университета «Синергия»",
+};
+for (const [slug, genitive] of Object.entries(expected)) {
+  const university = UNIVERSITIES.find((item) => item.slug === slug);
+  if (!university) throw new Error("missing fixture university " + slug);
+  if (universityGenitiveName(university) !== genitive) {
+    throw new Error("unexpected genitive form for " + slug);
+  }
+  if (university.name === genitive) {
+    throw new Error("registry display name must remain nominative for " + slug);
+  }
+  const faq = universityFaq(university);
+  if (slug === "msu" || slug === "sinergiya") {
+    if (!faq.some((item) => item.question.includes("расписание " + genitive))) {
+      throw new Error("schedule FAQ does not use genitive form for " + slug);
+    }
+    if (!faq.some((item) => item.answer.includes("Для " + genitive))) {
+      throw new Error("FAQ answer does not use genitive form for " + slug);
+    }
+  } else if (slug === "spbu") {
+    if (!faq.some((item) => item.answer.includes("название " + genitive))) {
+      throw new Error("regional FAQ does not use genitive form for " + slug);
+    }
+  } else if (!faq.some((item) => item.answer.includes("каналах " + genitive))) {
+    throw new Error("multi-campus FAQ does not use genitive form for " + slug);
+  }
+}
+for (const university of UNIVERSITIES) {
+  if (!universityGenitiveName(university).trim()) {
+    throw new Error("empty genitive name for " + university.slug);
+  }
+}
+console.log("OK Russian genitive copy");
+`;
+  const result = spawnSync("npx", ["--yes", "bun@1.3.14", "-e", script], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /OK Russian genitive copy/);
 });
 
 test("Telegram conversion classes remain distinct and exact", async () => {

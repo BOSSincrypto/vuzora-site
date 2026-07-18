@@ -253,6 +253,44 @@ export function findUniversity(slug: string): University | undefined {
   return BY_SLUG.get(key);
 }
 
+/**
+ * Natural genitive forms for copy that follows «расписание» or a genitive
+ * preposition. The registry `name` remains the exact display identity; these
+ * inflections are only for surrounding Russian prose.
+ */
+const UNIVERSITY_GENITIVE_NAMES: Readonly<Record<string, string>> = {
+  "reu-plekhanov": "РЭУ им. Г. В. Плеханова",
+  "financial-university": "Финансового университета при Правительстве РФ",
+  spbu: "Санкт-Петербургского государственного университета",
+  sinergiya: "Университета «Синергия»",
+  spbstu: "Санкт-Петербургского политехнического университета Петра Великого",
+  urfu: "Уральского федерального университета им. Б. Н. Ельцина",
+  rudn: "Российского университета дружбы народов",
+  mgimo: "Московского государственного института международных отношений",
+  dgtu: "Донского государственного технического университета",
+  kfu: "Казанского федерального университета",
+  mirea: "Российского технологического университета МИРЭА",
+  ranepa: "Российской академии народного хозяйства и государственной службы",
+  miit: "Российского университета транспорта (МИИТ)",
+  hse: "Национального исследовательского университета «Высшая школа экономики»",
+  mephi: "Национального исследовательского ядерного университета «МИФИ»",
+  mipt: "Московского физико-технического института",
+  mpei: "Национального исследовательского университета «МЭИ»",
+  "tgu-tolyatti": "Тольяттинского государственного университета",
+  unecon: "Санкт-Петербургского государственного экономического университета",
+  rggu: "Российского государственного гуманитарного университета",
+  msu: "Московского государственного университета им. М. В. Ломоносова",
+  sfu: "Сибирского федерального университета",
+  nngu: "Нижегородского государственного университета им. Н. И. Лобачевского",
+  bmstu: "Московского государственного технического университета им. Н. Э. Баумана",
+  susu: "Южно-Уральского государственного университета",
+};
+
+/** Return the registry university name in natural genitive Russian copy. */
+export function universityGenitiveName(university: University): string {
+  return UNIVERSITY_GENITIVE_NAMES[university.slug] ?? university.name;
+}
+
 /** Public no-slash path for a university detail page. */
 export function universityPagePath(slug: string): `/unis/${string}` {
   return `/unis/${slug}`;
@@ -345,26 +383,27 @@ function universityFaqCluster(university: University): UniversityFaqCluster {
  */
 export function universityFaq(university: University): readonly UniversityFaq[] {
   const availability = statusLabel(university.status).toLowerCase();
+  const genitiveName = universityGenitiveName(university);
   const cluster = universityFaqCluster(university);
   const framing =
     cluster === "multi-campus"
       ? {
           question: `Как учитывать несколько городов в карточке ${university.code}?`,
-          answer: `В реестре Vuzora для ${university.code} указаны площадки: ${university.city}. Это городская привязка карточки, а не готовая таблица занятий: за деталями конкретной группы следи в официальных каналах ${university.name}.`,
+          answer: `В реестре Vuzora для ${university.code} указаны площадки: ${university.city}. Это городская привязка карточки, а не готовая таблица занятий: за деталями конкретной группы следи в официальных каналах ${genitiveName}.`,
         }
       : cluster === "capital"
         ? {
-            question: `Когда приходит расписание ${university.name}?`,
-            answer: `Для ${university.name} доставка настроена на утренний слот: сообщения с расписанием приходят в Telegram в выбранное время между 05:00 и 10:00 по Москве. Точное расписание занятий на странице не публикуется и не заменяет проверку в официальных каналах.`,
+            question: `Когда приходит расписание ${genitiveName}?`,
+            answer: `Для ${genitiveName} доставка настроена на утренний слот: сообщения с расписанием приходят в Telegram в выбранное время между 05:00 и 10:00 по Москве. Точное расписание занятий на странице не публикуется и не заменяет проверку в официальных каналах.`,
           }
         : {
             question: `Что проверить перед подключением ${university.code} в своём городе?`,
-            answer: `Перед подключением ${university.code} сверяй город ${university.city} и название ${university.name} в карточке Vuzora. Сервис доставляет сообщения в Telegram, а детали занятий и официальные изменения нужно проверять в каналах университета.`,
+            answer: `Перед подключением ${university.code} сверяй город ${university.city} и название ${genitiveName} в карточке Vuzora. Сервис доставляет сообщения в Telegram, а детали занятий и официальные изменения нужно проверять в каналах университета.`,
           };
   return [
     {
       question: `Как подключить расписание ${university.code} в Telegram?`,
-      answer: `Открой кнопку подключения на странице ${university.name}, перейди в Vuzora и выбери ${university.code}. Ссылка страницы передаёт start=from-site_${university.slug}, чтобы запрос не потерял привязку к вузу.`,
+      answer: `Открой кнопку подключения на странице ${genitiveName}, перейди в Vuzora и выбери ${university.code}. Ссылка страницы передаёт start=from-site_${university.slug}, чтобы запрос не потерял привязку к вузу.`,
     },
     framing,
     {
