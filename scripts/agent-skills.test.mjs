@@ -111,6 +111,47 @@ test("accepts valid quoted required frontmatter values", () => {
   assert.doesNotThrow(() => assertAgentSkillsArtifact(bytes, index.skills[0]));
 });
 
+test("rejects malformed nested metadata structure", () => {
+  const fixtures = [
+    [
+      "empty metadata map with child key",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\nmetadata: {}\n  author: example-org\n---\n\n# Example skill\n`,
+    ],
+    [
+      "tab-indented metadata key",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\nmetadata:\n\t author: example-org\n---\n\n# Example skill\n`,
+    ],
+    [
+      "inconsistent metadata indentation",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\nmetadata:\n  author: example-org\n   version: "1.0"\n---\n\n# Example skill\n`,
+    ],
+    [
+      "duplicate metadata key",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\nmetadata:\n  author: example-org\n  author: another-org\n---\n\n# Example skill\n`,
+    ],
+    [
+      "malformed metadata mapping",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\nmetadata:\n  author example-org\n---\n\n# Example skill\n`,
+    ],
+    [
+      "nested metadata mapping",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\nmetadata:\n  author:\n    name: example-org\n---\n\n# Example skill\n`,
+    ],
+  ];
+  for (const [label, source] of fixtures) {
+    const bytes = Buffer.from(source, "utf8");
+    const entry = buildAgentSkillsIndex(bytes, {
+      name: "example-skill",
+      description: "Read-only guidance for a public site.",
+    }).skills[0];
+    assert.throws(
+      () => assertAgentSkillsArtifact(bytes, entry),
+      /frontmatter|indent|mapping|duplicate/i,
+      label,
+    );
+  }
+});
+
 test("rejects malformed, non-canonical, unsupported, and secret-bearing index entries", () => {
   const bytes = validSkill();
   const index = buildAgentSkillsIndex(bytes, {
@@ -364,9 +405,16 @@ test("release validation rejects malformed frontmatter with valid digests", asyn
     const indexPath = join(dist, AGENT_SKILLS_INDEX_PATH.replace(/^\//, ""));
     const artifactPath = join(dist, SKILL_ARTIFACT_PATH.replace(/^\//, ""));
     const originalIndex = JSON.parse(await readFile(indexPath, "utf8"));
+    const validDescription = originalIndex.skills[0].description;
     const fixtures = [
-      `---\nname: vuzora-public-discovery\ndescription: "Read-only guidance for discovering Vuzora's public pages.\n---\n\n# Malformed skill\n`,
-      `---\nname: vuzora-public-discovery\ndescription: Read-only guidance for discovering Vuzora's public pages.\n--- \n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: "${validDescription}\n---\n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: ${validDescription}\n--- \n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: ${validDescription}\nmetadata: {}\n  author: example-org\n---\n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: ${validDescription}\nmetadata:\n\t author: example-org\n---\n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: ${validDescription}\nmetadata:\n  author: example-org\n   version: "1.0"\n---\n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: ${validDescription}\nmetadata:\n  author: example-org\n  author: another-org\n---\n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: ${validDescription}\nmetadata:\n  author example-org\n---\n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: ${validDescription}\nmetadata:\n  author:\n    name: example-org\n---\n\n# Malformed skill\n`,
     ];
     for (const source of fixtures) {
       const malformed = Buffer.from(source, "utf8");

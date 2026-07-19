@@ -113,16 +113,33 @@ function parseFrontmatter(bytes) {
     return value.replace(/[ \t]+#.*/, "").trim();
   };
   let nestedField;
+  let metadataIndent;
+  let metadataEmptyMap = false;
+  const nestedMetadataKeys = new Set();
   for (const line of frontmatter.split(/\r\n|\n|\r/)) {
+    if (/^\t/.test(line))
+      throw new Error(`SKILL.md frontmatter uses tabs for indentation: ${line}`);
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
     if (/^\s/.test(line)) {
       if (nestedField !== "metadata")
         throw new Error(`SKILL.md frontmatter has an unexpected indented mapping: ${line}`);
-      const nestedMapping = line.match(/^\s{2,}([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);
+      if (metadataEmptyMap)
+        throw new Error("SKILL.md frontmatter metadata: {} cannot have child keys");
+      const indentation = line.match(/^ */)[0].length;
+      if (!metadataIndent) metadataIndent = indentation;
+      if (indentation !== metadataIndent || indentation < 2)
+        throw new Error(`SKILL.md frontmatter has inconsistent metadata indentation: ${line}`);
+      const nestedMapping = line.match(
+        /^ {2,}([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/,
+      );
       if (!nestedMapping)
         throw new Error(`SKILL.md frontmatter has a malformed metadata mapping: ${line}`);
-      parseScalar(`metadata.${nestedMapping[1]}`, nestedMapping[2]);
+      const nestedKey = nestedMapping[1];
+      if (nestedMetadataKeys.has(nestedKey))
+        throw new Error(`SKILL.md frontmatter duplicates metadata.${nestedKey}`);
+      nestedMetadataKeys.add(nestedKey);
+      parseScalar(`metadata.${nestedKey}`, nestedMapping[2]);
       continue;
     }
     const mapping = line.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);
@@ -135,6 +152,9 @@ function parseFrontmatter(bytes) {
       if (source.trim() && source.trim() !== "{}")
         throw new Error("SKILL.md frontmatter metadata must be an indented mapping");
       fields.set(field, source.trim() || "{}");
+      metadataEmptyMap = source.trim() === "{}";
+      metadataIndent = undefined;
+      nestedMetadataKeys.clear();
     } else {
       fields.set(field, parseScalar(field, source));
     }
