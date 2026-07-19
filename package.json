@@ -16,6 +16,7 @@
     "generate:llms": "node scripts/generate-llms.mjs",
     "generate:rss": "node scripts/generate-rss.mjs",
     "generate:agent-skills": "node scripts/generate-agent-skills.mjs",
+    "test:browser:webmcp": "node scripts/webmcp-browser-regression.mjs",
     "validate:release": "node scripts/validate-release.mjs",
     "compare:release": "node scripts/compare-release.mjs",
     "repeat:release": "node scripts/repeat-release.mjs",

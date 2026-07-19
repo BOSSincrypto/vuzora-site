@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import interCyrillicWoff2 from "@fontsource-variable/inter/files/inter-cyrillic-wght-normal.woff2?url";
 import interLatinWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { registerWebMcpTools } from "../lib/webmcp";
 import { SITE_URL, BRAND } from "@/content/vuzora";
 
 // Hoisted to module scope so JSON.stringify runs once at module init,
@@ -310,11 +311,21 @@ function RouteFocusManager() {
   return null;
 }
 
+function WebMcpEnhancement() {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    return registerWebMcpTools(document);
+  }, []);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
+      <WebMcpEnhancement />
       <RouteFocusManager />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
