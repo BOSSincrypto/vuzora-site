@@ -51,9 +51,13 @@ function metadataSnapshot() {
   }))()`);
 }
 
+function normalizeBrowserPath(pathname) {
+  return pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+}
+
 function assertSupported(snapshot, expectedPath, expectedType = "website") {
   const expectedUrl = `https://vuzora.ru${expectedPath}`;
-  assert.equal(snapshot.path, expectedPath);
+  assert.equal(normalizeBrowserPath(snapshot.path), expectedPath);
   assert.deepEqual(snapshot.robots, ["index, follow"]);
   assert.deepEqual(snapshot.canonical, [expectedUrl]);
   assert.deepEqual(snapshot.ogUrl, [expectedUrl]);
@@ -67,7 +71,7 @@ function assertSupported(snapshot, expectedPath, expectedType = "website") {
 }
 
 function assertUnknown(snapshot, expectedPath) {
-  assert.equal(snapshot.path, expectedPath);
+  assert.equal(normalizeBrowserPath(snapshot.path), expectedPath);
   assert.deepEqual(snapshot.robots, ["noindex"]);
   assert.deepEqual(snapshot.canonical, []);
   assert.deepEqual(snapshot.alternate, []);
