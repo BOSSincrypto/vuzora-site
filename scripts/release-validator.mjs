@@ -16,6 +16,7 @@ import {
 } from "./llms-packet.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 import { assertBlogIndexJoin, assertEditorialGraph } from "./editorial-joins.mjs";
+import { assertAgentSkillsRelease } from "./agent-skills.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -761,6 +762,11 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       RSS_PATH.replace(/^\//, ""),
     ])
       if (!(await exists(join(dist, file)))) fail(`missing release artifact: dist/${file}`);
+    try {
+      await assertAgentSkillsRelease({ root, dist });
+    } catch (error) {
+      fail(`Agent Skills: ${error.message}`);
+    }
     if (await exists(join(dist, RSS_PATH.replace(/^\//, "")))) {
       try {
         const rssBody = await read(join(dist, RSS_PATH.replace(/^\//, "")));

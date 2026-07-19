@@ -1,5 +1,5 @@
-import { readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import {
   assertLlmsJoin,
   buildLlmsPacket,
@@ -7,6 +7,12 @@ import {
 } from "./llms-packet.mjs";
 import { buildRoutes, manifestFor, readRegistry } from "./route-policy.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
+import {
+  AGENT_SKILLS_INDEX_PATH,
+  SKILL_ARTIFACT_PATH,
+  assertAgentSkillsIndex,
+  assertAgentSkillsRelease,
+} from "./agent-skills.mjs";
 
 const root = process.cwd();
 const dist = join(root, "dist");
@@ -60,6 +66,37 @@ await writeFile(join(dist, "llms.txt"), llms, "utf8");
 // Freeze lastmod to the UTC calendar day of the build. Repeat-build comparison
 // normalizes lastmod further, so only the route set and non-date bytes must match.
 const lastmod = new Date().toISOString().slice(0, 10);
+
+const agentSkillsIndexSource = join(
+  root,
+  "public",
+  AGENT_SKILLS_INDEX_PATH.replace(/^\//, ""),
+);
+const agentSkillsIndex = JSON.parse(await readFile(agentSkillsIndexSource, "utf8"));
+const agentSkillsBytesByUrl = new Map();
+for (const entry of agentSkillsIndex.skills ?? []) {
+  const artifactPath = new URL(entry.url).pathname.replace(/^\/+/, "");
+  agentSkillsBytesByUrl.set(
+    entry.url,
+    await readFile(join(root, "public", artifactPath)),
+  );
+}
+assertAgentSkillsIndex(agentSkillsIndex, agentSkillsBytesByUrl);
+await mkdir(
+  dirname(join(dist, AGENT_SKILLS_INDEX_PATH.replace(/^\//, ""))),
+  { recursive: true },
+);
+await writeFile(
+  join(dist, AGENT_SKILLS_INDEX_PATH.replace(/^\//, "")),
+  await readFile(agentSkillsIndexSource),
+);
+for (const entry of agentSkillsIndex.skills) {
+  const artifactPath = new URL(entry.url).pathname.replace(/^\/+/, "");
+  const destination = join(dist, artifactPath);
+  await mkdir(join(destination, ".."), { recursive: true });
+  await copyFile(join(root, "public", artifactPath), destination);
+}
+await assertAgentSkillsRelease({ root, dist });
 
 await writeFile(
   join(dist, "release-manifest.json"),

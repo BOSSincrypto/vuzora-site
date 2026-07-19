@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "vuzora-public-discovery",
+      "type": "skill-md",
+      "description": "Read-only guidance for discovering Vuzora's public university directory and Telegram schedule-delivery pages.",
+      "url": "https://vuzora.ru/.well-known/agent-skills/public-site-discovery/SKILL.md",
+      "digest": "sha256:39dde5b1f6e90e0c0dde04a740e9b870c24d511e25699de7f310b2c364ca1941"
+    }
+  ]
+}
