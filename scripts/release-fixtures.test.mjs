@@ -59,6 +59,10 @@ const metadataFixture = (route, overrides = {}) => {
     ${alternates}
   </head><body><main><h1>Проверка маршрута</h1></main></body></html>`;
 };
+const approvedDiscoveryAlternates = `
+    <link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml"/>
+    <link rel="alternate" type="text/plain" href="https://vuzora.ru/llms.txt"/>
+  `;
 
 test("indexable route matrix requires shared discovery metadata and preserves noindex/phantom fixtures", async () => {
   const { universities, posts, postRecords } = await readRegistry();
@@ -140,6 +144,63 @@ test("indexable route matrix requires shared discovery metadata and preserves no
     '<!doctype html><html lang="ru"><head><meta name="robots" content="noindex"/><title>Не найдено</title></head><body><main><h1>Страница не найдена</h1><a href="/">На главную</a></main></body></html>',
   );
   assert.doesNotThrow(() => assertIndependent404(notFound, indexableRoutes, universities, homepage));
+});
+
+test("route discovery metadata rejects alternate-origin and duplicate variants", () => {
+  const valid = parseHtmlDocument(metadataFixture("/pricing"));
+  assert.deepEqual(routeMetadataFailures(valid, "/pricing"), []);
+
+  const fixtures = [
+    [
+      "unrelated origin",
+      `<link rel="alternate" type="text/plain" href="https://example.com/llms.txt"/>`,
+    ],
+    [
+      "project-host origin",
+      `<link rel="alternate" type="application/rss+xml" href="https://bossincrypto.github.io/vuzora-site/blog/rss.xml"/>`,
+    ],
+    [
+      "duplicate RSS",
+      `<link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml"/>`,
+    ],
+    [
+      "wrong-origin llms",
+      `<link rel="alternate" type="text/plain" href="https://example.com/llms.txt"/>`,
+    ],
+    [
+      "RSS query variant",
+      `<link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml?format=xml"/>`,
+    ],
+    [
+      "llms fragment variant",
+      `<link rel="alternate" type="text/plain" href="https://vuzora.ru/llms.txt#packet"/>`,
+    ],
+  ];
+
+  for (const [label, extraLink] of fixtures) {
+    const failures = routeMetadataFailures(
+      parseHtmlDocument(
+        metadataFixture("/pricing", { alternates: `${approvedDiscoveryAlternates}${extraLink}` }),
+      ),
+      "/pricing",
+    );
+    assert.match(failures.join("\n"), /discovery metadata|discovery link/, label);
+  }
+});
+
+test("validate:release rejects unrelated route discovery alternates", async () => {
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", artifactFor("/pricing"));
+    const html = await readFile(path, "utf8");
+    await writeFile(
+      path,
+      html.replace(
+        "</head>",
+        '<link rel="alternate" type="text/plain" href="https://example.com/llms.txt"/></head>',
+      ),
+      "utf8",
+    );
+  }, /pricing: discovery metadata/);
 });
 
 test("validate:release rejects route-matrix metadata drift fixtures", async () => {

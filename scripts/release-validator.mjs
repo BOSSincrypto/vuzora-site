@@ -176,27 +176,34 @@ export function routeMetadataFailures(document, route, expectedDescription) {
     },
     { href: `${CANONICAL_ORIGIN}/llms.txt`, type: "text/plain" },
   ];
+  if (document.alternateLinks.length !== expectedDiscoveryLinks.length) {
+    failures.push(
+      `${route}: discovery metadata must contain exactly ${expectedDiscoveryLinks.length} alternate links`,
+    );
+  }
   for (const expected of expectedDiscoveryLinks) {
     const matching = document.alternateLinks.filter(
-      (link) => link.href === expected.href && link.type === expected.type,
+      (link) =>
+        link.rel === "alternate" &&
+        link.href === expected.href &&
+        link.type === expected.type,
     );
     if (matching.length !== 1)
       failures.push(`${route}: expected exactly one ${expected.type} discovery link`);
   }
-  if (
-    document.alternateLinks.some(
-      (link) =>
-        link.href === `${CANONICAL_ORIGIN}/blog/rss.xml` &&
-        link.type !== "application/rss+xml",
-    )
-  )
-    failures.push(`${route}: RSS discovery link has an incorrect media type`);
-  if (
-    document.alternateLinks.some(
-      (link) => link.href === `${CANONICAL_ORIGIN}/llms.txt` && link.type !== "text/plain",
-    )
-  )
-    failures.push(`${route}: llms discovery link has an incorrect media type`);
+  const expectedDiscoverySet = new Set(
+    expectedDiscoveryLinks.map(({ href, type }) => `${href}\u0000${type}`),
+  );
+  const unexpectedDiscovery = document.alternateLinks.filter(
+    (link) =>
+      link.rel !== "alternate" ||
+      !expectedDiscoverySet.has(`${link.href ?? ""}\u0000${link.type ?? ""}`),
+  );
+  if (unexpectedDiscovery.length) {
+    failures.push(
+      `${route}: discovery metadata contains unrelated, non-canonical, duplicate, or wrong-origin alternate link(s)`,
+    );
+  }
   return failures;
 }
 
