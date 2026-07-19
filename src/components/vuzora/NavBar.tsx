@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Logo, Wordmark } from "./Logo";
 import { MobileMenu } from "./nav/MobileMenu";
 import { TelegramIconLink } from "./nav/TelegramIconLink";
+import { BLOG_INDEX_PATH } from "@/content/blog";
 import { LINKS, NAV_LINKS } from "@/content/vuzora";
 
 const MOBILE_MENU_ID = "vuzora-mobile-menu";
@@ -199,7 +200,7 @@ export function NavBar() {
             </a>
           ))}
           <a
-            href="/blog"
+            href={BLOG_INDEX_PATH}
             onClick={handleNavClick}
             className="nav-item whitespace-nowrap rounded-full px-2 py-2 text-[13px] text-white/65 transition-colors hover:text-white focus-visible:text-white"
           >

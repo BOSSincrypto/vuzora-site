@@ -15,7 +15,7 @@ import { CtaButton } from "@/components/vuzora/ui/CtaButton";
 import { ReadProgress } from "@/components/vuzora/ReadProgress";
 import { RouteErrorFallback, RouteNotFoundFallback } from "@/components/vuzora/ui/RouteFallbacks";
 import { useReadProgress } from "@/hooks/use-read-progress";
-import { findPost, formatPostDate, POSTS } from "@/content/blog";
+import { BLOG_INDEX_PATH, blogPostPath, findPost, formatPostDate, POSTS } from "@/content/blog";
 import { BRAND, LINKS, SITE_URL, abs } from "@/content/vuzora";
 import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
@@ -64,7 +64,7 @@ export const Route = createFileRoute("/blog/$slug")({
     <RouteNotFoundFallback
       title="Такой заметки нет"
       description="Возможно, ссылка устарела или пост ещё не опубликован. Загляни в блог – там всё, что мы успели написать."
-      primaryHref="/blog"
+      primaryHref={BLOG_INDEX_PATH}
       primaryLabel="Все записи"
     />
   ),
@@ -76,19 +76,22 @@ export const Route = createFileRoute("/blog/$slug")({
       };
     }
     const title = `${post.title} – ${BRAND.name}`;
-    const url = abs(`/blog/${post.slug}`);
+    const url = abs(blogPostPath(post.slug));
     return {
       meta: [
         { title },
         { name: "description", content: post.summary },
         { property: "og:title", content: title },
         { property: "og:description", content: post.summary },
-        { property: "og:type", content: "website" },
+        { property: "og:type", content: "article" },
         { property: "og:url", content: url },
         { property: "og:image", content: abs(ogCover) },
         { property: "og:image:width", content: "1216" },
         { property: "og:image:height", content: "640" },
         { property: "article:published_time", content: post.date },
+        { property: "article:modified_time", content: post.date },
+        { property: "article:section", content: "Блог" },
+        { property: "article:author", content: BRAND.name },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: post.summary },
@@ -122,7 +125,7 @@ export const Route = createFileRoute("/blog/$slug")({
             "@type": "BreadcrumbList",
             itemListElement: [
               { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
-              { "@type": "ListItem", position: 2, name: "Блог", item: abs("/blog") },
+              { "@type": "ListItem", position: 2, name: "Блог", item: abs(BLOG_INDEX_PATH) },
               { "@type": "ListItem", position: 3, name: post.title, item: url },
             ],
           }),
@@ -227,9 +230,9 @@ function BlogPost() {
           </nav>
 
           <div className="mt-8 text-sm text-white/45">
-            <Link to="/blog" className="hover:text-white">
+            <a href={BLOG_INDEX_PATH} className="hover:text-white">
               ← Все записи
-            </Link>
+            </a>
           </div>
         </article>
       </main>

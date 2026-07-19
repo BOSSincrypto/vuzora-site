@@ -11,7 +11,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { NavBar } from "@/components/vuzora/NavBar";
 import { Footer } from "@/components/vuzora/Footer";
 import { Kicker } from "@/components/vuzora/ui/Kicker";
-import { POSTS, formatPostDate } from "@/content/blog";
+import { BLOG_INDEX_PATH, blogPostPath, POSTS, formatPostDate } from "@/content/blog";
 import { BRAND, abs, SITE_URL } from "@/content/vuzora";
 import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/blog/")({
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: abs("/blog/") },
+      { property: "og:url", content: abs(BLOG_INDEX_PATH) },
       { property: "og:image", content: abs(ogCover) },
       { property: "og:image:width", content: "1216" },
       { property: "og:image:height", content: "640" },
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/blog/")({
       { name: "twitter:image", content: abs(ogCover) },
       ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/blog/") }, ...DISCOVERY_LINKS],
+    links: [{ rel: "canonical", href: abs(BLOG_INDEX_PATH) }, ...DISCOVERY_LINKS],
 
     scripts: [
       {
@@ -46,8 +46,8 @@ export const Route = createFileRoute("/blog/")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Blog",
-          "@id": `${abs("/blog")}#blog`,
-          url: abs("/blog"),
+          "@id": `${abs(BLOG_INDEX_PATH)}#blog`,
+          url: abs(BLOG_INDEX_PATH),
           name: TITLE,
           inLanguage: "ru",
           publisher: { "@id": `${SITE_URL}/#org` },
@@ -55,9 +55,23 @@ export const Route = createFileRoute("/blog/")({
             "@type": "BlogPosting",
             headline: p.title,
             datePublished: p.date,
-            url: abs(`/blog/${p.slug}`),
+            url: abs(blogPostPath(p.slug)),
             description: p.summary,
           })),
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "@id": `${abs(BLOG_INDEX_PATH)}#breadcrumb`,
+          name: TITLE,
+          url: abs(BLOG_INDEX_PATH),
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
+            { "@type": "ListItem", position: 2, name: "Блог", item: abs(BLOG_INDEX_PATH) },
+          ],
         }),
       },
     ],

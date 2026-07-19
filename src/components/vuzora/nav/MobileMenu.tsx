@@ -15,6 +15,7 @@
 
 import { forwardRef } from "react";
 import { LINKS, NAV_LINKS } from "@/content/vuzora";
+import { BLOG_INDEX_PATH } from "@/content/blog";
 
 type Props = {
   id: string;
@@ -70,7 +71,7 @@ export const MobileMenu = forwardRef<HTMLDivElement, Props>(function MobileMenu(
           ))}
           <li>
             <a
-              href="/blog"
+              href={BLOG_INDEX_PATH}
               onClick={onClose}
               className="flex items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] text-white/85 transition-colors hover:bg-white/5 hover:text-white"
             >

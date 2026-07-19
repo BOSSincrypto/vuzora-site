@@ -16,6 +16,7 @@ import {
 } from "./llms-packet.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 import { assertBlogIndexJoin, assertEditorialGraph } from "./editorial-joins.mjs";
+import { BLOG_INDEX_ROUTE, assertBlogMetadataConsistency } from "./blog-metadata.mjs";
 import { assertAgentSkillsRelease } from "./agent-skills.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
@@ -336,6 +337,7 @@ export function validateRouteDocument(
   knownCanonicals = new Set(),
   routeExpectations,
   affiliationBoundary,
+  postRecords = [],
 ) {
   const expectation = routeExpectations?.[route] ?? routeExpectationFor(route, { universities });
   if (!expectation) failures.push(`${route}: missing explicit route expectation`);
@@ -354,11 +356,13 @@ export function validateRouteDocument(
     document.meta("property", "og:url")[0] !== expectedCanonical
   )
     failures.push(`${route}: og:url mismatch`);
+  const expectedOgType =
+    route.startsWith("/blog/") && route !== BLOG_INDEX_ROUTE ? "article" : "website";
   if (
     document.meta("property", "og:type").length !== 1 ||
-    document.meta("property", "og:type")[0] !== "website"
+    document.meta("property", "og:type")[0] !== expectedOgType
   )
-    failures.push(`${route}: og:type must be exactly website`);
+    failures.push(`${route}: og:type must be exactly ${expectedOgType}`);
   for (const [key, value] of [
     ["property", "og:title"],
     ["property", "og:description"],
@@ -606,6 +610,13 @@ export function validateRouteDocument(
     }
   }
   if (expectedRoutes.length === 0) failures.push("route policy is empty");
+  if (route === BLOG_INDEX_ROUTE || route.startsWith("/blog/")) {
+    try {
+      assertBlogMetadataConsistency(document.html, route, postRecords);
+    } catch (error) {
+      failures.push(`Blog metadata: ${error.message}`);
+    }
+  }
 }
 
 export function parseSitemapXml(xml) {
@@ -799,6 +810,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
           knownCanonicals,
           routeExpectations,
           affiliationBoundary,
+          postRecords,
         );
         if (route.startsWith("/unis/")) {
           const description = document.descriptions[0] ?? "";

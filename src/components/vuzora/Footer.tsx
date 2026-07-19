@@ -7,6 +7,7 @@
  */
 
 import { Logo, Wordmark } from "./Logo";
+import { BLOG_INDEX_PATH } from "@/content/blog";
 import { BRAND, LINKS } from "@/content/vuzora";
 
 /** Cached at module load — the year is read-only display data. */
@@ -54,7 +55,7 @@ export function Footer() {
             <a href={BRAND.legal.privacyUrl} className="hover:text-white">
               Политика конфиденциальности
             </a>
-            <a href="/blog" className="hover:text-white">
+            <a href={BLOG_INDEX_PATH} className="hover:text-white">
               Блог
             </a>
             <a href="/changelog" className="hover:text-white">

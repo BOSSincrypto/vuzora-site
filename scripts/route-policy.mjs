@@ -73,7 +73,7 @@ const CORE_ROUTE_EXPECTATIONS = {
   "/": {
     title: "Vuzora – расписание вуза в Telegram каждое утро",
     heading: "Расписание твоего вуза. Каждое утро.",
-    internalLinks: ["/pricing", "/unis", "/blog", "/changelog", "/legal/terms", "/legal/privacy"],
+    internalLinks: ["/pricing", "/unis", "/blog/", "/changelog", "/legal/terms", "/legal/privacy"],
     jsonLdTypes: ["SoftwareApplication", "FAQPage"],
     jsonLdIdentity: [
       { type: "SoftwareApplication", name: "Vuzora", url: "https://t.me/vuzora_bot" },
@@ -87,7 +87,7 @@ const CORE_ROUTE_EXPECTATIONS = {
   "/pricing": {
     title: "Тарифы Vuzora – подписка от 49 ₽",
     heading: "Тарифы и подписка Vuzora",
-    internalLinks: ["/pricing", "/unis", "/blog"],
+    internalLinks: ["/pricing", "/unis", "/blog/"],
     jsonLdTypes: ["Product", "BreadcrumbList"],
     jsonLdIdentity: [{ type: "Product", name: "Vuzora — подписка" }],
     ctas: [
@@ -98,7 +98,7 @@ const CORE_ROUTE_EXPECTATIONS = {
   "/unis": {
     title: "Поддерживаемые вузы – Vuzora",
     heading: "Поддерживаемые вузы",
-    internalLinks: ["/unis", "/pricing", "/blog"],
+    internalLinks: ["/unis", "/pricing", "/blog/"],
     jsonLdTypes: ["ItemList", "BreadcrumbList"],
     jsonLdIdentity: [
       {
@@ -116,14 +116,20 @@ const CORE_ROUTE_EXPECTATIONS = {
   "/blog/": {
     title: "Блог – Vuzora",
     heading: "Блог Vuzora",
-    internalLinks: ["/blog", "/pricing", "/unis", "/changelog", "/legal/terms", "/legal/privacy"],
-    jsonLdTypes: ["Blog"],
+    internalLinks: ["/blog/", "/pricing", "/unis", "/changelog", "/legal/terms", "/legal/privacy"],
+    jsonLdTypes: ["Blog", "BreadcrumbList"],
     jsonLdIdentity: [
       {
         type: "Blog",
-        "@id": "https://vuzora.ru/blog#blog",
+        "@id": "https://vuzora.ru/blog/#blog",
         name: "Блог – Vuzora",
-        url: "https://vuzora.ru/blog",
+        url: "https://vuzora.ru/blog/",
+      },
+      {
+        type: "BreadcrumbList",
+        "@id": "https://vuzora.ru/blog/#breadcrumb",
+        name: "Блог – Vuzora",
+        url: "https://vuzora.ru/blog/",
       },
     ],
     ctas: [{ marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 }],
@@ -131,7 +137,7 @@ const CORE_ROUTE_EXPECTATIONS = {
   "/changelog": {
     title: "Что нового – Vuzora",
     heading: "Что нового",
-    internalLinks: ["/changelog", "/pricing", "/unis", "/blog", "/legal/terms", "/legal/privacy"],
+    internalLinks: ["/changelog", "/pricing", "/unis", "/blog/", "/legal/terms", "/legal/privacy"],
     jsonLdTypes: ["BreadcrumbList"],
     jsonLdIdentity: [
       {
@@ -220,7 +226,7 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
         title: `${post.title} – Vuzora`,
         heading: post.title,
         internalLinks: [
-          "/blog",
+          "/blog/",
           "/pricing",
           "/unis",
           "/changelog",
@@ -232,6 +238,7 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
           {
             type: "BlogPosting",
             "@id": `https://vuzora.ru${route}#post`,
+            mainEntityOfPage: `https://vuzora.ru${route}`,
             url: `https://vuzora.ru${route}`,
           },
         ],

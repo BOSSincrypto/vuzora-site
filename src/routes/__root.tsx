@@ -15,6 +15,7 @@ import interCyrillicWoff2 from "@fontsource-variable/inter/files/inter-cyrillic-
 import interLatinWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { registerWebMcpTools } from "../lib/webmcp";
+import { BLOG_INDEX_PATH } from "@/content/blog";
 import { SITE_URL, BRAND } from "@/content/vuzora";
 
 // Hoisted to module scope so JSON.stringify runs once at module init,
@@ -75,12 +76,12 @@ function NotFoundComponent() {
           >
             На главную
           </Link>
-          <Link
-            to="/blog"
+          <a
+            href={BLOG_INDEX_PATH}
             className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/5"
           >
             В блог
-          </Link>
+          </a>
         </div>
       </div>
     </div>

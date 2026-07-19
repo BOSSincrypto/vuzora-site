@@ -27,6 +27,11 @@ export type BlogPost = {
   body: readonly string[];
 };
 
+/** The only published index URL. Detail URLs intentionally stay slashless. */
+export const BLOG_INDEX_PATH = "/blog/" as const;
+
+export const blogPostPath = (slug: string) => `/blog/${slug}`;
+
 /** All posts, newest first. */
 export const POSTS: readonly BlogPost[] = [
   {

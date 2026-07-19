@@ -105,7 +105,7 @@ test("opened mobile menu restores pointer input without removing header pass-thr
     /open \? "block pointer-events-auto" : "hidden pointer-events-none"/,
   );
   assert.match(menu, /href=\{l\.href\}/);
-  assert.match(menu, /href="\/blog"/);
+  assert.match(menu, /BLOG_INDEX_PATH/);
   assert.match(menu, /href=\{LINKS\.botUrl\}/);
   assert.match(menu, /onClick=\{onClose\}/);
 });
