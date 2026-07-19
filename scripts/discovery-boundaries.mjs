@@ -55,9 +55,9 @@ const ACTIVE_OAUTH_RE = /\b(?:oauth|oidc)\b[^.\n]{0,80}\b(?:provider|issuer|serv
 const NEGATIVE_CONTEXT_RE =
   /(?:нет|не\s|ниже|без|отсутств(?:ует|уют)|не\s+реализован|не\s+публику|не\s+выдаёт|не\s+означает|\bno\b|\bnot\b|\bwithout\b|\bdoes not\b|\bisn't\b|\bis not\b)/i;
 const ABSOLUTE_DISCOVERY_REFERENCE_RE =
-  /(?:https?:)?\/\/[^"'`\s<>()]*?\/\.well-known\/(?:openid-configuration|oauth-authorization-server|oauth-protected-resource|mcp\/server-card\.json)(?:\/)?(?:[?#][^"'`\s<>()]*)?/gi;
+  /(?:https?:)?\/\/[^"'`\s<>()]*?\/(?:[^"'`\s<>()]*\/)?\.well-known\/(?:openid-configuration|oauth-authorization-server|oauth-protected-resource|mcp\/server-card\.json)(?:\/)?(?:[?#][^"'`\s<>()]*)?/gi;
 const RELATIVE_DISCOVERY_REFERENCE_RE =
-  /(?:^|[\s"'`(=:#])((?:\/|\.{1,2}\/)?\.well-known\/(?:openid-configuration|oauth-authorization-server|oauth-protected-resource|mcp\/server-card\.json)(?:\/)?(?:[?#][^"'`\s<>()]*)?)/gim;
+  /(?:^|[\s"'`(=:#])((?:[^"'`\s<>()]*\/)?\.well-known\/(?:openid-configuration|oauth-authorization-server|oauth-protected-resource|mcp\/server-card\.json)(?:\/)?(?:[?#][^"'`\s<>()]*)?)/gim;
 
 function normalized(value) {
   return value.replace(/\r\n?/g, "\n").trim();
@@ -150,13 +150,15 @@ function decodeReferenceText(value) {
     .replace(/&#0*47;/gi, "/")
     .replace(/&#x0*2f;/gi, "/");
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      const next = decodeURIComponent(decoded);
-      if (next === decoded) break;
-      decoded = next;
-    } catch {
-      break;
-    }
+    const next = decoded.replace(/(?:%[0-9a-f]{2})+/gi, (encoded) => {
+      try {
+        return decodeURIComponent(encoded);
+      } catch {
+        return encoded.replace(/%([0-9a-f]{2})/gi, (_, byte) => String.fromCharCode(Number.parseInt(byte, 16)));
+      }
+    });
+    if (next === decoded) break;
+    decoded = next;
   }
   return decoded;
 }
@@ -183,8 +185,7 @@ function assertDiscoveryReferences(text, label) {
     ...Array.from(decoded.matchAll(ABSOLUTE_DISCOVERY_REFERENCE_RE), (match) => [match.index, match[0]]),
     ...Array.from(decoded.matchAll(RELATIVE_DISCOVERY_REFERENCE_RE), (match) => [match.index, match[1]]),
   ];
-  for (const entry of references) {
-    const [index, reference] = entry;
+  for (const [index, reference] of references) {
     const pathname = normalizeDiscoveryReference(reference);
     if (pathname && !hasNegativeContext(decoded, index)) {
       throw new Error(`${label} advertises a negative discovery path: ${pathname}`);

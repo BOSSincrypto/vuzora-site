@@ -150,6 +150,64 @@ test("scans every text artifact and normalizes active discovery references", asy
   }
 });
 
+test("decodes active candidates independently from malformed percent sequences", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-discovery-malformed-percent-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const body = [
+      "Unrelated malformed percent data: %ZZ%2.",
+      "Active candidate: https://vuzora.ru/%2Ewell-known%2Fmcp%2Fserver-card.json",
+    ].join("\n");
+    for (const base of ["public", "dist"]) {
+      const target = join(fixtureRoot, base, "fixtures", "malformed-percent.txt");
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, body, "utf8");
+    }
+    await assert.rejects(
+      () => assertDiscoveryBoundaryRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      /negative discovery path/i,
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("normalizes path-segment-relative candidates before dot-segment removal", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-discovery-relative-paths-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const forms = [
+      "./.well-known/openid-configuration/",
+      "../.well-known/oauth-protected-resource/",
+      "assets/../.well-known/mcp/server-card.json/",
+      "assets/section/../../.well-known/openid-configuration/",
+    ];
+    for (const [index, reference] of forms.entries()) {
+      const body = `Active relative candidate: ${reference}\n`;
+      for (const base of ["public", "dist"]) {
+        const target = join(fixtureRoot, base, "fixtures", `relative-${index}.txt`);
+        await mkdir(dirname(target), { recursive: true });
+        await writeFile(target, body, "utf8");
+      }
+      await assert.rejects(
+        () => assertDiscoveryBoundaryRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+        /negative discovery path/i,
+        reference,
+      );
+      await rm(join(fixtureRoot, "public", "fixtures", `relative-${index}.txt`));
+      await rm(join(fixtureRoot, "dist", "fixtures", `relative-${index}.txt`));
+    }
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test("preserves negative boundary wording and unrelated links", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-discovery-negative-"));
   try {
@@ -161,6 +219,7 @@ test("preserves negative boundary wording and unrelated links", async () => {
       "The OAuth discovery path is not deployed: /.well-known/openid-configuration.",
       "RFC 8414 is a reference, not a deployed endpoint.",
       "Unrelated documentation: https://example.com/.well-known/openid-configuration.",
+      "Unrelated relative-looking path: https://example.com/assets/../.well-known/mcp/server-card.json/",
       "Telegram: https://t.me/vuzora_bot?start=from-site.",
       "Browser-local read-only WebMCP remains a local enhancement.",
     ].join("\n");
