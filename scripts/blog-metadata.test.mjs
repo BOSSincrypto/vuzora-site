@@ -17,7 +17,19 @@ const post = {
 };
 const posts = [post];
 
-function html(route, { canonical = blogRouteUrl(route), ogUrl = canonical, ogType, locale = "ru_RU", breadcrumbUrl = blogRouteUrl(BLOG_INDEX_ROUTE), duplicateCanonical = false } = {}) {
+function html(
+  route,
+  {
+    canonical = blogRouteUrl(route),
+    ogUrl = canonical,
+    ogType,
+    locale = "ru_RU",
+    jsonLdUrl = canonical,
+    breadcrumbUrl = blogRouteUrl(BLOG_INDEX_ROUTE),
+    breadcrumbItemUrl = canonical,
+    duplicateCanonical = false,
+  } = {},
+) {
   const index = route === BLOG_INDEX_ROUTE;
   const type = ogType ?? (index ? "website" : "article");
   const jsonLd = index
@@ -26,7 +38,7 @@ function html(route, { canonical = blogRouteUrl(route), ogUrl = canonical, ogTyp
           "@context": "https://schema.org",
           "@type": "Blog",
           "@id": `${canonical}#blog`,
-          url: canonical,
+          url: jsonLdUrl,
           inLanguage: "ru",
           blogPost: [{ "@type": "BlogPosting", headline: post.title, url: blogRouteUrl(`/blog/${post.slug}`) }],
         },
@@ -45,7 +57,7 @@ function html(route, { canonical = blogRouteUrl(route), ogUrl = canonical, ogTyp
           "@type": "BlogPosting",
           "@id": `${canonical}#post`,
           mainEntityOfPage: canonical,
-          url: canonical,
+          url: jsonLdUrl,
           headline: post.title,
           datePublished: post.date,
           dateModified: post.date,
@@ -57,7 +69,7 @@ function html(route, { canonical = blogRouteUrl(route), ogUrl = canonical, ogTyp
           itemListElement: [
             { position: 1, name: "Главная", item: blogRouteUrl("/") },
             { position: 2, name: "Блог", item: breadcrumbUrl },
-            { position: 3, name: post.title, item: canonical },
+            { position: 3, name: post.title, item: breadcrumbItemUrl },
           ],
         },
       ];
@@ -104,6 +116,20 @@ test("blog metadata rejects mixed slash, cross-post, missing locale, duplicate c
   assert.throws(
     () => assertBlogMetadataConsistency(html(`/blog/${post.slug}`, { ogType: "website" }), `/blog/${post.slug}`, posts),
     /og:type/,
+  );
+});
+
+test("blog metadata rejects independent cross-post JSON-LD and breadcrumb URLs", () => {
+  const route = `/blog/${post.slug}`;
+  const crossPostUrl = blogRouteUrl("/blog/another-post");
+
+  assert.throws(
+    () => assertBlogMetadataConsistency(html(route, { jsonLdUrl: crossPostUrl }), route, posts),
+    /BlogPosting url mismatch/,
+  );
+  assert.throws(
+    () => assertBlogMetadataConsistency(html(route, { breadcrumbItemUrl: crossPostUrl }), route, posts),
+    /breadcrumb identity mismatch at position 3/,
   );
 });
 

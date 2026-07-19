@@ -64,6 +64,23 @@ const approvedDiscoveryAlternates = `
     <link rel="alternate" type="text/plain" href="https://vuzora.ru/llms.txt"/>
   `;
 
+function rewriteJsonLdNode(html, type, mutate) {
+  return html.replace(
+    /(<script\b[^>]*\btype=["']application\/ld\+json["'][^>]*>)([\s\S]*?)(<\/script>)/gi,
+    (whole, open, source, close) => {
+      const document = JSON.parse(source);
+      const nodes = [
+        document,
+        ...(Array.isArray(document?.["@graph"]) ? document["@graph"] : []),
+      ];
+      const node = nodes.find((candidate) => candidate?.["@type"] === type);
+      if (!node) return whole;
+      mutate(node);
+      return `${open}${JSON.stringify(document)}${close}`;
+    },
+  );
+}
+
 test("indexable route matrix requires shared discovery metadata and preserves noindex/phantom fixtures", async () => {
   const { universities, posts, postRecords } = await readRegistry();
   const indexableRoutes = buildRoutes({ universities, posts });
@@ -285,6 +302,36 @@ test("validate:release rejects route-matrix metadata drift fixtures", async () =
     await mkdir(join(destination, ".."), { recursive: true });
     await writeFile(destination, await readFile(source));
   }, /unexpected route HTML artifacts/);
+});
+
+test("validate:release rejects independent blog JSON-LD and breadcrumb cross-post fixtures", async () => {
+  const { posts } = await readRegistry();
+  assert.ok(posts.length >= 2, "cross-post fixtures require at least two blog posts");
+  const route = `/blog/${posts[0]}`;
+  const crossPostUrl = `https://vuzora.ru/blog/${posts[1]}`;
+  const artifact = artifactFor(route);
+
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", artifact);
+    const html = await readFile(path, "utf8");
+    const mutated = rewriteJsonLdNode(html, "BlogPosting", (node) => {
+      node.url = crossPostUrl;
+    });
+    assert.notEqual(mutated, html);
+    await writeFile(path, mutated, "utf8");
+  }, /Blog metadata: .*BlogPosting url mismatch/);
+
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", artifact);
+    const html = await readFile(path, "utf8");
+    const mutated = rewriteJsonLdNode(html, "BreadcrumbList", (node) => {
+      const item = node.itemListElement?.find((entry) => entry.position === 3);
+      assert.ok(item, "detail breadcrumb must include a post item");
+      item.item = crossPostUrl;
+    });
+    assert.notEqual(mutated, html);
+    await writeFile(path, mutated, "utf8");
+  }, /Blog metadata: .*breadcrumb identity mismatch at position 3/);
 });
 
 test("university CTA order requires one immediate above-content anchor", () => {
