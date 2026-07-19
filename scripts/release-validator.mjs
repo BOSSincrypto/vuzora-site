@@ -20,6 +20,7 @@ import { BLOG_INDEX_ROUTE, assertBlogMetadataConsistency } from "./blog-metadata
 import { assertAgentSkillsRelease } from "./agent-skills.mjs";
 import { assertApiCatalogRelease } from "./api-catalog.mjs";
 import { assertDiscoveryBoundaryRelease } from "./discovery-boundaries.mjs";
+import { assertMarkdownRelease } from "./markdown-artifacts.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -874,6 +875,15 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       await assertDiscoveryBoundaryRelease({ root, dist });
     } catch (error) {
       fail(`Discovery boundaries: ${error.message}`);
+    }
+    try {
+      await assertMarkdownRelease({
+        root,
+        dist,
+        manifest: expectedManifest.markdown,
+      });
+    } catch (error) {
+      fail(`Markdown artifacts: ${error.message}`);
     }
     if (await exists(join(dist, RSS_PATH.replace(/^\//, "")))) {
       try {

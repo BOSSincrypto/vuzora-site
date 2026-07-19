@@ -5,6 +5,8 @@ description: Read-only guidance for discovering Vuzora's public university direc
 
 # Vuzora public discovery
 
+Artifact: `/.well-known/agent-skills/public-site-discovery/SKILL.md`.
+
 Use this skill when an agent needs a concise, public description of Vuzora's supported university pages.
 
 ## Guidance

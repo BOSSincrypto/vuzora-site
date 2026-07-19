@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { MARKDOWN_ARTIFACTS } from "./markdown-artifacts.mjs";
 
 const read = (path, root = process.cwd()) => readFile(join(root, path), "utf8");
 const field = (record, name) => {
@@ -275,5 +276,6 @@ export function manifestFor({ universities, posts }) {
   return {
     universities: universities.map((record) => ({ ...record })),
     posts: [...posts],
+    markdown: MARKDOWN_ARTIFACTS.map((entry) => ({ ...entry })),
   };
 }

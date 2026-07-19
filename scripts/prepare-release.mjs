@@ -21,6 +21,10 @@ import {
   AUTH_BOUNDARY_PATH,
   assertDiscoveryBoundaryRelease,
 } from "./discovery-boundaries.mjs";
+import {
+  MARKDOWN_ARTIFACTS,
+  assertMarkdownRelease,
+} from "./markdown-artifacts.mjs";
 
 const root = process.cwd();
 const dist = join(root, "dist");
@@ -109,9 +113,19 @@ for (const entry of agentSkillsIndex.skills) {
   await mkdir(join(destination, ".."), { recursive: true });
   await copyFile(join(root, "public", artifactPath), destination);
 }
+for (const entry of MARKDOWN_ARTIFACTS) {
+  const destination = join(dist, entry.path);
+  await mkdir(dirname(destination), { recursive: true });
+  await copyFile(join(root, "public", entry.path), destination);
+}
 await assertAgentSkillsRelease({ root, dist });
 await assertApiCatalogRelease({ root, dist });
 await assertDiscoveryBoundaryRelease({ root, dist });
+await assertMarkdownRelease({
+  root,
+  dist,
+  manifest: MARKDOWN_ARTIFACTS,
+});
 
 await writeFile(
   join(dist, "release-manifest.json"),

@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Read-only guidance for discovering Vuzora's public university directory and Telegram schedule-delivery pages.",
       "url": "https://vuzora.ru/.well-known/agent-skills/public-site-discovery/SKILL.md",
-      "digest": "sha256:39dde5b1f6e90e0c0dde04a740e9b870c24d511e25699de7f310b2c364ca1941"
+      "digest": "sha256:0013e643fb8f3fb222d5c3b8a4f71adb4d88bcdd77da586bc8f35b21386bea9e"
     }
   ]
 }
