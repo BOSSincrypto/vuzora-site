@@ -45,6 +45,8 @@ function canonicalSkillUrl(value) {
   } catch {
     throw new Error(`Agent Skills artifact URL is not absolute: ${value}`);
   }
+  if (parsed.href !== value)
+    throw new Error(`Agent Skills artifact URL is not canonical HTTPS: ${value}`);
   if (
     parsed.protocol !== "https:" ||
     parsed.origin !== AGENT_SKILLS_ORIGIN ||

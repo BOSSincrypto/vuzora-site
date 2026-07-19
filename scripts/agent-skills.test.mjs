@@ -43,6 +43,35 @@ test("rejects malformed, non-canonical, unsupported, and secret-bearing index en
     ["wrong schema", { ...index, $schema: "https://schemas.agentskills.io/discovery/0.1.0/schema.json" }],
     ["relative URL", { ...index, skills: [{ ...index.skills[0], url: "SKILL.md" }] }],
     ["trailing slash URL", { ...index, skills: [{ ...index.skills[0], url: `${index.skills[0].url}/` }] }],
+    [
+      "uppercase host URL",
+      { ...index, skills: [{ ...index.skills[0], url: index.skills[0].url.replace("vuzora.ru", "VUZORA.RU") }] },
+    ],
+    [
+      "explicit default port URL",
+      { ...index, skills: [{ ...index.skills[0], url: index.skills[0].url.replace("https://vuzora.ru", "https://vuzora.ru:443") }] },
+    ],
+    [
+      "dot-segment URL",
+      {
+        ...index,
+        skills: [{
+          ...index.skills[0],
+          url: index.skills[0].url.replace(
+            "/.well-known/agent-skills/public-site-discovery",
+            "/.well-known/agent-skills/./public-site-discovery",
+          ),
+        }],
+      },
+    ],
+    [
+      "query URL",
+      { ...index, skills: [{ ...index.skills[0], url: `${index.skills[0].url}?download=1` }] },
+    ],
+    [
+      "fragment URL",
+      { ...index, skills: [{ ...index.skills[0], url: `${index.skills[0].url}#skill` }] },
+    ],
     ["bad digest", { ...index, skills: [{ ...index.skills[0], digest: "sha256:ABC" }] }],
     ["unsupported capability", { ...index, skills: [{ ...index.skills[0], description: "OAuth API access" }] }],
     ["secret", { ...index, skills: [{ ...index.skills[0], description: "Use api_key=secret" }] }],
@@ -126,6 +155,77 @@ test("release validation fails closed for missing, malformed, and mismatched art
             `${JSON.stringify({
               ...originalIndex,
               skills: [{ ...originalIndex.skills[0], url: originalIndex.skills[0].url.replace("https://vuzora.ru", "https://example.com") }],
+            })}\n`,
+            "utf8",
+          ),
+        /Agent Skills|canonical|URL/i,
+      ],
+      [
+        "uppercase host URL",
+        async () =>
+          writeFile(
+            indexPath,
+            `${JSON.stringify({
+              ...originalIndex,
+              skills: [{ ...originalIndex.skills[0], url: originalIndex.skills[0].url.replace("vuzora.ru", "VUZORA.RU") }],
+            })}\n`,
+            "utf8",
+          ),
+        /Agent Skills|canonical|URL/i,
+      ],
+      [
+        "explicit default port URL",
+        async () =>
+          writeFile(
+            indexPath,
+            `${JSON.stringify({
+              ...originalIndex,
+              skills: [{ ...originalIndex.skills[0], url: originalIndex.skills[0].url.replace("https://vuzora.ru", "https://vuzora.ru:443") }],
+            })}\n`,
+            "utf8",
+          ),
+        /Agent Skills|canonical|URL/i,
+      ],
+      [
+        "dot-segment URL",
+        async () =>
+          writeFile(
+            indexPath,
+            `${JSON.stringify({
+              ...originalIndex,
+              skills: [{
+                ...originalIndex.skills[0],
+                url: originalIndex.skills[0].url.replace(
+                  "/.well-known/agent-skills/public-site-discovery",
+                  "/.well-known/agent-skills/./public-site-discovery",
+                ),
+              }],
+            })}\n`,
+            "utf8",
+          ),
+        /Agent Skills|canonical|URL/i,
+      ],
+      [
+        "query URL",
+        async () =>
+          writeFile(
+            indexPath,
+            `${JSON.stringify({
+              ...originalIndex,
+              skills: [{ ...originalIndex.skills[0], url: `${originalIndex.skills[0].url}?download=1` }],
+            })}\n`,
+            "utf8",
+          ),
+        /Agent Skills|canonical|URL/i,
+      ],
+      [
+        "fragment URL",
+        async () =>
+          writeFile(
+            indexPath,
+            `${JSON.stringify({
+              ...originalIndex,
+              skills: [{ ...originalIndex.skills[0], url: `${originalIndex.skills[0].url}#skill` }],
             })}\n`,
             "utf8",
           ),
