@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 import {
   assertLlmsJoin,
+  assertContentSignalPolicy,
   assertRobotsAllowsLlms,
   assertRobotsPolicy,
   buildLlmsPacket,
@@ -124,6 +125,39 @@ test("robots explicitly allows named AI crawlers across public AEO paths", async
   assert.doesNotMatch(robots, /citation|ranking|guarantee/i);
 });
 
+test("robots publishes the exact approved Content-Signal policy", async () => {
+  const robots = await read("public/robots.txt");
+  assert.deepEqual(assertContentSignalPolicy(robots), {
+    "ai-train": "yes",
+    search: "yes",
+    "ai-input": "yes",
+  });
+});
+
+test("Content-Signal parser rejects missing, conflicting, malformed, and extra values", () => {
+  const valid = [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /api/",
+    "Content-Signal: ai-train=yes, search=yes, ai-input=yes",
+  ].join("\n");
+  assert.deepEqual(assertContentSignalPolicy(valid), {
+    "ai-train": "yes",
+    search: "yes",
+    "ai-input": "yes",
+  });
+
+  const fixtures = [
+    ["missing value", valid.replace(", ai-input=yes", ""), /missing|exact/i],
+    ["conflicting value", valid.replace("ai-train=yes", "ai-train=no"), /conflict|approved|value/i],
+    ["malformed value", valid.replace("search=yes", "search"), /malformed|format|value/i],
+    ["extra value", valid.replace("ai-input=yes", "ai-input=yes, ai-citations=yes"), /extra|unsupported|exact/i],
+  ];
+  for (const [label, fixture, message] of fixtures) {
+    assert.throws(() => assertContentSignalPolicy(fixture), message, label);
+  }
+});
+
 test("validate:release rejects robots policies that drift from named crawler access", async () => {
   const { validateRelease } = await import("./release-validator.mjs");
   const original = await read("dist/robots.txt");
@@ -139,6 +173,46 @@ test("validate:release rejects robots policies that drift from named crawler acc
       () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
       /robots\.txt.*(?:named|Gemini|AI crawler)|GPTBot|Gemini/i,
     );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("validate:release rejects Content-Signal policy drift fixtures", async () => {
+  const { validateRelease } = await import("./release-validator.mjs");
+  const original = await read("dist/robots.txt");
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-content-signal-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const fixtures = [
+      ["missing", original.replace(/^Content-Signal:.*$/im, ""), /Content-Signal|signal|missing/i],
+      [
+        "conflicting",
+        original.replace("ai-train=yes", "ai-train=no"),
+        /Content-Signal|signal|approved|conflict/i,
+      ],
+      [
+        "malformed",
+        original.replace("search=yes", "search"),
+        /Content-Signal|signal|malformed|format/i,
+      ],
+      [
+        "extra",
+        original.replace("ai-input=yes", "ai-input=yes, ai-citations=yes"),
+        /Content-Signal|signal|extra|unsupported/i,
+      ],
+    ];
+    for (const [label, fixture, message] of fixtures) {
+      await writeFile(join(fixtureRoot, "dist/robots.txt"), fixture, "utf8");
+      await assert.rejects(
+        () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+        message,
+        label,
+      );
+    }
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });
   }

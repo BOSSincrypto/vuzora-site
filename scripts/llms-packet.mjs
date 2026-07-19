@@ -18,6 +18,11 @@ export const NAMED_AI_CRAWLERS = [
   "Meta-ExternalAgent",
   "Gemini",
 ];
+export const APPROVED_CONTENT_SIGNAL = Object.freeze({
+  "ai-train": "yes",
+  search: "yes",
+  "ai-input": "yes",
+});
 export const DETAIL_URL_RE =
   /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?=$|[\s)\]}>.,;:`])/g;
 const NON_CANONICAL_DETAIL_URL_RE =
@@ -319,6 +324,68 @@ export function robotsDisallowsPath(robots, path, userAgent = "*") {
 }
 
 /**
+ * Parse and validate the single approved Content-Signal directive.
+ * @param {string} robots
+ * @returns {{ "ai-train": "yes", search: "yes", "ai-input": "yes" }}
+ */
+export function assertContentSignalPolicy(robots) {
+  if (typeof robots !== "string" || !robots.trim()) {
+    throw new Error("robots.txt Content-Signal directive is missing");
+  }
+
+  const directives = [];
+  for (const raw of robots.split(/\r?\n/)) {
+    const line = raw.replace(/#.*$/, "").trim();
+    if (!line) continue;
+    const match = line.match(/^Content-Signal\s*:\s*(.*)$/i);
+    if (match) directives.push(match[1].trim());
+  }
+  if (directives.length === 0) {
+    throw new Error("robots.txt Content-Signal directive is missing");
+  }
+  if (directives.length !== 1) {
+    throw new Error("robots.txt Content-Signal directive must appear exactly once");
+  }
+
+  const entries = directives[0].split(",");
+  if (entries.some((entry) => !entry.trim())) {
+    throw new Error("robots.txt Content-Signal contains a malformed empty value");
+  }
+  const parsed = {};
+  for (const entry of entries) {
+    const match = entry.trim().match(/^([a-z][a-z0-9-]*)\s*=\s*([a-z][a-z0-9-]*)$/i);
+    if (!match) {
+      throw new Error(`robots.txt Content-Signal contains malformed value: ${entry.trim()}`);
+    }
+    const key = match[1].toLowerCase();
+    const value = match[2].toLowerCase();
+    if (Object.hasOwn(parsed, key)) {
+      throw new Error(`robots.txt Content-Signal contains duplicate key: ${key}`);
+    }
+    parsed[key] = value;
+  }
+
+  const expectedKeys = Object.keys(APPROVED_CONTENT_SIGNAL);
+  const actualKeys = Object.keys(parsed);
+  const missing = expectedKeys.filter((key) => !Object.hasOwn(parsed, key));
+  const extra = actualKeys.filter((key) => !Object.hasOwn(APPROVED_CONTENT_SIGNAL, key));
+  if (missing.length) {
+    throw new Error(`robots.txt Content-Signal is missing approved key(s): ${missing.join(", ")}`);
+  }
+  if (extra.length) {
+    throw new Error(`robots.txt Content-Signal contains unsupported key(s): ${extra.join(", ")}`);
+  }
+  for (const key of expectedKeys) {
+    if (parsed[key] !== APPROVED_CONTENT_SIGNAL[key]) {
+      throw new Error(
+        `robots.txt Content-Signal has conflicting value for ${key}: expected ${APPROVED_CONTENT_SIGNAL[key]}`,
+      );
+    }
+  }
+  return { ...APPROVED_CONTENT_SIGNAL };
+}
+
+/**
  * Assert the named crawler policy and public AEO path decisions.
  * @param {string} robots
  */
@@ -326,6 +393,7 @@ export function assertRobotsPolicy(robots) {
   if (typeof robots !== "string" || !robots.trim()) {
     throw new Error("robots.txt is empty or missing");
   }
+  assertContentSignalPolicy(robots);
   const groups = parseRobotsGroups(robots);
   const namedAgents = NAMED_AI_CRAWLERS.filter((agent) =>
     groups.some((group) =>
