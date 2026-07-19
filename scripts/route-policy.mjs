@@ -72,6 +72,8 @@ export function artifactFor(route) {
 const CORE_ROUTE_EXPECTATIONS = {
   "/": {
     title: "Vuzora – расписание вуза в Telegram каждое утро",
+    description:
+      "Telegram-бот сам присылает расписание твоего вуза каждое утро в удобный тебе слот с 05:00 до 10:00 МСК. Без поиска, без рекламы, без шума.",
     heading: "Расписание твоего вуза. Каждое утро.",
     internalLinks: ["/pricing", "/unis", "/blog/", "/changelog", "/legal/terms", "/legal/privacy"],
     jsonLdTypes: ["SoftwareApplication", "FAQPage"],
@@ -86,6 +88,8 @@ const CORE_ROUTE_EXPECTATIONS = {
   },
   "/pricing": {
     title: "Тарифы Vuzora – подписка от 49 ₽",
+    description:
+      "Цена подписки на Vuzora: от 49 ₽ за месяц до 599 ₽ за весь срок обучения. Без рекламы и автопродления.",
     heading: "Тарифы и подписка Vuzora",
     internalLinks: ["/pricing", "/unis", "/blog/"],
     jsonLdTypes: ["Product", "BreadcrumbList"],
@@ -97,6 +101,8 @@ const CORE_ROUTE_EXPECTATIONS = {
   },
   "/unis": {
     title: "Поддерживаемые вузы – Vuzora",
+    description:
+      "Список вузов, для которых Vuzora уже умеет присылать расписание. Нет твоего вуза – напиши, добавим.",
     heading: "Поддерживаемые вузы",
     internalLinks: ["/unis", "/pricing", "/blog/"],
     jsonLdTypes: ["ItemList", "BreadcrumbList"],
@@ -115,6 +121,8 @@ const CORE_ROUTE_EXPECTATIONS = {
   },
   "/blog/": {
     title: "Блог – Vuzora",
+    description:
+      "Заметки про утренний ритуал, парсинг расписаний и устройство Vuzora. Без воды и SEO-выжимок.",
     heading: "Блог Vuzora",
     internalLinks: ["/blog/", "/pricing", "/unis", "/changelog", "/legal/terms", "/legal/privacy"],
     jsonLdTypes: ["Blog", "BreadcrumbList"],
@@ -136,6 +144,8 @@ const CORE_ROUTE_EXPECTATIONS = {
   },
   "/changelog": {
     title: "Что нового – Vuzora",
+    description:
+      "Публичная история изменений Vuzora: что добавили в бот, на сайт и в подписку.",
     heading: "Что нового",
     internalLinks: ["/changelog", "/pricing", "/unis", "/blog/", "/legal/terms", "/legal/privacy"],
     jsonLdTypes: ["BreadcrumbList"],
@@ -151,6 +161,8 @@ const CORE_ROUTE_EXPECTATIONS = {
   },
   "/legal/terms": {
     title: "Публичная оферта – Vuzora",
+    description:
+      "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств и ответственность сторон.",
     heading: "Публичная оферта",
     internalLinks: ["/", "/pricing"],
     jsonLdTypes: ["BreadcrumbList"],
@@ -169,6 +181,8 @@ const CORE_ROUTE_EXPECTATIONS = {
   },
   "/legal/privacy": {
     title: "Политика конфиденциальности – Vuzora",
+    description:
+      "Какие персональные данные собирает Vuzora, как они хранятся и как пользователь может их удалить.",
     heading: "Политика конфиденциальности",
     internalLinks: ["/"],
     jsonLdTypes: ["BreadcrumbList"],
@@ -224,6 +238,7 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
     if (post) {
       return {
         title: `${post.title} – Vuzora`,
+        description: post.summary,
         heading: post.title,
         internalLinks: [
           "/blog/",

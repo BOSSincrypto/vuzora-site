@@ -134,7 +134,7 @@ export function parseHtmlDocument(html) {
   };
 }
 
-export function routeMetadataFailures(document, route) {
+export function routeMetadataFailures(document, route, expectedDescription) {
   const failures = [];
   if (document.htmlLang !== "ru") failures.push(`${route}: HTML language must be ru`);
   if (
@@ -144,6 +144,11 @@ export function routeMetadataFailures(document, route) {
     PLACEHOLDER_RE.test(document.descriptions[0] ?? "")
   )
     failures.push(`${route}: description is missing, duplicated, placeholder, or out of bounds`);
+  if (
+    expectedDescription !== undefined &&
+    (document.descriptions.length !== 1 || document.descriptions[0] !== expectedDescription)
+  )
+    failures.push(`${route}: route-specific description mismatch`);
   const locale = document.meta("property", "og:locale");
   if (locale.length !== 1 || locale[0] !== "ru_RU")
     failures.push(`${route}: Russian OpenGraph locale is missing or duplicated`);
@@ -339,7 +344,8 @@ export function validateRouteDocument(
   affiliationBoundary,
   postRecords = [],
 ) {
-  const expectation = routeExpectations?.[route] ?? routeExpectationFor(route, { universities });
+  const expectation =
+    routeExpectations?.[route] ?? routeExpectationFor(route, { universities, postRecords });
   if (!expectation) failures.push(`${route}: missing explicit route expectation`);
   if (!/^<!doctype html>/i.test(document.html)) failures.push(`${route}: invalid HTML doctype`);
   if (document.headings.length !== 1) failures.push(`${route}: expected exactly one H1`);
@@ -350,7 +356,7 @@ export function validateRouteDocument(
   )
     failures.push(`${route}: title is missing, placeholder, or out of bounds`);
   const expectedCanonical = `${CANONICAL_ORIGIN}${route}`;
-  failures.push(...routeMetadataFailures(document, route));
+  failures.push(...routeMetadataFailures(document, route, expectation?.description));
   if (
     document.meta("property", "og:url").length !== 1 ||
     document.meta("property", "og:url")[0] !== expectedCanonical
@@ -764,7 +770,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
   const expectedManifest = manifestFor({ universities, posts });
   const knownTitles = new Set();
   const knownCanonicals = new Set();
-  const knownDetailDescriptions = new Set();
+  const knownDescriptions = new Set();
   const routeDocuments = new Map();
   if (!(await exists(dist))) fail("missing dist directory");
   const manifestPath = join(dist, "release-manifest.json");
@@ -812,12 +818,10 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
           affiliationBoundary,
           postRecords,
         );
-        if (route.startsWith("/unis/")) {
-          const description = document.descriptions[0] ?? "";
-          if (knownDetailDescriptions.has(description))
-            fail(`${route}: duplicate detail description`);
-          knownDetailDescriptions.add(description);
-        }
+        const description = document.descriptions[0] ?? "";
+        if (knownDescriptions.has(description))
+          fail(`${route}: duplicate indexable route description`);
+        knownDescriptions.add(description);
       } catch (error) {
         fail(`${route}: ${error.message}`);
       }

@@ -61,28 +61,57 @@ const metadataFixture = (route, overrides = {}) => {
 };
 
 test("indexable route matrix requires shared discovery metadata and preserves noindex/phantom fixtures", async () => {
-  const { universities, posts } = await readRegistry();
+  const { universities, posts, postRecords } = await readRegistry();
   const indexableRoutes = buildRoutes({ universities, posts });
   const routeClasses = [
     "/",
     "/pricing",
     "/changelog",
     "/unis",
-    `/unis/${universities[0].slug}`,
     "/blog/",
-    `/blog/${posts[0]}`,
+    ...posts.map((slug) => `/blog/${slug}`),
     "/legal/terms",
     "/legal/privacy",
   ];
 
   for (const route of routeClasses) {
-    assert.deepEqual(routeMetadataFailures(parseHtmlDocument(metadataFixture(route)), route), []);
+    const expectation = routeExpectationFor(route, { universities, postRecords });
+    assert.ok(expectation?.description, `${route} must define a route-specific description`);
+    assert.deepEqual(
+      routeMetadataFailures(
+        parseHtmlDocument(metadataFixture(route, { description: expectation.description })),
+        route,
+        expectation.description,
+      ),
+      [],
+    );
   }
 
   const missingDescription = parseHtmlDocument(
     metadataFixture("/pricing", { description: "коротко" }),
   );
-  assert.match(routeMetadataFailures(missingDescription, "/pricing").join("\n"), /description/);
+  assert.match(
+    routeMetadataFailures(
+      missingDescription,
+      "/pricing",
+      routeExpectationFor("/pricing", { universities, postRecords }).description,
+    ).join("\n"),
+    /description/,
+  );
+
+  const crossRouteDescription = parseHtmlDocument(
+    metadataFixture("/pricing", {
+      description: routeExpectationFor("/legal/privacy", { universities, postRecords }).description,
+    }),
+  );
+  assert.match(
+    routeMetadataFailures(
+      crossRouteDescription,
+      "/pricing",
+      routeExpectationFor("/pricing", { universities, postRecords }).description,
+    ).join("\n"),
+    /route-specific description/,
+  );
 
   const duplicateCanonical = parseHtmlDocument(
     metadataFixture("/changelog", {
@@ -120,6 +149,48 @@ test("validate:release rejects route-matrix metadata drift fixtures", async () =
     const html = await readFile(path, "utf8");
     await writeFile(path, html.replace(/<meta name="description"[^>]*>/, ""), "utf8");
   }, /pricing: description/);
+
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", pricingArtifact);
+    const html = await readFile(path, "utf8");
+    await writeFile(
+      path,
+      html.replace(
+        /<meta name="description"[^>]*content="[^"]*"/,
+        '<meta name="description" content=""',
+      ),
+      "utf8",
+    );
+  }, /pricing: description/);
+
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", pricingArtifact);
+    const html = await readFile(path, "utf8");
+    const homepage = await readFile(join(root, "dist", artifactFor("/")), "utf8");
+    const homepageDescription = homepage.match(/<meta name="description"[^>]*>/)?.[0];
+    assert.ok(homepageDescription);
+    await writeFile(
+      path,
+      html.replace(/<meta name="description"[^>]*>/, homepageDescription),
+      "utf8",
+    );
+  }, /pricing: route-specific description|duplicate indexable route description/);
+
+  await releaseFixture(async (root) => {
+    const route = `/blog/${(await readRegistry(root)).posts[0]}`;
+    const otherRoute = `/blog/${(await readRegistry(root)).posts[1]}`;
+    const path = join(root, "dist", artifactFor(route));
+    const otherPath = join(root, "dist", artifactFor(otherRoute));
+    const html = await readFile(path, "utf8");
+    const otherHtml = await readFile(otherPath, "utf8");
+    const otherDescription = otherHtml.match(/<meta name="description"[^>]*>/)?.[0];
+    assert.ok(otherDescription);
+    await writeFile(
+      path,
+      html.replace(/<meta name="description"[^>]*>/, otherDescription),
+      "utf8",
+    );
+  }, /route-specific description|duplicate indexable route description/);
 
   await releaseFixture(async (root) => {
     const path = join(root, "dist", artifactFor("/changelog"));
