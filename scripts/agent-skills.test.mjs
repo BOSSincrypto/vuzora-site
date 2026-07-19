@@ -33,6 +33,18 @@ test("builds and validates a v0.2.0 Agent Skills index from exact raw bytes", ()
   assert.doesNotThrow(() => assertAgentSkillsArtifact(bytes, index.skills[0]));
 });
 
+test("accepts valid quoted required frontmatter values", () => {
+  const bytes = Buffer.from(
+    `---\nname: "example-skill" # stable identifier\ndescription: 'Read-only guidance for a public site.'\nlicense: Apache-2.0\nmetadata:\n  author: example-org\n  version: "1.0"\n---\n\n# Example skill\n`,
+    "utf8",
+  );
+  const index = buildAgentSkillsIndex(bytes, {
+    name: "example-skill",
+    description: "Read-only guidance for a public site.",
+  });
+  assert.doesNotThrow(() => assertAgentSkillsArtifact(bytes, index.skills[0]));
+});
+
 test("rejects malformed, non-canonical, unsupported, and secret-bearing index entries", () => {
   const bytes = validSkill();
   const index = buildAgentSkillsIndex(bytes, {
@@ -115,6 +127,36 @@ test("rejects digest mismatches and invalid SKILL.md frontmatter", () => {
       }),
     /name|frontmatter/i,
   );
+  const malformedFrontmatter = [
+    [
+      "unterminated description quote",
+      `---\nname: example-skill\ndescription: "Read-only guidance for a public site.\n---\n\n# Example skill\n`,
+    ],
+    [
+      "unterminated name quote",
+      `---\nname: 'example-skill\ndescription: Read-only guidance for a public site.\n---\n\n# Example skill\n`,
+    ],
+    [
+      "invalid closing delimiter",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\n--- \n\n# Example skill\n`,
+    ],
+    [
+      "malformed mapping line",
+      `---\nname: example-skill\ndescription: Read-only guidance for a public site.\nnot a mapping\n---\n\n# Example skill\n`,
+    ],
+  ];
+  for (const [label, source] of malformedFrontmatter) {
+    const malformed = Buffer.from(source, "utf8");
+    const malformedEntry = buildAgentSkillsIndex(malformed, {
+      name: "example-skill",
+      description: "Read-only guidance for a public site.",
+    }).skills[0];
+    assert.throws(
+      () => assertAgentSkillsArtifact(malformed, malformedEntry),
+      /frontmatter|delimiter|quote|mapping/i,
+      label,
+    );
+  }
   const secret = Buffer.from(`${bytes.toString("utf8")}api_key=secret\n`, "utf8");
   assert.throws(
     () =>
@@ -239,6 +281,39 @@ test("release validation fails closed for missing, malformed, and mismatched art
       });
       await mutate();
       await assert.rejects(() => assertAgentSkillsRelease({ root: fixtureRoot, dist }), message, label);
+    }
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("release validation rejects malformed frontmatter with valid digests", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-agent-skills-frontmatter-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const dist = join(fixtureRoot, "dist");
+    const indexPath = join(dist, AGENT_SKILLS_INDEX_PATH.replace(/^\//, ""));
+    const artifactPath = join(dist, SKILL_ARTIFACT_PATH.replace(/^\//, ""));
+    const originalIndex = JSON.parse(await readFile(indexPath, "utf8"));
+    const fixtures = [
+      `---\nname: vuzora-public-discovery\ndescription: "Read-only guidance for discovering Vuzora's public pages.\n---\n\n# Malformed skill\n`,
+      `---\nname: vuzora-public-discovery\ndescription: Read-only guidance for discovering Vuzora's public pages.\n--- \n\n# Malformed skill\n`,
+    ];
+    for (const source of fixtures) {
+      const malformed = Buffer.from(source, "utf8");
+      const malformedIndex = buildAgentSkillsIndex(malformed, {
+        name: originalIndex.skills[0].name,
+        description: originalIndex.skills[0].description,
+      });
+      await writeFile(artifactPath, malformed);
+      await writeFile(indexPath, `${JSON.stringify(malformedIndex, null, 2)}\n`, "utf8");
+      await assert.rejects(
+        () => assertAgentSkillsRelease({ root: fixtureRoot, dist }),
+        /Agent Skills|frontmatter|quote|closed/i,
+      );
     }
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });

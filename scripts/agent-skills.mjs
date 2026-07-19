@@ -61,22 +61,79 @@ function canonicalSkillUrl(value) {
 
 function parseFrontmatter(bytes) {
   const markdown = decodeUtf8(bytes);
-  const opening = markdown.match(/^---(?:\r?\n|$)/);
+  const opening = markdown.match(/^---(?:\r\n|\n|\r|$)/);
   if (!opening) throw new Error("SKILL.md is missing YAML frontmatter");
-  const closing = markdown.slice(opening[0].length).match(/^---\s*(?:\r?\n|$)/m);
+  const closing = markdown.slice(opening[0].length).match(/^---(?:\r\n|\n|\r|$)/m);
   if (!closing) throw new Error("SKILL.md frontmatter is not closed");
   const frontmatter = markdown.slice(
     opening[0].length,
     opening[0].length + closing.index,
   );
-  const readField = (name) => {
-    const line = frontmatter.match(new RegExp(`^${name}:[ \\t]*([^\\r\\n]+)`, "m"));
-    return line?.[1]?.replace(/^(['"])(.*)\1$/, "$2").trim() ?? "";
+  const fields = new Map();
+  const parseScalar = (field, source) => {
+    const value = source.trim();
+    if (!value) throw new Error(`SKILL.md frontmatter ${field} is empty`);
+    if (value.startsWith("'")) {
+      const quoted = value.match(/^'((?:''|[^'])*)'(?:[ \t]+#.*)?$/);
+      if (!quoted) throw new Error(`SKILL.md frontmatter ${field} has an unterminated quote`);
+      const inner = quoted[1];
+      for (let index = 0; index < inner.length; index += 1) {
+        if (inner[index] === "'") {
+          if (inner[index + 1] !== "'") {
+            throw new Error(`SKILL.md frontmatter ${field} has an invalid quote`);
+          }
+          index += 1;
+        }
+      }
+      return inner.replaceAll("''", "'");
+    }
+    if (value.startsWith('"')) {
+      const quoted = value.match(/^("(?:\\.|[^"\\])*")(?:[ \t]+#.*)?$/);
+      if (!quoted) throw new Error(`SKILL.md frontmatter ${field} has an unterminated quote`);
+      try {
+        const parsed = JSON.parse(quoted[1]);
+        if (typeof parsed !== "string") throw new Error("not a string");
+        return parsed;
+      } catch {
+        throw new Error(`SKILL.md frontmatter ${field} has an invalid quoted value`);
+      }
+    }
+    return value.replace(/[ \t]+#.*/, "").trim();
   };
-  const name = readField("name");
-  const description = readField("description");
+  let nestedField;
+  for (const line of frontmatter.split(/\r\n|\n|\r/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (/^\s/.test(line)) {
+      if (nestedField !== "metadata")
+        throw new Error(`SKILL.md frontmatter has an unexpected indented mapping: ${line}`);
+      const nestedMapping = line.match(/^\s{2,}([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);
+      if (!nestedMapping)
+        throw new Error(`SKILL.md frontmatter has a malformed metadata mapping: ${line}`);
+      parseScalar(`metadata.${nestedMapping[1]}`, nestedMapping[2]);
+      continue;
+    }
+    const mapping = line.match(/^([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)$/);
+    if (!mapping) throw new Error(`SKILL.md frontmatter has a malformed mapping: ${line}`);
+    const [, field, source] = mapping;
+    if (fields.has(field)) throw new Error(`SKILL.md frontmatter duplicates ${field}`);
+    if (!["name", "description", "license", "compatibility", "metadata", "allowed-tools"].includes(field))
+      throw new Error(`SKILL.md frontmatter has an unsupported field: ${field}`);
+    if (field === "metadata") {
+      if (source.trim() && source.trim() !== "{}")
+        throw new Error("SKILL.md frontmatter metadata must be an indented mapping");
+      fields.set(field, source.trim() || "{}");
+    } else {
+      fields.set(field, parseScalar(field, source));
+    }
+    nestedField = field === "metadata" ? field : undefined;
+  }
+  const name = fields.get("name") ?? "";
+  const description = fields.get("description") ?? "";
   if (!name || !description) throw new Error("SKILL.md frontmatter requires name and description");
   if (!NAME_RE.test(name)) throw new Error(`SKILL.md frontmatter name is invalid: ${name}`);
+  if (description.length > 1024)
+    throw new Error("SKILL.md frontmatter description is too long");
   return { name, description, markdown };
 }
 
