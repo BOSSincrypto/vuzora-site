@@ -173,6 +173,109 @@ test("Markdown artifact validation preserves local negative boundaries", () => {
   assert.doesNotThrow(() => assertMarkdownArtifact(body, entry));
 });
 
+test("Markdown artifact validation rejects direct MCP server claims in either language and order", () => {
+  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
+  assert.ok(entry);
+  const fixtures = [
+    [
+      "English active claim after a negative claim",
+      [
+        "# Поддерживаемые вузы – Vuzora",
+        "",
+        "HTTP API is not available but the site provides an MCP server.",
+        "Маршрут: `/unis`.",
+      ].join("\n"),
+    ],
+    [
+      "English active claim before a negative claim",
+      [
+        "# Поддерживаемые вузы – Vuzora",
+        "",
+        "The site provides an MCP server but HTTP API is not available.",
+        "Маршрут: `/unis`.",
+      ].join("\n"),
+    ],
+    [
+      "Russian active claim after a negative claim",
+      [
+        "# Поддерживаемые вузы – Vuzora",
+        "",
+        "HTTP API не поддерживается и сайт предоставляет MCP-сервер.",
+        "Маршрут: `/unis`.",
+      ].join("\n"),
+    ],
+    [
+      "Russian active claim before a negative claim",
+      [
+        "# Поддерживаемые вузы – Vuzora",
+        "",
+        "Сайт предоставляет MCP-сервер и HTTP API не поддерживается.",
+        "Маршрут: `/unis`.",
+      ].join("\n"),
+    ],
+    [
+      "mixed-language active claim",
+      [
+        "# Поддерживаемые вузы – Vuzora",
+        "",
+        "Удалённый MCP-сервер отсутствует, but an MCP server is available.",
+        "Маршрут: `/unis`.",
+      ].join("\n"),
+    ],
+  ];
+  for (const [label, body] of fixtures) {
+    assert.throws(
+      () => assertMarkdownArtifact(body, entry),
+      /unsupported|advertises/i,
+      label,
+    );
+  }
+});
+
+test("Markdown artifact validation evaluates conjunction-linked claims independently", () => {
+  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
+  assert.ok(entry);
+  const validBodies = [
+    [
+      "# Поддерживаемые вузы – Vuzora",
+      "",
+      "The site has no MCP server and HTTP API is not available.",
+      "Маршрут: `/unis`.",
+    ].join("\n"),
+    [
+      "# Поддерживаемые вузы – Vuzora",
+      "",
+      "HTTP API is not available and the site has no MCP server.",
+      "Маршрут: `/unis`.",
+    ].join("\n"),
+    [
+      "# Поддерживаемые вузы – Vuzora",
+      "",
+      "MCP-сервер отсутствует, а HTTP API не поддерживается.",
+      "Маршрут: `/unis`.",
+    ].join("\n"),
+    [
+      "# Поддерживаемые вузы – Vuzora",
+      "",
+      "HTTP API не поддерживается, а MCP-сервер отсутствует.",
+      "Маршрут: `/unis`.",
+    ].join("\n"),
+  ];
+  for (const body of validBodies) assert.doesNotThrow(() => assertMarkdownArtifact(body, entry));
+});
+
+test("Markdown artifact validation preserves static browser-local WebMCP wording", () => {
+  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
+  assert.ok(entry);
+  const body = [
+    "# Поддерживаемые вузы – Vuzora",
+    "",
+    "Static-only, browser-local WebMCP is a read-only enhancement; no remote MCP server is provided.",
+    "Маршрут: `/unis`.",
+  ].join("\n");
+  assert.doesNotThrow(() => assertMarkdownArtifact(body, entry));
+});
+
 test("Markdown release validation fails closed on missing, extra, empty, and divergent artifacts", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-markdown-artifacts-"));
   try {

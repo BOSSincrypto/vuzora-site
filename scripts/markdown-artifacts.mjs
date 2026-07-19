@@ -31,9 +31,11 @@ export const MARKDOWN_ARTIFACTS = [
 const SECRET_RE =
   /\b(?:api[_-]?(?:key|token)|cloudflare|cf[-_]?api|sk_(?:live|test)(?:_[A-Za-z0-9]+)?|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-|bearer\s+[A-Za-z0-9\-._~+/]+=*|database_url|postgres(?:ql)?:\/\/\S+:\S+@|mongodb(?:\+srv)?:\/\/\S+:\S+@|AKIA[0-9A-Z]{16})\b/i;
 const ACTIVE_UNSUPPORTED_RE =
-  /(?:\b(?:http\s+api|api\s+(?:access|availability|endpoint|service|catalog)|official\s+(?:university\s+)?(?:service|partner)|protected[-\s]+resource(?:\s+support)?|remote\s+mcp|mcp\s+integration|server\s+card|oauth\/oidc\s+(?:issuer|provider|login|sign[-\s]?in|flow|endpoint)|(?:oauth|oidc)\s+(?:issuer|provider|login|sign[-\s]?in|flow))\b|(?:api\s+(?:доступ[а-яё]*|поддерж[а-яё]*|реализ[а-яё]*|предостав[а-яё]*|работ[а-яё]*)|oauth(?:\/oidc)?\s+(?:вход|логин|доступ[а-яё]*)|(?:вход|логин)\s+(?:через\s+)?(?:oauth|oidc|oauth\/oidc)|(?:удал(?:ённ|енн)[а-яё-]*\s+mcp|(?:официальн)[а-яё-]*\s+(?:сервис|партнёр|партнер)|(?:защищ[ёе]н)[а-яё-]*\s+ресурс)))/i;
+  /(?:\b(?:http\s+api|api\s+(?:access|availability|endpoint|service|catalog)|official\s+(?:university\s+)?(?:service|partner)|protected[-\s]+resource(?:\s+support)?|remote\s+mcp|mcp\s+(?:server|integration)|server\s+card|oauth\/oidc\s+(?:issuer|provider|login|sign[-\s]?in|flow|endpoint)|(?:oauth|oidc)\s+(?:issuer|provider|login|sign[-\s]?in|flow))\b|(?:api\s+(?:доступ[а-яё]*|поддерж[а-яё]*|реализ[а-яё]*|предостав[а-яё]*|работ[а-яё]*)|oauth(?:\/oidc)?\s+(?:вход|логин|доступ[а-яё]*)|(?:вход|логин)\s+(?:через\s+)?(?:oauth|oidc|oauth\/oidc)|(?:удал(?:ённ|енн)[а-яё-]*\s+mcp|(?:официальн)[а-яё-]*\s+(?:сервис|партнёр|партнер)|(?:защищ[ёе]н)[а-яё-]*\s+ресурс|mcp[-\s]+сервер)))/i;
 const NEGATIVE_CONTEXT_RE =
   /(?:нет|не\s|ниже|без|отсутств(?:ует|уют|ует)|недоступ|не\s+(?:доступ|поддерж|реализ|публи|выда|означ|явля|существ)|\bno\b|\bnot\b|\bwithout\b|\bdoes not\b|\bdoesn't\b|\bisn't\b|\bis not\b|\bunavailable\b|\bunsupported\b)/i;
+const CONJUNCTION_RE =
+  /(?<![\p{L}\p{N}_])(?:as\s+well\s+as|and|but|or|yet|while|и|но|а|или|либо|зато|однако|при\s+этом)(?![\p{L}\p{N}_])/giu;
 
 function normalized(value) {
   return value.replace(/\r\n?/g, "\n").trim();
@@ -75,7 +77,7 @@ function localClaimBounds(value, index, length) {
   const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
   const before = value.slice(lineStart, index);
   const after = value.slice(index + length, lineEnd);
-  const sentenceStart = Math.max(
+  const punctuationStart = Math.max(
     before.lastIndexOf("."),
     before.lastIndexOf("!"),
     before.lastIndexOf("?"),
@@ -83,13 +85,26 @@ function localClaimBounds(value, index, length) {
     before.lastIndexOf(":"),
     before.lastIndexOf(","),
   );
-  const sentenceEndCandidates = [".", "!", "?", ";", ":", ","]
+  const conjunctionsBefore = [...before.matchAll(CONJUNCTION_RE)];
+  const conjunctionStart =
+    conjunctionsBefore.length > 0
+      ? conjunctionsBefore.at(-1).index + conjunctionsBefore.at(-1)[0].length
+      : -1;
+  const startOffset = Math.max(
+    punctuationStart >= 0 ? punctuationStart + 1 : 0,
+    conjunctionStart,
+  );
+  const punctuationEndCandidates = [".", "!", "?", ";", ":", ","]
     .map((boundary) => after.indexOf(boundary))
     .filter((boundary) => boundary >= 0);
-  const sentenceEnd =
-    sentenceEndCandidates.length > 0 ? Math.min(...sentenceEndCandidates) : after.length;
-  let start = lineStart + sentenceStart + (sentenceStart >= 0 ? 1 : 0);
-  let end = index + length + sentenceEnd;
+  const conjunctionsAfter = [...after.matchAll(CONJUNCTION_RE)];
+  const conjunctionEnd = conjunctionsAfter.length > 0 ? conjunctionsAfter[0].index : -1;
+  const endOffsetCandidates = [...punctuationEndCandidates, conjunctionEnd].filter(
+    (boundary) => boundary >= 0,
+  );
+  const endOffset = endOffsetCandidates.length > 0 ? Math.min(...endOffsetCandidates) : after.length;
+  const start = lineStart + startOffset;
+  const end = index + length + endOffset;
   return { start, end };
 }
 
