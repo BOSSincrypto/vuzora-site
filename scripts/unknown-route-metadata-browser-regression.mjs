@@ -38,20 +38,18 @@ function waitForPage() {
 }
 
 function waitForMetadata(expectedPath, expectedRobots) {
-  browser(
-    [
-      "wait",
-      "--fn",
-      `(() => {
-        const pathname = location.pathname.length > 1
-          ? location.pathname.replace(/\\/+$/, "")
-          : location.pathname;
-        const robots = document.querySelector('meta[name="robots"]')?.content;
-        return pathname === ${JSON.stringify(expectedPath)}
-          && robots === ${JSON.stringify(expectedRobots)};
-      })()`,
-    ],
-    10_000,
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const snapshot = metadataSnapshot();
+    if (
+      normalizeBrowserPath(snapshot.path) === expectedPath &&
+      snapshot.robots[0] === expectedRobots
+    ) {
+      return;
+    }
+    browser(["wait", "250"], 10_000);
+  }
+  throw new Error(
+    `Timed out waiting for ${expectedPath} metadata to become ${expectedRobots}`,
   );
 }
 
