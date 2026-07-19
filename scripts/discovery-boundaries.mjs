@@ -11,6 +11,40 @@ export const DISCOVERY_NEGATIVE_PATHS = [
 ];
 
 const CANONICAL_ORIGIN = "https://vuzora.ru";
+const BINARY_EXTENSIONS = new Set([
+  ".7z",
+  ".avif",
+  ".bin",
+  ".bmp",
+  ".class",
+  ".db",
+  ".dll",
+  ".doc",
+  ".docx",
+  ".eot",
+  ".exe",
+  ".gif",
+  ".gz",
+  ".ico",
+  ".jpeg",
+  ".jpg",
+  ".mov",
+  ".mp3",
+  ".mp4",
+  ".pdf",
+  ".png",
+  ".rar",
+  ".so",
+  ".tar",
+  ".ttf",
+  ".wav",
+  ".wasm",
+  ".webm",
+  ".webp",
+  ".woff",
+  ".woff2",
+  ".zip",
+]);
 const SECRET_RE =
   /\b(?:api[_-]?(?:key|token)|cloudflare|cf[-_]?api|sk_(?:live|test)(?:_[A-Za-z0-9]+)?|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-|bearer\s+[A-Za-z0-9\-._~+/]+=*|database_url|postgres(?:ql)?:\/\/\S+:\S+@|mongodb(?:\+srv)?:\/\/\S+:\S+@|AKIA[0-9A-Z]{16})\b/i;
 const ACTIVE_ENDPOINT_RE =
@@ -20,16 +54,29 @@ const ACTIVE_PROTOCOL_RE =
 const ACTIVE_OAUTH_RE = /\b(?:oauth|oidc)\b[^.\n]{0,80}\b(?:provider|issuer|server|service|endpoint|flow)\b/i;
 const NEGATIVE_CONTEXT_RE =
   /(?:нет|не\s|ниже|без|отсутств(?:ует|уют)|не\s+реализован|не\s+публику|не\s+выдаёт|не\s+означает|\bno\b|\bnot\b|\bwithout\b|\bdoes not\b|\bisn't\b|\bis not\b)/i;
+const ABSOLUTE_DISCOVERY_REFERENCE_RE =
+  /(?:https?:)?\/\/[^"'`\s<>()]*?\/\.well-known\/(?:openid-configuration|oauth-authorization-server|oauth-protected-resource|mcp\/server-card\.json)(?:\/)?(?:[?#][^"'`\s<>()]*)?/gi;
+const RELATIVE_DISCOVERY_REFERENCE_RE =
+  /(?:^|[\s"'`(=:#])((?:\/|\.{1,2}\/)?\.well-known\/(?:openid-configuration|oauth-authorization-server|oauth-protected-resource|mcp\/server-card\.json)(?:\/)?(?:[?#][^"'`\s<>()]*)?)/gim;
 
 function normalized(value) {
   return value.replace(/\r\n?/g, "\n").trim();
 }
 
+function localContextStart(text, index) {
+  let start = text.lastIndexOf("\n", index) + 1;
+  for (const match of text.slice(0, index).matchAll(/[.!?;](?=\s|$)/g)) {
+    start = Math.max(start, match.index + 1);
+  }
+  return start;
+}
+
 function assertNegativeClaim(text, pattern, message) {
-  const match = text.match(pattern);
-  if (!match) return;
-  const context = text.slice(Math.max(0, match.index - 100), match.index);
-  if (!NEGATIVE_CONTEXT_RE.test(context)) throw new Error(message);
+  const globalPattern = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
+  for (const match of text.matchAll(globalPattern)) {
+    const context = text.slice(localContextStart(text, match.index), match.index);
+    if (!NEGATIVE_CONTEXT_RE.test(context)) throw new Error(message);
+  }
 }
 
 export function assertAuthBoundaryDocument(value) {
@@ -78,17 +125,100 @@ async function filesUnder(directory) {
   return files;
 }
 
+function isTextArtifact(path) {
+  const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
+  return !BINARY_EXTENSIONS.has(extension);
+}
+
+async function textArtifacts(files, base) {
+  const artifacts = [];
+  for (const path of files) {
+    if (!isTextArtifact(path)) continue;
+    const bytes = await readFile(path);
+    if (bytes.includes(0)) continue;
+    artifacts.push([relative(base, path), bytes.toString("utf8")]);
+  }
+  return artifacts;
+}
+
+function decodeReferenceText(value) {
+  let decoded = value
+    .replace(/\\u002f/gi, "/")
+    .replace(/\\u005c/gi, "\\")
+    .replace(/\\\//g, "/")
+    .replace(/&sol;/gi, "/")
+    .replace(/&#0*47;/gi, "/")
+    .replace(/&#x0*2f;/gi, "/");
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+  return decoded;
+}
+
+function normalizeDiscoveryReference(value) {
+  const candidate = value.replace(/[),.;]+$/, "");
+  try {
+    const url = new URL(candidate, `${CANONICAL_ORIGIN}/`);
+    if (url.hostname.toLowerCase() !== "vuzora.ru") return null;
+    const pathname = decodeReferenceText(url.pathname).replace(/\/+$/, "");
+    return DISCOVERY_NEGATIVE_PATHS.find((negativePath) => pathname === negativePath) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function hasNegativeContext(text, index) {
+  return NEGATIVE_CONTEXT_RE.test(text.slice(localContextStart(text, index), index));
+}
+
+function assertDiscoveryReferences(text, label) {
+  const decoded = decodeReferenceText(text);
+  const references = [
+    ...Array.from(decoded.matchAll(ABSOLUTE_DISCOVERY_REFERENCE_RE), (match) => [match.index, match[0]]),
+    ...Array.from(decoded.matchAll(RELATIVE_DISCOVERY_REFERENCE_RE), (match) => [match.index, match[1]]),
+  ];
+  for (const entry of references) {
+    const [index, reference] = entry;
+    const pathname = normalizeDiscoveryReference(reference);
+    if (pathname && !hasNegativeContext(decoded, index)) {
+      throw new Error(`${label} advertises a negative discovery path: ${pathname}`);
+    }
+  }
+}
+
+function normalizedArtifactPath(path) {
+  return `/${path
+    .replaceAll("\\", "/")
+    .split("/")
+    .filter(Boolean)
+    .map((part) => decodeReferenceText(part))
+    .join("/")}`;
+}
+
+function assertNoDiscoveryArtifacts(files, base, label) {
+  for (const file of files) {
+    const pathname = normalizedArtifactPath(relative(base, file));
+    for (const negativePath of DISCOVERY_NEGATIVE_PATHS) {
+      if (pathname === negativePath || pathname.startsWith(`${negativePath}/`)) {
+        throw new Error(`${label} contains a release artifact at a negative discovery path: ${negativePath}`);
+      }
+    }
+  }
+}
+
 function assertDiscoveryText(text, label) {
   if (SECRET_RE.test(text)) throw new Error(`${label} contains secret-like credential material`);
   if (ACTIVE_ENDPOINT_RE.test(text))
     throw new Error(`${label} advertises an OAuth/OIDC endpoint`);
   assertNegativeClaim(text, ACTIVE_PROTOCOL_RE, `${label} advertises a remote MCP or protected-resource capability`);
   assertNegativeClaim(text, ACTIVE_OAUTH_RE, `${label} advertises an implemented OAuth/OIDC capability`);
-  for (const pathname of DISCOVERY_NEGATIVE_PATHS) {
-    if (text.includes(`${CANONICAL_ORIGIN}${pathname}`) || text.includes(`href="${pathname}"`)) {
-      throw new Error(`${label} advertises a negative discovery path: ${pathname}`);
-    }
-  }
+  assertDiscoveryReferences(text, label);
 }
 
 export async function assertDiscoveryBoundaryRelease({ root = process.cwd(), dist = join(root, "dist") } = {}) {
@@ -103,23 +233,11 @@ export async function assertDiscoveryBoundaryRelease({ root = process.cwd(), dis
 
   const publicFiles = await filesUnder(join(root, "public"));
   const distFiles = await filesUnder(dist);
-  const publicTexts = await Promise.all(
-    publicFiles
-      .filter((path) => /\.(?:md|txt|json|xml)$/i.test(path))
-      .map(async (path) => [relative(join(root, "public"), path), await readFile(path, "utf8")]),
-  );
-  const distTexts = await Promise.all(
-    distFiles
-      .filter((path) => /\.(?:md|txt|json|xml)$/i.test(path))
-      .map(async (path) => [relative(dist, path), await readFile(path, "utf8")]),
-  );
+  const publicTexts = await textArtifacts(publicFiles, join(root, "public"));
+  const distTexts = await textArtifacts(distFiles, dist);
   for (const [label, text] of [...publicTexts, ...distTexts]) assertDiscoveryText(text, label);
 
-  for (const pathname of DISCOVERY_NEGATIVE_PATHS) {
-    if (await isFile(join(dist, pathname.slice(1))))
-      throw new Error(`negative discovery path has a release artifact: ${pathname}`);
-    if (await isFile(join(root, "public", pathname.slice(1))))
-      throw new Error(`negative discovery path has a source artifact: ${pathname}`);
-  }
+  assertNoDiscoveryArtifacts(publicFiles, join(root, "public"), "public");
+  assertNoDiscoveryArtifacts(distFiles, dist, "dist");
   return { authPath: AUTH_BOUNDARY_PATH, negativePaths: DISCOVERY_NEGATIVE_PATHS };
 }

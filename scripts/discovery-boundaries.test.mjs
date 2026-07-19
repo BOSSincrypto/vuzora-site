@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import {
@@ -80,6 +80,97 @@ test("discovery release validation rejects auth claims, secrets, and protocol ar
     await assert.rejects(
       () => assertDiscoveryBoundaryRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
       /negative|OAuth|protocol|well-known/i,
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("scans every text artifact and normalizes active discovery references", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-discovery-surfaces-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+
+    const forms = [
+      ["html", "fixtures/discovery.html", "<a href='/.well-known/openid-configuration/'>bad</a>"],
+      ["markdown", "fixtures/discovery.md", "[metadata](%2F.well-known%2Foauth-authorization-server)"],
+      [
+        "json",
+        "fixtures/discovery.json",
+        '{"url":"https:\\/\\/vuzora.ru\\/.well-known\\/oauth-protected-resource\\/"}',
+      ],
+      ["javascript", "fixtures/discovery.js", 'const metadata = "../.well-known/mcp/server-card.json";'],
+      ["css", "fixtures/discovery.css", "background: url('https://vuzora.ru/.well-known/openid-configuration');"],
+      ["svg", "fixtures/discovery.svg", "<a href='/.well-known/oauth-authorization-server'>bad</a>"],
+      ["xml", "fixtures/discovery.xml", '<link href="https://vuzora.ru/.well-known/oauth-protected-resource/"/>'],
+      ["plain text", "fixtures/discovery.txt", "https://vuzora.ru/%2Ewell-known%2Fmcp%2Fserver-card.json"],
+    ];
+
+    for (const [label, artifact, body] of forms) {
+      const publicPath = join(fixtureRoot, "public", artifact);
+      const distPath = join(fixtureRoot, "dist", artifact);
+      await mkdir(dirname(publicPath), { recursive: true });
+      await mkdir(dirname(distPath), { recursive: true });
+      await writeFile(publicPath, body, "utf8");
+      await writeFile(distPath, body, "utf8");
+      await assert.rejects(
+        () => assertDiscoveryBoundaryRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+        /negative discovery path|secret-like|OAuth|implemented/i,
+        label,
+      );
+      await rm(publicPath);
+      await rm(distPath);
+    }
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("preserves negative boundary wording and unrelated links", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-discovery-negative-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const body = [
+      "The OAuth discovery path is not deployed: /.well-known/openid-configuration.",
+      "RFC 8414 is a reference, not a deployed endpoint.",
+      "Unrelated documentation: https://example.com/.well-known/openid-configuration.",
+      "Telegram: https://t.me/vuzora_bot?start=from-site.",
+      "Browser-local read-only WebMCP remains a local enhancement.",
+    ].join("\n");
+    for (const base of ["public", "dist"]) {
+      const target = join(fixtureRoot, base, "fixtures", "negative.txt");
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, body, "utf8");
+    }
+    await assert.doesNotReject(() =>
+      assertDiscoveryBoundaryRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("ignores binary assets while checking text artifacts", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-discovery-binary-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const body = Buffer.from("\0https://vuzora.ru/.well-known/openid-configuration\0", "utf8");
+    for (const base of ["public", "dist"]) {
+      const target = join(fixtureRoot, base, "assets", "fixture.dat");
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, body);
+    }
+    await assert.doesNotReject(() =>
+      assertDiscoveryBoundaryRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
     );
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });
