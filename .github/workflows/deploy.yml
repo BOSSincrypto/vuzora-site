@@ -58,7 +58,7 @@ jobs:
 
       - name: Start static browser validation server
         run: |
-          nohup python3 -m http.server 3100 --bind 127.0.0.1 --directory dist >/tmp/vuzora-browser-server.log 2>&1 &
+          nohup node scripts/static-server.mjs dist >/tmp/vuzora-browser-server.log 2>&1 &
           for attempt in $(seq 1 30); do
             curl --fail --silent http://127.0.0.1:3100/ >/dev/null && exit 0
             sleep 1

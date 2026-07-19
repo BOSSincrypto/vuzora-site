@@ -65,7 +65,7 @@ test("browser release gate uses the hit-tested regression after serving dist", a
   const workflow = await read(".github/workflows/deploy.yml");
   const browserScript = await read("scripts/mobile-menu-browser-regression.mjs");
   assert.match(workflow, /npm install --global agent-browser/);
-  assert.match(workflow, /python3 -m http\.server 3100/);
+  assert.match(workflow, /node scripts\/static-server\.mjs dist/);
   assert.match(workflow, /VUZORA_ORIGIN:\s*http:\/\/127\.0\.0\.1:3100/);
   assert.match(browserScript, /"mouse", "move"/);
   assert.match(browserScript, /"mouse", "down"/);
