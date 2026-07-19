@@ -35,6 +35,22 @@ test("negative protocol candidates are fixed and absent from public artifacts", 
   assert.doesNotThrow(() => assertDiscoveryBoundaryRelease({ root, dist: join(root, "dist") }));
 });
 
+test("edge runbook keeps DNS-AID owner roles and deployment boundaries explicit", async () => {
+  const runbook = await readFile(join(root, "AGENT-DISCOVERY-EDGE-RUNBOOK.md"), "utf8");
+  assert.match(runbook, /exact DNS-AID draft and version/i);
+  assert.match(runbook, /<agent-owner-fqdn>/);
+  assert.match(runbook, /`_index\._agents\.<domain>`.*organization-level index/i);
+  assert.match(runbook, /agent-specific primary owner/i);
+  assert.match(runbook, /`_a2a\._agents` is not a\s+universal owner name/i);
+  assert.doesNotMatch(runbook, /_a2a\._agents\.<zone>/i);
+  assert.doesNotMatch(runbook, /NAME=['"]_a2a\._agents\.vuzora\.ru['"]/i);
+  assert.match(runbook, /not deployed or simulated by this static repository/i);
+  assert.match(runbook, /HTTP `Link` response headers/i);
+  assert.match(runbook, /DNS-AID SVCB\/HTTPS records or DNSSEC proofs/i);
+  assert.match(runbook, /True `Accept: text\/markdown` content negotiation/i);
+  assert.match(runbook, /static GitHub Pages artifact/i);
+});
+
 test("discovery release validation rejects auth claims, secrets, and protocol artifacts", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-discovery-boundary-"));
   try {
@@ -67,6 +83,11 @@ test("discovery release validation rejects auth claims, secrets, and protocol ar
       recursive: true,
       filter: (source) => !source.includes("node_modules"),
     });
+    await writeFile(
+      join(fixtureRoot, "public", "auth.md"),
+      await readFile(join(root, "public", "auth.md"), "utf8"),
+      "utf8",
+    );
     await writeFile(
       join(fixtureRoot, "dist", "auth.md"),
       await readFile(join(fixtureRoot, "public", "auth.md"), "utf8"),

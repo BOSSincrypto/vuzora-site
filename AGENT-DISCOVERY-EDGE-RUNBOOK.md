@@ -117,24 +117,45 @@ latest draft before publishing a record because names and parameters may
 change. A record is safe to publish only when a real agent service exists
 and its protocol, TLS, authentication, and ownership have been reviewed.
 
-### 2.1 Prepare the real endpoint first
+### 2.1 Select the draft, owner, and real endpoint first
+
+Do not choose a DNS owner name from this runbook. Before writing any record,
+document the exact DNS-AID draft and version, the relevant section, the
+agent protocol, and the real HTTPS endpoint. The current referenced draft
+distinguishes an agent-specific primary owner from an organization index:
+`<agent-owner-fqdn>` is a placeholder for the reviewed owner of one agent,
+whereas `_index._agents.<domain>` is the separate organization-level index.
+The index name is not a substitute for an agent owner, and an
+agent-specific owner is not an organization index. `_a2a._agents` is not a
+universal owner name; use it only if the exact selected draft and reviewed
+deployment require that name for a specific purpose.
 
 The DNS target must be the hostname of the deployed agent service, not
 `vuzora.ru`, GitHub Pages, Telegram, a browser-local WebMCP tool, an OAuth
 issuer, or a remote MCP placeholder. Do not paste the following notation
-literally. Replace every angle-bracket value with reviewed production data,
-or do not create the record:
+literally. Replace every angle-bracket value with reviewed production data
+only after the draft, version, owner role, endpoint, certificate, protocol,
+and rollback plan have been approved. Otherwise, do not create the record:
 
 ```dns
-_a2a._agents.<zone>. 3600 IN SVCB 1 <real-agent-target>. alpn="a2a" port=443
+<agent-owner-fqdn>. 3600 IN SVCB 1 <real-agent-target>. alpn="<reviewed-alpn>" port=<reviewed-port>
+```
+
+If the selected draft also requires organization-level discovery, review and
+configure `_index._agents.<domain>` as that separate index owner. Do not
+turn the index into an agent-specific record or assume that an `a2a` label is
+the owner:
+
+```dns
+_index._agents.<domain>. 3600 IN <draft-selected-record-type> 1 <real-index-target>. alpn="<reviewed-alpn>" port=<reviewed-port>
 ```
 
 Use an `HTTPS` record only when the selected DNS-AID draft and the actual
-agent protocol require it. If required, use the same reviewed target and
-parameters, never a fictional service:
+agent protocol require it. If required, use the same reviewed owner role,
+target, and parameters, never a fictional service:
 
 ```dns
-_a2a._agents.<zone>. 3600 IN HTTPS 1 <real-agent-target>. alpn="a2a" port=443
+<agent-owner-fqdn>. 3600 IN HTTPS 1 <real-agent-target>. alpn="<reviewed-alpn>" port=<reviewed-port>
 ```
 
 Do not publish both record types merely to make discovery appear complete.
@@ -144,16 +165,21 @@ unless the endpoint and clients actually support all of them.
 
 ### 2.2 Configure Cloudflare DNS and the registrar
 
-1. In the authoritative Cloudflare zone, create the draft-required
-   `_a2a._agents` SVCB or HTTPS record for the real target.
-2. Confirm the target presents the expected certificate and advertises the
+1. Confirm the exact DNS-AID draft/version and section, then select the
+   reviewed agent-specific owner for the real target. If organization
+   discovery is required, treat `_index._agents.<domain>` as a separate
+   index owner.
+2. In the authoritative Cloudflare zone, create only the draft-required
+   SVCB or HTTPS record for that reviewed owner and real target. Never assume
+   `_a2a._agents` is the owner.
+3. Confirm the target presents the expected certificate and advertises the
    expected ALPN and port. Do not proxy or rewrite the endpoint unless its
    protocol supports that path.
-3. In Cloudflare DNSSEC, enable signing for `vuzora.ru` and record the
+4. In Cloudflare DNSSEC, enable signing for `vuzora.ru` and record the
    generated DS parameters.
-4. At the registrar, publish that DS record without changing its digest,
+5. At the registrar, publish that DS record without changing its digest,
    algorithm, or key-tag values.
-5. Wait for parent-zone propagation and validate from an independent
+6. Wait for parent-zone propagation and validate from an independent
    validating resolver.
 
 DNSSEC authenticates DNS answers. It does not make a nonexistent agent
@@ -166,16 +192,21 @@ actually deployed the records:
 
 ```sh
 set -eu
-NAME='_a2a._agents.vuzora.ru'
-dig +dnssec +adflag +multi "$NAME" SVCB
-dig +dnssec +adflag +multi "$NAME" HTTPS
+AGENT_OWNER='<reviewed-agent-owner-fqdn>'
+INDEX_OWNER='_index._agents.<domain>'
+dig +dnssec +adflag +multi "$AGENT_OWNER" SVCB
+dig +dnssec +adflag +multi "$AGENT_OWNER" HTTPS
+# Run the index-owner checks only when the selected draft requires an index.
+dig +dnssec +adflag +multi "$INDEX_OWNER" SVCB
+dig +dnssec +adflag +multi "$INDEX_OWNER" HTTPS
 dig +dnssec +adflag +multi vuzora.ru DNSKEY
 dig +dnssec +adflag +multi vuzora.ru DS
 ```
 
-Check for the expected owner name, record type, target, SvcParamKey values,
-`RRSIG` coverage, and the validating resolver's `ad` flag. An empty answer
-or an answer without authenticated DNSSEC data is not a pass.
+Do not run these commands with literal placeholders. Check for the exact
+owner selected from the reviewed draft, the record type, target, SvcParamKey
+values, `RRSIG` coverage, and the validating resolver's `ad` flag. An empty
+answer or an answer without authenticated DNSSEC data is not a pass.
 
 Use DNS-over-HTTPS as an independent read-only check. The `AD` value must be
 true when the resolver has authenticated the answer:
@@ -184,15 +215,17 @@ true when the resolver has authenticated the answer:
 set -eu
 curl -fsS \
   -H 'accept: application/dns-json' \
-  'https://cloudflare-dns.com/dns-query?name=_a2a._agents.vuzora.ru&type=SVCB' \
+  --get --data-urlencode "name=$AGENT_OWNER" --data-urlencode 'type=SVCB' \
+  'https://cloudflare-dns.com/dns-query' \
   -o /tmp/vuzora-dnsaid.json
 jq -e '.Status == 0 and .AD == true and (.Answer | length) > 0' \
   /tmp/vuzora-dnsaid.json
 ```
 
-Repeat with `type=HTTPS` if that record type is the approved deployment.
-Do not treat a successful DoH request for a missing record as evidence of
-DNS-AID deployment.
+Repeat with `type=HTTPS` and, when required by the selected draft, with
+`name=$INDEX_OWNER`. If the endpoint is not deployed, do not treat a
+successful DoH request for a missing record as evidence of DNS-AID
+deployment.
 
 References:
 
