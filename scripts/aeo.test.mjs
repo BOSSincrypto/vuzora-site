@@ -209,6 +209,26 @@ test("Content-Signal parser rejects missing, conflicting, malformed, and extra v
     ["conflicting value", valid.replace("ai-train=yes", "ai-train=no"), /conflict|approved|value/i],
     ["malformed value", valid.replace("search=yes", "search"), /malformed|format|value/i],
     ["extra value", valid.replace("ai-input=yes", "ai-input=yes, ai-citations=yes"), /extra|unsupported|exact/i],
+    [
+      "__proto__ key extra value",
+      valid.replace("ai-input=yes", "ai-input=yes, __proto__=yes"),
+      /extra|unsupported|exact/i,
+    ],
+    [
+      "constructor-key extra value",
+      valid.replace("ai-input=yes", "ai-input=yes, constructor=yes"),
+      /extra|unsupported|exact/i,
+    ],
+    [
+      "prototype key extra value",
+      valid.replace("ai-input=yes", "ai-input=yes, prototype=yes"),
+      /extra|unsupported|exact/i,
+    ],
+    [
+      "duplicate value",
+      valid.replace("ai-input=yes", "ai-input=yes, search=yes"),
+      /duplicate/i,
+    ],
   ];
   for (const [label, fixture, message] of fixtures) {
     assert.throws(() => assertContentSignalPolicy(fixture), message, label);
@@ -260,6 +280,26 @@ test("validate:release rejects Content-Signal policy drift fixtures", async () =
         "extra",
         original.replace("ai-input=yes", "ai-input=yes, ai-citations=yes"),
         /Content-Signal|signal|extra|unsupported/i,
+      ],
+      [
+        "__proto__ key extra",
+        original.replace("ai-input=yes", "ai-input=yes, __proto__=yes"),
+        /Content-Signal|signal|extra|unsupported/i,
+      ],
+      [
+        "constructor-key extra",
+        original.replace("ai-input=yes", "ai-input=yes, constructor=yes"),
+        /Content-Signal|signal|extra|unsupported/i,
+      ],
+      [
+        "prototype key extra",
+        original.replace("ai-input=yes", "ai-input=yes, prototype=yes"),
+        /Content-Signal|signal|extra|unsupported/i,
+      ],
+      [
+        "duplicate",
+        original.replace("ai-input=yes", "ai-input=yes, search=yes"),
+        /Content-Signal|signal|duplicate/i,
       ],
     ];
     for (const [label, fixture, message] of fixtures) {

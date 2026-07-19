@@ -435,9 +435,11 @@ export function assertContentSignalPolicy(robots) {
   if (entries.some((entry) => !entry.trim())) {
     throw new Error("robots.txt Content-Signal contains a malformed empty value");
   }
-  const parsed = {};
+  // Use a null-prototype map so names such as "__proto__", "constructor", and
+  // "prototype" remain enumerable own keys and cannot bypass exact-key checks.
+  const parsed = Object.create(null);
   for (const entry of entries) {
-    const match = entry.trim().match(/^([a-z][a-z0-9-]*)\s*=\s*([a-z][a-z0-9-]*)$/i);
+    const match = entry.trim().match(/^([a-z_][a-z0-9_-]*)\s*=\s*([a-z][a-z0-9-]*)$/i);
     if (!match) {
       throw new Error(`robots.txt Content-Signal contains malformed value: ${entry.trim()}`);
     }
