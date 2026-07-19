@@ -29,7 +29,7 @@ import {
   abs,
   SITE_URL,
 } from "@/content/vuzora";
-import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
+import { DISCOVERY_LINKS, INDEXABLE_META, NOINDEX_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 export const Route = createFileRoute("/unis_/$slug")({
@@ -55,7 +55,12 @@ export const Route = createFileRoute("/unis_/$slug")({
     const university = loaderData?.university;
     if (!university) {
       return {
-        meta: [{ title: `Вуз не найден – ${BRAND.name}` }],
+        // `notFound()` keeps this route mounted during client navigation.
+        // Replace the supported-route head completely so no prior university
+        // canonical, discovery, or route-class metadata can survive recovery.
+        meta: [{ title: `Вуз не найден – ${BRAND.name}` }, ...NOINDEX_META],
+        links: [],
+        scripts: [],
       };
     }
     const title = universityDetailTitle(university);

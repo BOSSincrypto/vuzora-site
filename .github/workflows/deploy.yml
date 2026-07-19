@@ -72,6 +72,12 @@ jobs:
           VUZORA_ORIGIN: http://127.0.0.1:3100
           AGENT_BROWSER_SESSION: vuzora-release-${{ github.run_id }}
 
+      - name: Run unknown-route metadata regression
+        run: bun run test:browser:unknown-route-metadata
+        env:
+          VUZORA_ORIGIN: http://127.0.0.1:3100
+          AGENT_BROWSER_SESSION: vuzora-unknown-route-${{ github.run_id }}
+
       - name: Run two clean frozen-install build cycles
         run: bun run repeat:release
         env:

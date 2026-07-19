@@ -183,6 +183,23 @@ test("not-found recovery UI has known-route recovery without university CTA", as
   assert.match(fallbacks, /primaryHref\s*=\s*"\/"|to=\{primaryHref\}|to="\/"/);
 });
 
+test("unknown dynamic route fallbacks replace indexable head metadata", async () => {
+  const universityRoute = await read("src/routes/unis_.$slug.tsx");
+  const blogRoute = await read("src/routes/blog.$slug.tsx");
+  const seo = await read("src/content/seo.ts");
+
+  assert.match(seo, /export const NOINDEX_META = \[\{ name: "robots", content: "noindex" \}\]/);
+  for (const source of [universityRoute, blogRoute]) {
+    assert.match(source, /NOINDEX_META/);
+    assert.match(
+      source,
+      /meta:\s*\[\s*\{\s*title:\s*`[^`]+`\s*\},\s*\.\.\.NOINDEX_META\s*\]/,
+    );
+    assert.match(source, /links: \[\]/);
+    assert.match(source, /scripts: \[\]/);
+  }
+});
+
 test("route focus manager restores focus after client navigation", async () => {
   const root = await read("src/routes/__root.tsx");
   assert.match(root, /RouteFocusManager/);

@@ -17,7 +17,7 @@ import { RouteErrorFallback, RouteNotFoundFallback } from "@/components/vuzora/u
 import { useReadProgress } from "@/hooks/use-read-progress";
 import { BLOG_INDEX_PATH, blogPostPath, findPost, formatPostDate, POSTS } from "@/content/blog";
 import { BRAND, LINKS, SITE_URL, abs } from "@/content/vuzora";
-import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
+import { DISCOVERY_LINKS, INDEXABLE_META, NOINDEX_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 const BLOG_LINK_RE = /\[\[([^\]|]+)\|([^\]]+)\]\]/g;
@@ -72,7 +72,12 @@ export const Route = createFileRoute("/blog/$slug")({
     const post = loaderData?.post;
     if (!post) {
       return {
-        meta: [{ title: `Пост не найден – ${BRAND.name}` }],
+        // `notFound()` keeps this route mounted during client navigation.
+        // Replace the supported-route head completely so no prior post
+        // canonical, discovery, or route-class metadata can survive recovery.
+        meta: [{ title: `Пост не найден – ${BRAND.name}` }, ...NOINDEX_META],
+        links: [],
+        scripts: [],
       };
     }
     const title = `${post.title} – ${BRAND.name}`;

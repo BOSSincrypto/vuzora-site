@@ -6,6 +6,9 @@ export const INDEXABLE_META = [
   { property: "og:locale", content: "ru_RU" },
 ] as const;
 
+/** Metadata for route-local 404 recovery, which must never be indexable. */
+export const NOINDEX_META = [{ name: "robots", content: "noindex" }] as const;
+
 /**
  * Keep machine-readable discovery reachable from ordinary HTML without
  * inventing a separate endpoint or relying on client-side navigation.
