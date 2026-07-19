@@ -19,6 +19,7 @@ import { assertBlogIndexJoin, assertEditorialGraph } from "./editorial-joins.mjs
 import { BLOG_INDEX_ROUTE, assertBlogMetadataConsistency } from "./blog-metadata.mjs";
 import { assertAgentSkillsRelease } from "./agent-skills.mjs";
 import { assertApiCatalogRelease } from "./api-catalog.mjs";
+import { assertDiscoveryBoundaryRelease } from "./discovery-boundaries.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -855,6 +856,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       "robots.txt",
       "sitemap.xml",
       "llms.txt",
+      "auth.md",
       RSS_PATH.replace(/^\//, ""),
     ])
       if (!(await exists(join(dist, file)))) fail(`missing release artifact: dist/${file}`);
@@ -867,6 +869,11 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       await assertApiCatalogRelease({ root, dist });
     } catch (error) {
       fail(`API catalog: ${error.message}`);
+    }
+    try {
+      await assertDiscoveryBoundaryRelease({ root, dist });
+    } catch (error) {
+      fail(`Discovery boundaries: ${error.message}`);
     }
     if (await exists(join(dist, RSS_PATH.replace(/^\//, "")))) {
       try {
