@@ -81,6 +81,10 @@ export function parseHtmlDocument(html) {
   const canonical = findAll("link").filter((element) =>
     element.attrs.rel?.toLowerCase().split(/\s+/).includes("canonical"),
   );
+  const alternateLinks = findAll("link").filter((element) =>
+    element.attrs.rel?.toLowerCase().split(/\s+/).includes("alternate"),
+  );
+  const htmlTag = elements.find((element) => element.tag === "html");
   const headings = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((match) =>
     textContent(match[1]),
   );
@@ -122,9 +126,72 @@ export function parseHtmlDocument(html) {
     title: titleMatch ? textContent(titleMatch[1]) : "",
     descriptions: description.map((element) => element.attrs.content ?? ""),
     canonicals: canonical.map((element) => element.attrs.href ?? ""),
+    alternateLinks: alternateLinks.map((element) => element.attrs),
+    htmlLang: htmlTag?.attrs.lang ?? "",
     meta,
     jsonLd: parsedJsonLd,
   };
+}
+
+export function routeMetadataFailures(document, route) {
+  const failures = [];
+  if (document.htmlLang !== "ru") failures.push(`${route}: HTML language must be ru`);
+  if (
+    document.descriptions.length !== 1 ||
+    document.descriptions[0].length < 50 ||
+    document.descriptions[0].length > 170 ||
+    PLACEHOLDER_RE.test(document.descriptions[0] ?? "")
+  )
+    failures.push(`${route}: description is missing, duplicated, placeholder, or out of bounds`);
+  const locale = document.meta("property", "og:locale");
+  if (locale.length !== 1 || locale[0] !== "ru_RU")
+    failures.push(`${route}: Russian OpenGraph locale is missing or duplicated`);
+  const robots = document.meta("name", "robots");
+  const robotTokens = (robots[0] ?? "")
+    .toLowerCase()
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+  if (
+    robots.length !== 1 ||
+    !robotTokens.includes("index") ||
+    !robotTokens.includes("follow") ||
+    robotTokens.includes("noindex") ||
+    robotTokens.includes("nofollow")
+  )
+    failures.push(`${route}: robots metadata must resolve to index, follow`);
+  const expectedCanonical = `${CANONICAL_ORIGIN}${route}`;
+  if (document.canonicals.length !== 1 || document.canonicals[0] !== expectedCanonical)
+    failures.push(`${route}: canonical mismatch`);
+  const expectedDiscoveryLinks = [
+    {
+      href: `${CANONICAL_ORIGIN}/blog/rss.xml`,
+      type: "application/rss+xml",
+    },
+    { href: `${CANONICAL_ORIGIN}/llms.txt`, type: "text/plain" },
+  ];
+  for (const expected of expectedDiscoveryLinks) {
+    const matching = document.alternateLinks.filter(
+      (link) => link.href === expected.href && link.type === expected.type,
+    );
+    if (matching.length !== 1)
+      failures.push(`${route}: expected exactly one ${expected.type} discovery link`);
+  }
+  if (
+    document.alternateLinks.some(
+      (link) =>
+        link.href === `${CANONICAL_ORIGIN}/blog/rss.xml` &&
+        link.type !== "application/rss+xml",
+    )
+  )
+    failures.push(`${route}: RSS discovery link has an incorrect media type`);
+  if (
+    document.alternateLinks.some(
+      (link) => link.href === `${CANONICAL_ORIGIN}/llms.txt` && link.type !== "text/plain",
+    )
+  )
+    failures.push(`${route}: llms discovery link has an incorrect media type`);
+  return failures;
 }
 
 export function assertUniversityCtaOrder(document, university, route) {
@@ -280,16 +347,8 @@ export function validateRouteDocument(
     PLACEHOLDER_RE.test(document.title)
   )
     failures.push(`${route}: title is missing, placeholder, or out of bounds`);
-  if (
-    document.descriptions.length !== 1 ||
-    document.descriptions[0].length < 50 ||
-    document.descriptions[0].length > 170 ||
-    PLACEHOLDER_RE.test(document.descriptions[0] ?? "")
-  )
-    failures.push(`${route}: description is missing, duplicated, placeholder, or out of bounds`);
   const expectedCanonical = `${CANONICAL_ORIGIN}${route}`;
-  if (document.canonicals.length !== 1 || document.canonicals[0] !== expectedCanonical)
-    failures.push(`${route}: canonical mismatch`);
+  failures.push(...routeMetadataFailures(document, route));
   if (
     document.meta("property", "og:url").length !== 1 ||
     document.meta("property", "og:url")[0] !== expectedCanonical
@@ -630,6 +689,19 @@ export function assertIndependent404(document, routes, universities, homepageDoc
   if (document.headings.length !== 1) throw new Error("404.html must contain exactly one H1");
   if (!document.anchors.some((anchor) => anchor.href === "/"))
     throw new Error("404.html must link to /");
+  const robots = document.meta("name", "robots");
+  const robotTokens = (robots[0] ?? "")
+    .toLowerCase()
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+  if (
+    robots.length !== 1 ||
+    !robotTokens.includes("noindex") ||
+    robotTokens.includes("index") ||
+    robotTokens.includes("follow")
+  )
+    throw new Error("404.html must remain explicitly noindex");
   if (!document.title || document.title === homepageDocument.title)
     throw new Error("404.html must have an independent title");
   if (document.canonicals.length) throw new Error("404.html must not expose a canonical");

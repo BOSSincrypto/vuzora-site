@@ -11,6 +11,7 @@ import { NavBar } from "@/components/vuzora/NavBar";
 import { Universities } from "@/components/vuzora/Universities";
 import { Footer } from "@/components/vuzora/Footer";
 import { AFFILIATION_BOUNDARY, UNIVERSITIES, abs, SITE_URL } from "@/content/vuzora";
+import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 const TITLE = "Поддерживаемые вузы – Vuzora";
@@ -31,8 +32,9 @@ export const Route = createFileRoute("/unis")({
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
       { name: "twitter:image", content: abs(ogCover) },
+      ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/unis") }],
+    links: [{ rel: "canonical", href: abs("/unis") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",

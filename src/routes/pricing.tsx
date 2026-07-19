@@ -11,6 +11,7 @@ import { NavBar } from "@/components/vuzora/NavBar";
 import { Pricing } from "@/components/vuzora/Pricing";
 import { Footer } from "@/components/vuzora/Footer";
 import { PLANS, BRAND, abs, SITE_URL } from "@/content/vuzora";
+import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 const TITLE = "Тарифы Vuzora – подписка от 49 ₽";
@@ -58,8 +59,9 @@ export const Route = createFileRoute("/pricing")({
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
       { name: "twitter:image", content: abs(ogCover) },
+      ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/pricing") }],
+    links: [{ rel: "canonical", href: abs("/pricing") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",

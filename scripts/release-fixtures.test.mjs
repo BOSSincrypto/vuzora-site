@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
 import {
   assertIndependent404,
@@ -8,15 +11,149 @@ import {
   assertSitemap,
   parseHtmlDocument,
   parseSitemapXml,
+  routeMetadataFailures,
+  validateRelease,
 } from "./release-validator.mjs";
 import { assertLlmsJoin, buildLlmsPacket, detailUrl } from "./llms-packet.mjs";
-import { routeExpectationFor } from "./route-policy.mjs";
+import { artifactFor, buildRoutes, readRegistry, routeExpectationFor } from "./route-policy.mjs";
 import { hashReleaseBytes, normalizeSitemapLastmodBytes } from "./compare-release.mjs";
 
 const baseHtml = (body, head = "") =>
   `<!doctype html><html><head><title>Страница Vuzora для проверки</title><meta name="description" content="Достаточно длинное описание страницы Vuzora для детерминированной проверки релизного контракта без заглушек."/><link rel="canonical" href="https://vuzora.ru/test"/><meta property="og:url" content="https://vuzora.ru/test"/><meta property="og:type" content="website"/>${head}</head><body><main><h1>Страница Vuzora для проверки</h1>${body}</main></body></html>`;
 
 const routes = ["/", "/pricing"];
+
+async function releaseFixture(mutator, expectedMessage) {
+  const root = process.cwd();
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-route-metadata-"));
+  await cp(root, fixtureRoot, {
+    recursive: true,
+    filter: (source) => !source.includes("node_modules"),
+  });
+  try {
+    await mutator(fixtureRoot);
+    await assert.rejects(
+      () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+      expectedMessage,
+    );
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+}
+
+const metadataFixture = (route, overrides = {}) => {
+  const canonical = overrides.canonical ?? `https://vuzora.ru${route}`;
+  const description = overrides.description ?? "Маршрут Vuzora с полезным описанием для студентов и утренней доставки расписания.";
+  const robots = overrides.robots ?? "index, follow";
+  const locale = overrides.locale ?? "ru_RU";
+  const alternates = overrides.alternates ?? `
+    <link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml"/>
+    <link rel="alternate" type="text/plain" href="https://vuzora.ru/llms.txt"/>
+  `;
+  return `<!doctype html><html lang="ru"><head>
+    <title>Маршрут Vuzora для проверки</title>
+    <meta name="description" content="${description}"/>
+    <meta name="robots" content="${robots}"/>
+    <meta property="og:locale" content="${locale}"/>
+    <link rel="canonical" href="${canonical}"/>
+    ${alternates}
+  </head><body><main><h1>Проверка маршрута</h1></main></body></html>`;
+};
+
+test("indexable route matrix requires shared discovery metadata and preserves noindex/phantom fixtures", async () => {
+  const { universities, posts } = await readRegistry();
+  const indexableRoutes = buildRoutes({ universities, posts });
+  const routeClasses = [
+    "/",
+    "/pricing",
+    "/changelog",
+    "/unis",
+    `/unis/${universities[0].slug}`,
+    "/blog/",
+    `/blog/${posts[0]}`,
+    "/legal/terms",
+    "/legal/privacy",
+  ];
+
+  for (const route of routeClasses) {
+    assert.deepEqual(routeMetadataFailures(parseHtmlDocument(metadataFixture(route)), route), []);
+  }
+
+  const missingDescription = parseHtmlDocument(
+    metadataFixture("/pricing", { description: "коротко" }),
+  );
+  assert.match(routeMetadataFailures(missingDescription, "/pricing").join("\n"), /description/);
+
+  const duplicateCanonical = parseHtmlDocument(
+    metadataFixture("/changelog", {
+      alternates: `
+        <link rel="canonical" href="https://vuzora.ru/changelog"/>
+        <link rel="canonical" href="https://vuzora.ru/changelog"/>
+      `,
+    }),
+  );
+  assert.match(routeMetadataFailures(duplicateCanonical, "/changelog").join("\n"), /canonical/);
+
+  const wrongOrigin = parseHtmlDocument(
+    metadataFixture("/unis", { canonical: "https://example.com/unis" }),
+  );
+  assert.match(routeMetadataFailures(wrongOrigin, "/unis").join("\n"), /canonical/);
+
+  const noindex = parseHtmlDocument(metadataFixture("/legal/privacy", { robots: "noindex" }));
+  assert.match(routeMetadataFailures(noindex, "/legal/privacy").join("\n"), /robots/);
+
+  const phantomRoute = "/not-in-release-manifest";
+  assert.equal(indexableRoutes.includes(phantomRoute), false);
+  assert.equal(routeExpectationFor(phantomRoute, { universities, postRecords: [] }), undefined);
+
+  const homepage = parseHtmlDocument(metadataFixture("/"));
+  const notFound = parseHtmlDocument(
+    '<!doctype html><html lang="ru"><head><meta name="robots" content="noindex"/><title>Не найдено</title></head><body><main><h1>Страница не найдена</h1><a href="/">На главную</a></main></body></html>',
+  );
+  assert.doesNotThrow(() => assertIndependent404(notFound, indexableRoutes, universities, homepage));
+});
+
+test("validate:release rejects route-matrix metadata drift fixtures", async () => {
+  const pricingArtifact = artifactFor("/pricing");
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", pricingArtifact);
+    const html = await readFile(path, "utf8");
+    await writeFile(path, html.replace(/<meta name="description"[^>]*>/, ""), "utf8");
+  }, /pricing: description/);
+
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", artifactFor("/changelog"));
+    const html = await readFile(path, "utf8");
+    await writeFile(
+      path,
+      html.replace("</head>", '<link rel="canonical" href="https://vuzora.ru/changelog"/></head>'),
+      "utf8",
+    );
+  }, /changelog: canonical/);
+
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", artifactFor("/unis"));
+    const html = await readFile(path, "utf8");
+    await writeFile(
+      path,
+      html.replace('href="https://vuzora.ru/unis"', 'href="https://example.com/unis"'),
+      "utf8",
+    );
+  }, /unis: canonical|og:url/);
+
+  await releaseFixture(async (root) => {
+    const path = join(root, "dist", artifactFor("/legal/privacy"));
+    const html = await readFile(path, "utf8");
+    await writeFile(path, html.replace('content="index, follow"', 'content="noindex"'), "utf8");
+  }, /legal\/privacy: robots/);
+
+  await releaseFixture(async (root) => {
+    const source = join(root, "dist", artifactFor("/pricing"));
+    const destination = join(root, "dist", "not-in-release-manifest", "index.html");
+    await mkdir(join(destination, ".."), { recursive: true });
+    await writeFile(destination, await readFile(source));
+  }, /unexpected route HTML artifacts/);
+});
 
 test("university CTA order requires one immediate above-content anchor", () => {
   const university = { slug: "msu" };
@@ -232,7 +369,7 @@ test("404 isolation rejects homepage, canonical, and university CTA leakage", ()
   );
   assert.throws(
     () => assertIndependent404(leaking, routes, [{ slug: "msu", name: "МГУ" }], homepage),
-    /canonical|CTA|homepage|title/,
+    /canonical|CTA|homepage|title|noindex/,
   );
 });
 

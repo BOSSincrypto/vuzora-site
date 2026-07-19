@@ -7,6 +7,7 @@
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BRAND, LINKS, PLANS, formatPrice, abs, SITE_URL } from "@/content/vuzora";
+import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 export const Route = createFileRoute("/legal/terms")({
@@ -24,7 +25,6 @@ export const Route = createFileRoute("/legal/terms")({
         content: "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:locale", content: "ru_RU" },
       { property: "og:url", content: abs("/legal/terms") },
       { property: "og:image", content: abs(ogCover) },
       { name: "twitter:card", content: "summary_large_image" },
@@ -34,10 +34,10 @@ export const Route = createFileRoute("/legal/terms")({
         content: "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
       },
       { name: "twitter:image", content: abs(ogCover) },
-      { name: "robots", content: "index, follow" },
+      ...INDEXABLE_META,
     ],
 
-    links: [{ rel: "canonical", href: abs("/legal/terms") }],
+    links: [{ rel: "canonical", href: abs("/legal/terms") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",

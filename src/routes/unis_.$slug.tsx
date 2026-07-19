@@ -29,6 +29,7 @@ import {
   abs,
   SITE_URL,
 } from "@/content/vuzora";
+import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 export const Route = createFileRoute("/unis_/$slug")({
@@ -72,7 +73,6 @@ export const Route = createFileRoute("/unis_/$slug")({
         { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
-        { property: "og:locale", content: "ru_RU" },
         { property: "og:url", content: url },
         { property: "og:image", content: abs(ogCover) },
         { property: "og:image:width", content: "1216" },
@@ -81,8 +81,9 @@ export const Route = createFileRoute("/unis_/$slug")({
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
         { name: "twitter:image", content: abs(ogCover) },
+        ...INDEXABLE_META,
       ],
-      links: [{ rel: "canonical", href: url }],
+      links: [{ rel: "canonical", href: url }, ...DISCOVERY_LINKS],
       scripts: [
         {
           type: "application/ld+json",

@@ -13,6 +13,7 @@ import { Footer } from "@/components/vuzora/Footer";
 import { Kicker } from "@/components/vuzora/ui/Kicker";
 import { CHANGELOG, formatEntryDate } from "@/content/changelog";
 import { BRAND, abs, SITE_URL } from "@/content/vuzora";
+import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 const PAGE_TITLE = `Что нового – ${BRAND.name}`;
@@ -32,8 +33,9 @@ export const Route = createFileRoute("/changelog")({
       { name: "twitter:title", content: PAGE_TITLE },
       { name: "twitter:description", content: PAGE_DESC },
       { name: "twitter:image", content: abs(ogCover) },
+      ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/changelog") }],
+    links: [{ rel: "canonical", href: abs("/changelog") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",

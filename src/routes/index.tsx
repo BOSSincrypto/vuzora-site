@@ -33,6 +33,7 @@ import { Compare } from "@/components/vuzora/Compare";
 import { ErrorBoundary } from "@/components/vuzora/ui/ErrorBoundary";
 import { DeferredSection } from "@/components/vuzora/ui/DeferredSection";
 import { BRAND, FAQ, LINKS, PLANS, UNIVERSITIES, abs, SITE_URL } from "@/content/vuzora";
+import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 /** Browser-tab title and OpenGraph `og:title`. */
@@ -50,7 +51,6 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:url", content: SITE_URL + "/" },
-      { property: "og:locale", content: "ru_RU" },
       { property: "og:image", content: abs(ogCover) },
       { property: "og:image:width", content: "1216" },
       { property: "og:image:height", content: "640" },
@@ -58,8 +58,9 @@ export const Route = createFileRoute("/")({
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
       { name: "twitter:image", content: abs(ogCover) },
+      ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: SITE_URL + "/" }],
+    links: [{ rel: "canonical", href: SITE_URL + "/" }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",
