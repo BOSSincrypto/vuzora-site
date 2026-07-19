@@ -1,0 +1,15 @@
+{
+  "description": "Vuzora does not implement an HTTP API.",
+  "linkset": [
+    {
+      "anchor": "https://vuzora.ru/.well-known/api-catalog",
+      "link": [
+        {
+          "href": "https://vuzora.ru/llms.txt",
+          "rel": "describedby",
+          "type": "text/plain"
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,9 @@ const mime = {
   ".woff2": "font/woff2",
   ".webmanifest": "application/manifest+json",
 };
+const pathMime = {
+  "/.well-known/api-catalog": "application/linkset+json; charset=utf-8",
+};
 
 function fileIfExists(candidate) {
   try {
@@ -53,7 +56,8 @@ const server = http.createServer((request, response) => {
   }
 
   response.writeHead(200, {
-    "Content-Type": mime[path.extname(file)] ?? "application/octet-stream",
+    "Content-Type":
+      pathMime[pathname] ?? mime[path.extname(file)] ?? "application/octet-stream",
   });
   response.end(fs.readFileSync(file));
 });

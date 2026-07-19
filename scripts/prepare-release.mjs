@@ -13,6 +13,10 @@ import {
   assertAgentSkillsIndex,
   assertAgentSkillsRelease,
 } from "./agent-skills.mjs";
+import {
+  API_CATALOG_PATH,
+  assertApiCatalogRelease,
+} from "./api-catalog.mjs";
 
 const root = process.cwd();
 const dist = join(root, "dist");
@@ -63,6 +67,9 @@ const discoveryRoutes = deriveDiscoveryRoutes({
 const llms = buildLlmsPacket(universities, { affiliationBoundary, discoveryRoutes });
 assertLlmsJoin(llms, universities, { affiliationBoundary, discoveryRoutes });
 await writeFile(join(dist, "llms.txt"), llms, "utf8");
+const apiCatalogPath = API_CATALOG_PATH.replace(/^\/+/, "");
+await mkdir(dirname(join(dist, apiCatalogPath)), { recursive: true });
+await copyFile(join(root, "public", apiCatalogPath), join(dist, apiCatalogPath));
 // Freeze lastmod to the UTC calendar day of the build. Repeat-build comparison
 // normalizes lastmod further, so only the route set and non-date bytes must match.
 const lastmod = new Date().toISOString().slice(0, 10);
@@ -97,6 +104,7 @@ for (const entry of agentSkillsIndex.skills) {
   await copyFile(join(root, "public", artifactPath), destination);
 }
 await assertAgentSkillsRelease({ root, dist });
+await assertApiCatalogRelease({ root, dist });
 
 await writeFile(
   join(dist, "release-manifest.json"),

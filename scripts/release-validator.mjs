@@ -18,6 +18,7 @@ import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 import { assertBlogIndexJoin, assertEditorialGraph } from "./editorial-joins.mjs";
 import { BLOG_INDEX_ROUTE, assertBlogMetadataConsistency } from "./blog-metadata.mjs";
 import { assertAgentSkillsRelease } from "./agent-skills.mjs";
+import { assertApiCatalogRelease } from "./api-catalog.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -861,6 +862,11 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       await assertAgentSkillsRelease({ root, dist });
     } catch (error) {
       fail(`Agent Skills: ${error.message}`);
+    }
+    try {
+      await assertApiCatalogRelease({ root, dist });
+    } catch (error) {
+      fail(`API catalog: ${error.message}`);
     }
     if (await exists(join(dist, RSS_PATH.replace(/^\//, "")))) {
       try {
