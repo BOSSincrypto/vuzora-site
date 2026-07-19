@@ -9,6 +9,7 @@ import {
   assertRobotsAllowsLlms,
   assertRobotsPolicy,
   buildLlmsPacket,
+  deriveDiscoveryRoutes,
   detailUrl,
   extractDetailUrls,
   NAMED_AI_CRAWLERS,
@@ -16,7 +17,7 @@ import {
   robotsDisallowsPath,
   SECRET_PATTERN_RE,
 } from "./llms-packet.mjs";
-import { readRegistry } from "./route-policy.mjs";
+import { buildRoutes, readRegistry } from "./route-policy.mjs";
 
 const root = process.cwd();
 const read = (path) => readFile(join(root, path), "utf8");
@@ -38,10 +39,13 @@ test("buildLlmsPacket joins full registry with absolute production detail URLs",
 });
 
 test("committed public/llms.txt matches registry join policy", async () => {
-  const { universities, affiliationBoundary } = await readRegistry(root);
+  const { universities, posts, affiliationBoundary } = await readRegistry(root);
+  const discoveryRoutes = deriveDiscoveryRoutes({
+    routes: [...buildRoutes({ universities, posts }), "/blog/rss.xml", "/sitemap.xml"],
+  });
   const body = await read("public/llms.txt");
-  assertLlmsJoin(body, universities, { affiliationBoundary });
-  const expected = buildLlmsPacket(universities, { affiliationBoundary });
+  assertLlmsJoin(body, universities, { affiliationBoundary, discoveryRoutes });
+  const expected = buildLlmsPacket(universities, { affiliationBoundary, discoveryRoutes });
   assert.equal(
     body,
     expected,
@@ -93,6 +97,59 @@ test("packet documents CTA attribution and non-official Russian product position
   assert.match(body, /утр/i);
   assert.equal(SECRET_PATTERN_RE.test(body), false);
   assert.doesNotMatch(body, /официальн(?:ый|ого)\s+партн/i);
+});
+
+test("llms packet derives and joins every published discovery surface", async () => {
+  const { universities, affiliationBoundary } = await readRegistry(root);
+  const discoveryRoutes = deriveDiscoveryRoutes({
+    routes: [
+      "/",
+      "/pricing",
+      "/changelog",
+      "/unis",
+      "/blog/",
+      "/blog/rss.xml",
+      "/sitemap.xml",
+      "/legal/terms",
+      "/legal/privacy",
+    ],
+  });
+  const body = buildLlmsPacket(universities, { affiliationBoundary, discoveryRoutes });
+  assert.doesNotThrow(() => assertLlmsJoin(body, universities, { affiliationBoundary, discoveryRoutes }));
+  for (const path of discoveryRoutes) assert.equal((body.match(new RegExp(`https://vuzora\\.ru${path === "/" ? "/" : path}`, "g")) ?? []).length >= 1, true);
+  assert.equal(deriveDiscoveryRoutes({ routes: ["/", "/pricing", "/unis"] }).includes("/changelog"), false);
+  assert.equal(deriveDiscoveryRoutes({ routes: ["/", "/legal/terms"] }).includes("/legal/privacy"), false);
+});
+
+test("discovery join rejects missing, phantom, duplicate, and alternate-origin surfaces", async () => {
+  const { universities, affiliationBoundary } = await readRegistry(root);
+  const discoveryRoutes = deriveDiscoveryRoutes({
+    routes: ["/", "/pricing", "/changelog", "/unis", "/blog/", "/blog/rss.xml", "/sitemap.xml", "/legal/terms"],
+  });
+  const valid = buildLlmsPacket(universities, { affiliationBoundary, discoveryRoutes });
+  const missing = valid.replace(`- [Что нового](https://vuzora.ru/changelog)\n`, "");
+  assert.throws(
+    () => assertLlmsJoin(missing, universities, { affiliationBoundary, discoveryRoutes }),
+    /discovery underlist|missing/i,
+  );
+  const phantom = `${valid}- [Phantom](https://vuzora.ru/not-a-real-public-route)\n`;
+  assert.throws(
+    () => assertLlmsJoin(phantom, universities, { affiliationBoundary, discoveryRoutes }),
+    /discovery overlist|phantom|non-production/i,
+  );
+  const duplicate = `${valid}- [Блог снова](https://vuzora.ru/blog/)\n`;
+  assert.throws(
+    () => assertLlmsJoin(duplicate, universities, { affiliationBoundary, discoveryRoutes }),
+    /discovery join|duplicate/i,
+  );
+  const alternateOrigin = valid.replace(
+    "https://vuzora.ru/pricing",
+    "https://example.com/pricing",
+  );
+  assert.throws(
+    () => assertLlmsJoin(alternateOrigin, universities, { affiliationBoundary, discoveryRoutes }),
+    /non-production|discovery/i,
+  );
 });
 
 test("robots does not Disallow /llms.txt", async () => {
@@ -207,6 +264,40 @@ test("validate:release rejects Content-Signal policy drift fixtures", async () =
     ];
     for (const [label, fixture, message] of fixtures) {
       await writeFile(join(fixtureRoot, "dist/robots.txt"), fixture, "utf8");
+      await assert.rejects(
+        () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
+        message,
+        label,
+      );
+    }
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("validate:release rejects missing and phantom discovery-surface fixtures", async () => {
+  const { validateRelease } = await import("./release-validator.mjs");
+  const original = await read("dist/llms.txt");
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-llms-discovery-"));
+  try {
+    await cp(root, fixtureRoot, {
+      recursive: true,
+      filter: (source) => !source.includes("node_modules"),
+    });
+    const fixtures = [
+      [
+        "missing discovery surface",
+        original.replace("- [Что нового](https://vuzora.ru/changelog)\n", ""),
+        /llms\.txt.*(?:discovery|underlist|missing)/i,
+      ],
+      [
+        "phantom discovery surface",
+        `${original}- [Phantom](https://vuzora.ru/not-a-real-public-route)\n`,
+        /llms\.txt.*(?:discovery|overlist|phantom)/i,
+      ],
+    ];
+    for (const [label, fixture, message] of fixtures) {
+      await writeFile(join(fixtureRoot, "dist/llms.txt"), fixture, "utf8");
       await assert.rejects(
         () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
         message,

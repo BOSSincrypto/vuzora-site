@@ -1,5 +1,10 @@
 import { readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import {
+  assertLlmsJoin,
+  buildLlmsPacket,
+  deriveDiscoveryRoutes,
+} from "./llms-packet.mjs";
 import { buildRoutes, manifestFor, readRegistry } from "./route-policy.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 
@@ -41,11 +46,17 @@ for (const path of await htmlFiles(dist)) {
   if (normalized !== html) await writeFile(path, normalized);
 }
 
-const { universities, posts, postRecords } = await readRegistry();
+const { universities, posts, postRecords, affiliationBoundary } = await readRegistry();
 const routes = buildRoutes({ universities, posts });
 const rss = buildRssFeed(postRecords);
 assertRssJoin(rss, postRecords);
 await writeFile(join(dist, RSS_PATH.replace(/^\//, "")), rss, "utf8");
+const discoveryRoutes = deriveDiscoveryRoutes({
+  routes: [...routes, RSS_PATH, "/sitemap.xml"],
+});
+const llms = buildLlmsPacket(universities, { affiliationBoundary, discoveryRoutes });
+assertLlmsJoin(llms, universities, { affiliationBoundary, discoveryRoutes });
+await writeFile(join(dist, "llms.txt"), llms, "utf8");
 // Freeze lastmod to the UTC calendar day of the build. Repeat-build comparison
 // normalizes lastmod further, so only the route set and non-date bytes must match.
 const lastmod = new Date().toISOString().slice(0, 10);

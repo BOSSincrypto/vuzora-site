@@ -27,6 +27,7 @@ export const DETAIL_URL_RE =
   /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?=$|[\s)\]}>.,;:`])/g;
 const NON_CANONICAL_DETAIL_URL_RE =
   /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?:[/?#][^\s<>"'`]*)/g;
+const MARKDOWN_LINK_RE = /\]\(([^)\s]+)\)/g;
 
 /** Loose secret / credential patterns that must never appear in public AEO text. */
 export const SECRET_PATTERN_RE =
@@ -41,6 +42,53 @@ export const OFFICIAL_PARTNER_RE =
  */
 export function detailUrl(slug) {
   return `${CANONICAL_ORIGIN}/unis/${slug}`;
+}
+
+/**
+ * Return the public discovery paths that are present in the supplied route
+ * manifest/artifact/sitemap observations. University details and blog posts
+ * remain in their own joins, so they are intentionally not promoted to this
+ * packet's discovery-surface section.
+ *
+ * @param {{ routes?: string[], artifactRoutes?: string[], sitemapRoutes?: string[] }} [observed]
+ */
+export function deriveDiscoveryRoutes(observed = {}) {
+  const available = new Set(
+    [...(observed.routes ?? []), ...(observed.artifactRoutes ?? []), ...(observed.sitemapRoutes ?? [])]
+      .map((route) => (route === "/" ? "/" : route.replace(/\/+$/, "")))
+      .map((route) => (route === "/blog" ? "/blog/" : route)),
+  );
+  const core = [
+    "/",
+    "/pricing",
+    "/changelog",
+    "/unis",
+    "/blog/",
+    "/blog/rss.xml",
+    "/sitemap.xml",
+  ].filter((route) => available.has(route));
+  const legal = [...available]
+    .filter((route) => route.startsWith("/legal/") && !core.includes(route))
+    .sort();
+  return [...core, ...legal];
+}
+
+function discoveryUrl(path) {
+  return `${CANONICAL_ORIGIN}${path}`;
+}
+
+function discoveryLabel(path) {
+  return (
+    {
+      "/": "Главная",
+      "/pricing": "Тарифы",
+      "/changelog": "Что нового",
+      "/unis": "Поддерживаемые вузы",
+      "/blog/": "Блог",
+      "/blog/rss.xml": "RSS блога",
+      "/sitemap.xml": "Карта сайта",
+    }[path] ?? `Публичная страница ${path}`
+  );
 }
 
 /**
@@ -79,11 +127,12 @@ function extractDetailRows(body) {
 /**
  * Build the committed `llms.txt` body from the university registry.
  * @param {Array<{ slug: string|null, code: string|null, name: string|null }>} universities
- * @param {{ affiliationBoundary?: string }} [options]
+ * @param {{ affiliationBoundary?: string, discoveryRoutes?: string[] }} [options]
  */
 export function buildLlmsPacket(universities, options = {}) {
   const affiliationBoundary =
     options.affiliationBoundary ?? "Сервис не является официальным сервисом вуза";
+  const discoveryRoutes = options.discoveryRoutes ?? [];
   const rows = universities.filter((university) => university?.slug);
   const list = rows
     .map((university) => {
@@ -119,12 +168,10 @@ export function buildLlmsPacket(universities, options = {}) {
     `\n` +
     `## Страницы сайта\n` +
     `\n` +
-    `- [Главная](${CANONICAL_ORIGIN}/): что такое Vuzora, как работает, для каких вузов.\n` +
-    `- [Тарифы](${CANONICAL_ORIGIN}/pricing): цены подписки.\n` +
-    `- [Поддерживаемые вузы](${CANONICAL_ORIGIN}/unis): каталог вузов.\n` +
-    `- [Блог](${CANONICAL_ORIGIN}/blog/): материалы о расписании в Telegram.\n` +
-    `- [Пользовательское соглашение](${CANONICAL_ORIGIN}/legal/terms).\n` +
-    `- [Политика конфиденциальности](${CANONICAL_ORIGIN}/legal/privacy).\n`
+    discoveryRoutes
+      .map((path) => `- [${discoveryLabel(path)}](${discoveryUrl(path)})`)
+      .join("\n") +
+    (discoveryRoutes.length ? "\n" : "")
   );
 }
 
@@ -133,7 +180,7 @@ export function buildLlmsPacket(universities, options = {}) {
  * product positioning, CTA docs, and honesty constraints.
  * @param {string} body
  * @param {Array<{ slug: string|null, code: string|null, name: string|null }>} universities
- * @param {{ affiliationBoundary?: string }} [options]
+ * @param {{ affiliationBoundary?: string, discoveryRoutes?: string[] }} [options]
  */
 export function assertLlmsJoin(body, universities, options = {}) {
   if (typeof body !== "string" || !body.trim()) {
@@ -141,6 +188,7 @@ export function assertLlmsJoin(body, universities, options = {}) {
   }
 
   const registry = universities.filter((university) => university?.slug);
+  const expectedDiscoveryRoutes = options.discoveryRoutes ?? [];
   const expectedSlugs = registry.map((university) => university.slug);
   const expectedSet = new Set(expectedSlugs);
   const nonCanonical = [...body.matchAll(NON_CANONICAL_DETAIL_URL_RE)].map((match) => match[0]);
@@ -203,6 +251,42 @@ export function assertLlmsJoin(body, universities, options = {}) {
         `llms.txt row identity mismatch for slug ${university.slug}: need its name and/or code on the URL row`,
       );
     }
+  }
+
+  const markdownLinks = [...body.matchAll(MARKDOWN_LINK_RE)].map((match) => match[1]);
+  const nonProductionLinks = markdownLinks.filter(
+    (url) => !url.startsWith(`${CANONICAL_ORIGIN}/`) && url !== CANONICAL_ORIGIN,
+  );
+  if (nonProductionLinks.length) {
+    throw new Error(
+      `llms.txt contains non-production discovery link(s): ${nonProductionLinks.join(", ")}`,
+    );
+  }
+  const expectedDiscoveryUrls = expectedDiscoveryRoutes.map(discoveryUrl);
+  const discoveryCounts = new Map();
+  for (const url of markdownLinks) discoveryCounts.set(url, (discoveryCounts.get(url) ?? 0) + 1);
+  const missingDiscovery = expectedDiscoveryUrls.filter((url) => !discoveryCounts.has(url));
+  if (missingDiscovery.length) {
+    throw new Error(
+      `llms.txt discovery underlist: missing ${missingDiscovery.length} public surface link(s): ${missingDiscovery.join(", ")}`,
+    );
+  }
+  const expectedDiscoverySet = new Set(expectedDiscoveryUrls);
+  const unexpectedDiscovery = markdownLinks.filter(
+    (url) => !expectedDiscoverySet.has(url) && !found.some((entry) => entry.url === url),
+  );
+  if (unexpectedDiscovery.length) {
+    throw new Error(
+      `llms.txt discovery overlist: phantom public surface link(s): ${[
+        ...new Set(unexpectedDiscovery),
+      ].join(", ")}`,
+    );
+  }
+  const duplicateDiscovery = expectedDiscoveryUrls.filter((url) => discoveryCounts.get(url) > 1);
+  if (duplicateDiscovery.length) {
+    throw new Error(
+      `llms.txt discovery join is not bijective: duplicate public surface link(s): ${duplicateDiscovery.join(", ")}`,
+    );
   }
 
   if (!/Vuzora/i.test(body)) throw new Error("llms.txt missing product name Vuzora");

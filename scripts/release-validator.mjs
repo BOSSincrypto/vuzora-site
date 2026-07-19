@@ -12,6 +12,7 @@ import {
   assertRobotsPolicy,
   assertRobotsAllowsLlms,
   buildLlmsPacket,
+  deriveDiscoveryRoutes,
 } from "./llms-packet.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 import { assertBlogIndexJoin, assertEditorialGraph } from "./editorial-joins.mjs";
@@ -780,8 +781,28 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
     if (await exists(join(dist, "llms.txt"))) {
       try {
         const llmsBody = await read(join(dist, "llms.txt"));
-        assertLlmsJoin(llmsBody, universities, { affiliationBoundary });
-        const expectedPacket = buildLlmsPacket(universities, { affiliationBoundary });
+        const artifactRoutes = htmlArtifacts
+          .map((artifact) => {
+            if (artifact === "index.html") return "/";
+            if (artifact.endsWith("/index.html"))
+              return `/${artifact.slice(0, -"/index.html".length)}`;
+            return undefined;
+          })
+          .filter(Boolean);
+        const sitemapRoutes = (await exists(join(dist, "sitemap.xml")))
+          ? parseSitemapXml(await read(join(dist, "sitemap.xml"))).map((entry) =>
+              entry.loc.slice(CANONICAL_ORIGIN.length),
+            )
+          : [];
+        const discoveryRoutes = deriveDiscoveryRoutes({
+          artifactRoutes: [...artifactRoutes, RSS_PATH, "/sitemap.xml"],
+          sitemapRoutes,
+        });
+        assertLlmsJoin(llmsBody, universities, { affiliationBoundary, discoveryRoutes });
+        const expectedPacket = buildLlmsPacket(universities, {
+          affiliationBoundary,
+          discoveryRoutes,
+        });
         if (llmsBody !== expectedPacket) {
           fail(
             "dist/llms.txt does not match registry-driven buildLlmsPacket output; run node scripts/generate-llms.mjs",

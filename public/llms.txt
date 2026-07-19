@@ -44,9 +44,12 @@
 
 ## Страницы сайта
 
-- [Главная](https://vuzora.ru/): что такое Vuzora, как работает, для каких вузов.
-- [Тарифы](https://vuzora.ru/pricing): цены подписки.
-- [Поддерживаемые вузы](https://vuzora.ru/unis): каталог вузов.
-- [Блог](https://vuzora.ru/blog/): материалы о расписании в Telegram.
-- [Пользовательское соглашение](https://vuzora.ru/legal/terms).
-- [Политика конфиденциальности](https://vuzora.ru/legal/privacy).
+- [Главная](https://vuzora.ru/)
+- [Тарифы](https://vuzora.ru/pricing)
+- [Что нового](https://vuzora.ru/changelog)
+- [Поддерживаемые вузы](https://vuzora.ru/unis)
+- [Блог](https://vuzora.ru/blog/)
+- [RSS блога](https://vuzora.ru/blog/rss.xml)
+- [Карта сайта](https://vuzora.ru/sitemap.xml)
+- [Публичная страница /legal/privacy](https://vuzora.ru/legal/privacy)
+- [Публичная страница /legal/terms](https://vuzora.ru/legal/terms)
