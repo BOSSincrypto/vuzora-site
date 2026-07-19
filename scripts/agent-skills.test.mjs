@@ -8,6 +8,7 @@ import {
   AGENT_SKILLS_SCHEMA,
   SKILL_ARTIFACT_PATH,
   assertAgentSkillsArtifact,
+  assertAgentSkillsFetchedArtifact,
   assertAgentSkillsIndex,
   assertAgentSkillsRelease,
   buildAgentSkillsIndex,
@@ -20,6 +21,17 @@ const validSkill = (name = "example-skill") =>
     "utf8",
   );
 
+function fetchedSkill(bytes, contentType, { status = 200, url } = {}) {
+  const body = Uint8Array.from(bytes).buffer;
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    url,
+    headers: new Headers(contentType ? { "content-type": contentType } : {}),
+    arrayBuffer: async () => body,
+  };
+}
+
 test("builds and validates a v0.2.0 Agent Skills index from exact raw bytes", () => {
   const bytes = validSkill();
   const index = buildAgentSkillsIndex(bytes, {
@@ -31,6 +43,60 @@ test("builds and validates a v0.2.0 Agent Skills index from exact raw bytes", ()
   assert.match(index.skills[0].url, /^https:\/\/vuzora\.ru\/\.well-known\/agent-skills\/.+\/SKILL\.md$/);
   assert.doesNotThrow(() => assertAgentSkillsIndex(index, new Map([[index.skills[0].url, bytes]])));
   assert.doesNotThrow(() => assertAgentSkillsArtifact(bytes, index.skills[0]));
+});
+
+test("accepts only Markdown media types for fetched SKILL.md artifacts", async () => {
+  const bytes = validSkill();
+  const index = buildAgentSkillsIndex(bytes, {
+    name: "example-skill",
+    description: "Read-only guidance for a public site.",
+  });
+  for (const contentType of [
+    "text/markdown",
+    "text/markdown; charset=utf-8",
+    "text/plain",
+    "TEXT/PLAIN; charset=UTF-8",
+  ]) {
+    await assert.doesNotReject(() =>
+      assertAgentSkillsFetchedArtifact(
+        fetchedSkill(bytes, contentType, { url: index.skills[0].url }),
+        index.skills[0],
+      ),
+    );
+  }
+});
+
+test("rejects unreachable or non-Markdown fetched SKILL.md fixtures", async () => {
+  const bytes = validSkill();
+  const index = buildAgentSkillsIndex(bytes, {
+    name: "example-skill",
+    description: "Read-only guidance for a public site.",
+  });
+  for (const [label, contentType] of [
+    ["application/json", "application/json"],
+    ["HTML", "text/html; charset=utf-8"],
+    ["binary", "application/octet-stream"],
+    ["missing Content-Type", undefined],
+  ]) {
+    await assert.rejects(
+      () =>
+        assertAgentSkillsFetchedArtifact(
+          fetchedSkill(bytes, contentType, { url: index.skills[0].url }),
+          index.skills[0],
+        ),
+      /media type|Content-Type/i,
+      label,
+    );
+  }
+  await assert.rejects(
+    () =>
+      assertAgentSkillsFetchedArtifact(
+        fetchedSkill(bytes, "text/markdown", { status: 404, url: index.skills[0].url }),
+        index.skills[0],
+      ),
+    /HTTP|reachable|status/i,
+    "unreachable artifact",
+  );
 });
 
 test("accepts valid quoted required frontmatter values", () => {

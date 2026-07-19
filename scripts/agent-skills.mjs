@@ -11,6 +11,7 @@ export const SKILL_ARTIFACT_PATH =
 export const SKILL_NAME = "vuzora-public-discovery";
 export const SKILL_DESCRIPTION =
   "Read-only guidance for discovering Vuzora's public university directory and Telegram schedule-delivery pages.";
+export const AGENT_SKILLS_MEDIA_TYPES = new Set(["text/markdown", "text/plain"]);
 
 const NAME_RE = /^(?!-)(?!.*--)[a-z0-9-]{1,64}(?<!-)$/;
 const DIGEST_RE = /^sha256:[0-9a-f]{64}$/;
@@ -35,6 +36,17 @@ function decodeUtf8(bytes) {
 
 function digestFor(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+export function assertAgentSkillsMediaType(contentType, url = "SKILL.md") {
+  if (typeof contentType !== "string" || !contentType.trim())
+    throw new Error(`SKILL.md Content-Type is missing for ${url}`);
+  const mediaType = contentType.split(";", 1)[0].trim().toLowerCase();
+  if (!AGENT_SKILLS_MEDIA_TYPES.has(mediaType))
+    throw new Error(
+      `SKILL.md Content-Type must be text/markdown or text/plain for ${url}, got ${contentType}`,
+    );
+  return mediaType;
 }
 
 function canonicalSkillUrl(value) {
@@ -149,10 +161,12 @@ export function buildAgentSkillsIndex(
   };
 }
 
-export function assertAgentSkillsArtifact(artifactBytes, entry) {
+export function assertAgentSkillsArtifact(artifactBytes, entry, transport = undefined) {
   const bytes = asBytes(artifactBytes);
   if (entry?.type !== "skill-md") throw new Error("Agent Skills entry type must be skill-md");
   const url = canonicalSkillUrl(entry.url);
+  if (transport && Object.hasOwn(transport, "contentType"))
+    assertAgentSkillsMediaType(transport.contentType, url);
   if (entry.digest !== digestFor(bytes))
     throw new Error(`Agent Skills digest mismatch for ${url}`);
   const frontmatter = parseFrontmatter(bytes);
@@ -164,6 +178,20 @@ export function assertAgentSkillsArtifact(artifactBytes, entry) {
   if (UNSUPPORTED_CAPABILITY_RE.test(frontmatter.markdown))
     throw new Error(`SKILL.md advertises unsupported capability: ${url}`);
   return frontmatter;
+}
+
+export async function assertAgentSkillsFetchedArtifact(response, entry) {
+  if (!response || typeof response.arrayBuffer !== "function")
+    throw new TypeError("Agent Skills artifact response must provide raw bytes");
+  const url = canonicalSkillUrl(entry?.url);
+  if (!response.ok || response.status < 200 || response.status >= 300)
+    throw new Error(`SKILL.md artifact is not reachable: HTTP ${response.status ?? "unknown"} for ${url}`);
+  if (typeof response.url !== "string" || response.url !== url)
+    throw new Error(`SKILL.md artifact response URL is not canonical HTTPS: ${response.url}`);
+  const contentType = response.headers?.get?.("content-type");
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const frontmatter = assertAgentSkillsArtifact(bytes, entry, { contentType });
+  return { bytes, contentType, frontmatter };
 }
 
 export function assertAgentSkillsIndex(index, artifactBytesByUrl = new Map()) {
@@ -215,6 +243,9 @@ function localArtifactPath(dist, url) {
 }
 
 export async function assertAgentSkillsRelease({ root = process.cwd(), dist = join(root, "dist") } = {}) {
+  // Local artifact validation intentionally stays byte-based. The mission's
+  // static server serves .md as application/octet-stream, so accepted Markdown
+  // media types are asserted only on fetched production responses.
   const indexPath = join(dist, AGENT_SKILLS_INDEX_PATH.replace(/^\/+/, ""));
   if (!(await isFile(indexPath))) throw new Error("Agent Skills release is missing index.json");
   const indexBytes = await readFile(indexPath);
