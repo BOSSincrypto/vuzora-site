@@ -37,6 +37,24 @@ function waitForPage() {
   browser(["wait", "250"], 10_000);
 }
 
+function waitForMetadata(expectedPath, expectedRobots) {
+  browser(
+    [
+      "wait",
+      "--fn",
+      `(() => {
+        const pathname = location.pathname.length > 1
+          ? location.pathname.replace(/\\/+$/, "")
+          : location.pathname;
+        const robots = document.querySelector('meta[name="robots"]')?.content;
+        return pathname === ${JSON.stringify(expectedPath)}
+          && robots === ${JSON.stringify(expectedRobots)};
+      })()`,
+    ],
+    10_000,
+  );
+}
+
 function metadataSnapshot() {
   return evaluate(`(() => ({
     path: location.pathname,
@@ -101,28 +119,7 @@ async function navigateWithRouter(route, params, expectedPath, expectedRobots) {
   evaluate(
     `window.__TSR_ROUTER__.navigate({to:${JSON.stringify(route)},params:${JSON.stringify(params)}}).then(() => "navigated")`,
   );
-  const normalizedExpectedPath = JSON.stringify(expectedPath);
-  browser(
-    [
-      "wait",
-      "--fn",
-      `(() => {
-        const pathname = location.pathname.length > 1
-          ? location.pathname.replace(/\\/+$/, "")
-          : location.pathname;
-        return pathname === ${normalizedExpectedPath};
-      })()`,
-    ],
-    10_000,
-  );
-  browser(
-    [
-      "wait",
-      "--fn",
-      `document.querySelector('meta[name="robots"]')?.content === ${JSON.stringify(expectedRobots)}`,
-    ],
-    10_000,
-  );
+  waitForMetadata(expectedPath, expectedRobots);
 }
 
 try {
@@ -152,10 +149,12 @@ try {
 
   browser(["open", `${ORIGIN}/unis/not-a-real-university-direct-xyz`]);
   waitForPage();
+  waitForMetadata("/unis/not-a-real-university-direct-xyz", "noindex");
   assertUnknown(metadataSnapshot(), "/unis/not-a-real-university-direct-xyz");
 
   browser(["open", `${ORIGIN}/blog/not-a-real-post-direct-xyz`]);
   waitForPage();
+  waitForMetadata("/blog/not-a-real-post-direct-xyz", "noindex");
   assertUnknown(metadataSnapshot(), "/blog/not-a-real-post-direct-xyz");
 
   console.log(
