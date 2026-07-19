@@ -97,11 +97,32 @@ function assertUnknown(snapshot, expectedPath) {
   assert.deepEqual(leakedRouteNodes, []);
 }
 
-async function navigateWithRouter(route, params) {
+async function navigateWithRouter(route, params, expectedPath, expectedRobots) {
   evaluate(
     `window.__TSR_ROUTER__.navigate({to:${JSON.stringify(route)},params:${JSON.stringify(params)}}).then(() => "navigated")`,
   );
-  browser(["wait", "500"], 10_000);
+  const normalizedExpectedPath = JSON.stringify(expectedPath);
+  browser(
+    [
+      "wait",
+      "--fn",
+      `(() => {
+        const pathname = location.pathname.length > 1
+          ? location.pathname.replace(/\\/+$/, "")
+          : location.pathname;
+        return pathname === ${normalizedExpectedPath};
+      })()`,
+    ],
+    10_000,
+  );
+  browser(
+    [
+      "wait",
+      "--fn",
+      `document.querySelector('meta[name="robots"]')?.content === ${JSON.stringify(expectedRobots)}`,
+    ],
+    10_000,
+  );
 }
 
 try {
@@ -109,14 +130,24 @@ try {
   waitForPage();
   assertSupported(metadataSnapshot(), "/unis/msu");
 
-  await navigateWithRouter("/unis/$slug", { slug: "not-a-real-university-xyz" });
+  await navigateWithRouter(
+    "/unis/$slug",
+    { slug: "not-a-real-university-xyz" },
+    "/unis/not-a-real-university-xyz",
+    "noindex",
+  );
   assertUnknown(metadataSnapshot(), "/unis/not-a-real-university-xyz");
 
   browser(["open", `${ORIGIN}/blog/msu-utrenniy-plan`]);
   waitForPage();
   assertSupported(metadataSnapshot(), "/blog/msu-utrenniy-plan", "article");
 
-  await navigateWithRouter("/blog/$slug", { slug: "not-a-real-post-xyz" });
+  await navigateWithRouter(
+    "/blog/$slug",
+    { slug: "not-a-real-post-xyz" },
+    "/blog/not-a-real-post-xyz",
+    "noindex",
+  );
   assertUnknown(metadataSnapshot(), "/blog/not-a-real-post-xyz");
 
   browser(["open", `${ORIGIN}/unis/not-a-real-university-direct-xyz`]);
