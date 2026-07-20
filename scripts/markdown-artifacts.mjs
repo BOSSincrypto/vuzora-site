@@ -1,6 +1,9 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { assertAuthBoundaryDocument } from "./discovery-boundaries.mjs";
+import {
+  assertAuthBoundaryDocument,
+  assertNegativeUnsupportedClaim as assertAuthUnsupportedClaim,
+} from "./discovery-boundaries.mjs";
 
 export const MARKDOWN_MEDIA_TYPE = "text/markdown";
 
@@ -33,9 +36,9 @@ const SECRET_RE =
 const ACTIVE_UNSUPPORTED_RE =
   /(?:\b(?:http\s+api|api\s+(?:access|availability|endpoint|service|catalog)|official\s+(?:university\s+)?(?:service|partner)|protected[-\s]+resource(?:\s+support)?|remote\s+mcp|mcp\s+(?:server|integration)|server\s+card|oauth\/oidc\s+(?:issuer|provider|login|sign[-\s]?in|flow|endpoint)|(?:oauth|oidc)\s+(?:issuer|provider|login|sign[-\s]?in|flow))\b|(?:api\s+(?:доступ[а-яё]*|поддерж[а-яё]*|реализ[а-яё]*|предостав[а-яё]*|работ[а-яё]*)|oauth(?:\/oidc)?\s+(?:вход|логин|доступ[а-яё]*)|(?:вход|логин)\s+(?:через\s+)?(?:oauth|oidc|oauth\/oidc)|(?:удал(?:ённ|енн)[а-яё-]*\s+mcp|(?:официальн)[а-яё-]*\s+(?:сервис|партнёр|партнер)|(?:защищ[ёе]н)[а-яё-]*\s+ресурс|mcp[-\s]+сервер)))/i;
 const NEGATIVE_CONTEXT_RE =
-  /(?:нет|не\s|ниже|без|отсутств(?:ует|уют|ует)|недоступ|не\s+(?:доступ|поддерж|реализ|публи|выда|означ|явля|существ)|\bno\b|\bnot\b|\bwithout\b|\bdoes not\b|\bdoesn't\b|\bisn't\b|\bis not\b|\bunavailable\b|\bunsupported\b)/i;
+  /(?:нет|не\s|ниже|без|отсутств(?:ует|уют|ует)|недоступ|не\s+(?:доступ|поддерж|реализ|публи|выда|означ|явля|существ)|\bno\b|\bnot\b|\bwithout\b|\bdoes not\b|\bdoesn't\b|\bisn't\b|\bis not\b|\bunavailable\b|\bunsupported\b|\bnor\b)/i;
 const CONJUNCTION_RE =
-  /(?<![\p{L}\p{N}_])(?:as\s+well\s+as|and|but|or|yet|while|и|но|а|или|либо|зато|однако|при\s+этом)(?![\p{L}\p{N}_])/giu;
+  /(?<![\p{L}\p{N}_])(?:as\s+well\s+as|and|but|nor|or|yet|while|и|но|а|или|либо|зато|однако|при\s+этом)(?![\p{L}\p{N}_])/giu;
 
 function normalized(value) {
   return value.replace(/\r\n?/g, "\n").trim();
@@ -86,10 +89,13 @@ function localClaimBounds(value, index, length) {
     before.lastIndexOf(","),
   );
   const conjunctionsBefore = [...before.matchAll(CONJUNCTION_RE)];
+  const lastConjunction = conjunctionsBefore.at(-1);
   const conjunctionStart =
-    conjunctionsBefore.length > 0
-      ? conjunctionsBefore.at(-1).index + conjunctionsBefore.at(-1)[0].length
-      : -1;
+    lastConjunction?.[0].toLowerCase() === "nor"
+      ? lastConjunction.index
+      : lastConjunction
+        ? lastConjunction.index + lastConjunction[0].length
+        : -1;
   const startOffset = Math.max(
     punctuationStart >= 0 ? punctuationStart + 1 : 0,
     conjunctionStart,
@@ -137,6 +143,7 @@ export function assertMarkdownArtifact(value, entry, label = entry.path) {
   if (SECRET_RE.test(value)) throw new Error(`${label} contains secret-like credential material`);
   if (entry.path === "auth.md") {
     assertAuthBoundaryDocument(value);
+    assertAuthUnsupportedClaim(value, label);
   } else {
     assertNegativeUnsupportedClaim(value, label);
   }

@@ -276,6 +276,49 @@ test("Markdown artifact validation preserves static browser-local WebMCP wording
   assert.doesNotThrow(() => assertMarkdownArtifact(body, entry));
 });
 
+test("Markdown artifact validation applies unsupported-capability guards to auth.md", () => {
+  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "auth.md");
+  assert.ok(entry);
+  const base = [
+    "# auth.md",
+    "",
+    "У Vuzora нет регистрации и входа.",
+    "У сайта нет OAuth/OIDC issuer и нет token endpoint для токенов.",
+    "У сайта нет защищённого HTTP API и нет аутентифицированного сервиса.",
+    "Маршрут: `/auth.md`.",
+  ];
+  const fixtures = [
+    ["English prose", "The site provides an MCP server."],
+    ["Russian prose", "Сайт предоставляет MCP-сервер."],
+  ];
+  for (const [label, claim] of fixtures) {
+    assert.throws(
+      () => assertMarkdownArtifact([...base, claim].join("\n"), entry),
+      /unsupported|advertises/i,
+      label,
+    );
+  }
+});
+
+test("Markdown artifact validation segments independently negative nor clauses", () => {
+  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "auth.md");
+  assert.ok(entry);
+  const base = [
+    "# auth.md",
+    "",
+    "У Vuzora нет регистрации и входа.",
+    "У сайта нет OAuth/OIDC issuer и нет token endpoint для токенов.",
+    "У сайта нет защищённого HTTP API и нет аутентифицированного сервиса.",
+    "Маршрут: `/auth.md`.",
+  ];
+  const validBodies = [
+    "The site has no MCP server nor an MCP server is available.",
+    "An MCP server is unavailable nor does the site provide an MCP server.",
+  ];
+  for (const claim of validBodies)
+    assert.doesNotThrow(() => assertMarkdownArtifact([...base, claim].join("\n"), entry));
+});
+
 test("Markdown release validation fails closed on missing, extra, empty, and divergent artifacts", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-markdown-artifacts-"));
   try {

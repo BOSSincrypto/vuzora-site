@@ -52,8 +52,12 @@ const ACTIVE_ENDPOINT_RE =
 const ACTIVE_PROTOCOL_RE =
   /\b(?:remote|удалённ(?:ый|ого|ом))\s+mcp\b|\b(?:mcp\s+server|server\s+card|protected[-\s]+resource)\b\s*[:=]/i;
 const ACTIVE_OAUTH_RE = /\b(?:oauth|oidc)\b[^.\n]{0,80}\b(?:provider|issuer|server|service|endpoint|flow)\b/i;
+const ACTIVE_UNSUPPORTED_RE =
+  /(?:\b(?:http\s+api|api\s+(?:access|availability|endpoint|service|catalog)|official\s+(?:university\s+)?(?:service|partner)|protected[-\s]+resource(?:\s+support)?|remote\s+mcp|mcp\s+(?:server|integration)|server\s+card|oauth\/oidc\s+(?:issuer|provider|login|sign[-\s]?in|flow|endpoint)|(?:oauth|oidc)\s+(?:issuer|provider|login|sign[-\s]?in|flow))\b|(?:api\s+(?:доступ[а-яё]*|поддерж[а-яё]*|реализ[а-яё]*|предостав[а-яё]*|работ[а-яё]*)|oauth(?:\/oidc)?\s+(?:вход|логин|доступ[а-яё]*)|(?:вход|логин)\s+(?:через\s+)?(?:oauth|oidc|oauth\/oidc)|(?:удал(?:ённ|енн)[а-яё-]*\s+mcp|(?:официальн)[а-яё-]*\s+(?:сервис|партнёр|партнер)|(?:защищ[ёе]н)[а-яё-]*\s+ресурс|mcp[-\s]+сервер)))/i;
 const NEGATIVE_CONTEXT_RE =
-  /(?:нет|не\s|ниже|без|отсутств(?:ует|уют)|не\s+реализован|не\s+публику|не\s+выдаёт|не\s+означает|\bno\b|\bnot\b|\bwithout\b|\bdoes not\b|\bisn't\b|\bis not\b)/i;
+  /(?:нет|не\s|ниже|без|отсутств(?:ует|уют)|недоступ|не\s+реализован|не\s+публику|не\s+выдаёт|не\s+означает|\bno\b|\bnot\b|\bwithout\b|\bdoes not\b|\bdoesn't\b|\bisn't\b|\bis not\b|\bunavailable\b|\bunsupported\b|\bnor\b)/i;
+const CONJUNCTION_RE =
+  /(?<![\p{L}\p{N}_])(?:as\s+well\s+as|and|but|nor|or|yet|while|и|но|а|или|либо|зато|однако|при\s+этом)(?![\p{L}\p{N}_])/giu;
 const ABSOLUTE_DISCOVERY_REFERENCE_RE =
   /(?:https?:)?\/\/[^"'`\s<>()]*?\/(?:[^"'`\s<>()]*\/)?\.well-known\/(?:openid-configuration|oauth-authorization-server|oauth-protected-resource|mcp\/server-card\.json)(?:\/)?(?:[?#][^"'`\s<>()]*)?/gi;
 const RELATIVE_DISCOVERY_REFERENCE_RE =
@@ -79,6 +83,63 @@ function assertNegativeClaim(text, pattern, message) {
   }
 }
 
+function localUnsupportedClaimBounds(value, index, length) {
+  const lineStart = value.lastIndexOf("\n", index) + 1;
+  const lineEndIndex = value.indexOf("\n", index + length);
+  const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
+  const before = value.slice(lineStart, index);
+  const after = value.slice(index + length, lineEnd);
+  const punctuationStart = Math.max(
+    before.lastIndexOf("."),
+    before.lastIndexOf("!"),
+    before.lastIndexOf("?"),
+    before.lastIndexOf(";"),
+    before.lastIndexOf(":"),
+    before.lastIndexOf(","),
+  );
+  const conjunctionsBefore = [...before.matchAll(CONJUNCTION_RE)];
+  const lastConjunction = conjunctionsBefore.at(-1);
+  const conjunctionStart =
+    lastConjunction?.[0].toLowerCase() === "nor"
+      ? lastConjunction.index
+      : lastConjunction
+        ? lastConjunction.index + lastConjunction[0].length
+        : -1;
+  const startOffset = Math.max(
+    punctuationStart >= 0 ? punctuationStart + 1 : 0,
+    conjunctionStart,
+  );
+  const punctuationEndCandidates = [".", "!", "?", ";", ":", ","]
+    .map((boundary) => after.indexOf(boundary))
+    .filter((boundary) => boundary >= 0);
+  const conjunctionsAfter = [...after.matchAll(CONJUNCTION_RE)];
+  const conjunctionEnd = conjunctionsAfter.length > 0 ? conjunctionsAfter[0].index : -1;
+  const endOffsetCandidates = [...punctuationEndCandidates, conjunctionEnd].filter(
+    (boundary) => boundary >= 0,
+  );
+  const endOffset =
+    endOffsetCandidates.length > 0 ? Math.min(...endOffsetCandidates) : after.length;
+  return {
+    start: lineStart + startOffset,
+    end: index + length + endOffset,
+  };
+}
+
+export function assertNegativeUnsupportedClaim(value, label) {
+  const globalPattern = new RegExp(
+    ACTIVE_UNSUPPORTED_RE.source,
+    ACTIVE_UNSUPPORTED_RE.flags.includes("g")
+      ? ACTIVE_UNSUPPORTED_RE.flags
+      : `${ACTIVE_UNSUPPORTED_RE.flags}g`,
+  );
+  for (const match of value.matchAll(globalPattern)) {
+    const { start, end } = localUnsupportedClaimBounds(value, match.index, match[0].length);
+    const context = `${value.slice(start, match.index)} ${value.slice(match.index + match[0].length, end)}`;
+    if (!NEGATIVE_CONTEXT_RE.test(context))
+      throw new Error(`${label} advertises an unsupported capability`);
+  }
+}
+
 export function assertAuthBoundaryDocument(value) {
   if (typeof value !== "string" || !normalized(value)) {
     throw new Error("auth.md must be a non-empty Markdown document");
@@ -100,6 +161,7 @@ export function assertAuthBoundaryDocument(value) {
   if (SECRET_RE.test(value)) throw new Error("auth.md contains secret-like credential material");
   if (/\b(?:https?:\/\/|www\.)/i.test(value))
     throw new Error("auth.md must not link to fictional authentication endpoints");
+  assertNegativeUnsupportedClaim(value, "auth.md");
   assertNegativeClaim(value, ACTIVE_ENDPOINT_RE, "auth.md advertises an implemented auth endpoint");
   assertNegativeClaim(value, ACTIVE_PROTOCOL_RE, "auth.md advertises a remote MCP or protected-resource capability");
   assertNegativeClaim(value, ACTIVE_OAUTH_RE, "auth.md advertises an implemented OAuth/OIDC capability");

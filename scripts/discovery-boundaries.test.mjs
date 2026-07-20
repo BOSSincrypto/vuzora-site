@@ -25,6 +25,39 @@ test("auth.md is an explicit no-auth Markdown boundary", async () => {
   assert.match(body, /аутентифицированного сервиса/i);
 });
 
+test("auth boundary rejects direct English and Russian MCP server prose claims", async () => {
+  const body = await readFile(join(root, "public", AUTH_BOUNDARY_PATH.slice(1)), "utf8");
+  for (const claim of ["The site provides an MCP server.", "Сайт предоставляет MCP-сервер."]) {
+    assert.throws(
+      () => assertAuthBoundaryDocument(`${body}\n${claim}`),
+      /unsupported|advertises/i,
+      claim,
+    );
+  }
+});
+
+test("auth boundary keeps nor clauses local in either order", async () => {
+  const body = await readFile(join(root, "public", AUTH_BOUNDARY_PATH.slice(1)), "utf8");
+  const validClaims = [
+    "The site has no MCP server, nor is an MCP server available.",
+    "No MCP server is available, nor does the site provide an MCP server.",
+  ];
+  for (const claim of validClaims)
+    assert.doesNotThrow(() => assertAuthBoundaryDocument(`${body}\n${claim}`), claim);
+
+  const activeClaims = [
+    "The site provides an MCP server, nor is HTTP API available.",
+    "An MCP server is available, nor is HTTP API unavailable.",
+  ];
+  for (const claim of activeClaims) {
+    assert.throws(
+      () => assertAuthBoundaryDocument(`${body}\n${claim}`),
+      /unsupported|advertises/i,
+      claim,
+    );
+  }
+});
+
 test("negative protocol candidates are fixed and absent from public artifacts", async () => {
   assert.deepEqual(DISCOVERY_NEGATIVE_PATHS, [
     "/.well-known/openid-configuration",
