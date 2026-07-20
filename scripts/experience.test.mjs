@@ -207,6 +207,7 @@ test("route focus manager restores focus after client navigation", async () => {
   assert.match(root, /preventScroll:\s*true/);
   assert.match(root, /sessionStorage|FOCUS_PATH_KEY|vuzora:last-path/);
   assert.match(root, /spaChanged|storageChanged/);
+  assert.match(root, /classList\.contains\("sr-only"\)/);
   // Multi-timeout retries must clear on cleanup and avoid fighting the menu trap.
   assert.match(root, /clearTimeout/);
   assert.match(root, /timeoutIds/);

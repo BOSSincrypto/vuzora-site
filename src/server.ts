@@ -1,6 +1,6 @@
 import "./lib/error-capture";
 
-import { consumeLastCapturedError } from "./lib/error-capture";
+import { consumeLastCapturedError, startErrorCaptureRequest } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
 type ServerEntry = {
@@ -39,6 +39,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const finishErrorCaptureRequest = startErrorCaptureRequest();
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
@@ -49,6 +50,8 @@ export default {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
       });
+    } finally {
+      finishErrorCaptureRequest();
     }
   },
 };

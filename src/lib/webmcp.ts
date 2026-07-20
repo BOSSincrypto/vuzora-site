@@ -144,10 +144,15 @@ export function registerWebMcpTools(target: WebMcpDocument): () => void {
   const options = controller ? { signal: controller.signal } : undefined;
 
   for (const tool of createWebMcpTools()) {
-    void Promise.resolve(modelContext.registerTool(tool, options)).catch(() => {
-      // Unsupported permissions, invalid experimental implementations, and
-      // duplicate registrations must not break the page.
-    });
+    try {
+      void Promise.resolve(modelContext.registerTool(tool, options)).catch(() => {
+        // Unsupported permissions, invalid experimental implementations, and
+        // duplicate registrations must not break the page.
+      });
+    } catch {
+      // Some implementations throw synchronously before returning a promise.
+      // WebMCP is progressive enhancement and must never affect rendering.
+    }
   }
 
   return () => {

@@ -14,11 +14,15 @@ import { PLANS, BRAND, abs, SITE_URL } from "@/content/vuzora";
 import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
-const TITLE = "Тарифы Vuzora – подписка от 49 ₽";
-const DESCRIPTION =
-  "Цена подписки на Vuzora: от 49 ₽ за месяц до 599 ₽ за весь срок обучения. Без рекламы и автопродления.";
-
 const prices = PLANS.map((p) => p.price);
+const minPrice = Math.min(...prices);
+const maxPrice = Math.max(...prices);
+
+const TITLE = `Тарифы Vuzora – от ${minPrice} ₽ до ${maxPrice} ₽`;
+const DESCRIPTION =
+  `Цена подписки на Vuzora: от ${minPrice} ₽ до ${maxPrice} ₽ за выбранный план. ` +
+  "Без рекламы и автопродления.";
+
 const offers = PLANS.map((p) => ({
   "@type": "Offer",
   name: `Vuzora · ${p.period}`,

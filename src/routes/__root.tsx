@@ -241,9 +241,10 @@ function focusRouteSurface() {
   const headings = [...main.querySelectorAll<HTMLElement>("h1, h2")];
   const heading =
     headings.find((el) => {
+      if (el.classList.contains("sr-only")) return false;
       const style = window.getComputedStyle(el);
       return style.display !== "none" && style.visibility !== "hidden";
-    }) ?? headings[0];
+    });
   const target =
     heading ??
     main.querySelector<HTMLElement>(

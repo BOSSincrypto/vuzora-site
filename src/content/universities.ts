@@ -474,10 +474,16 @@ export function universityDetailDescription(university: University): string {
     `Получай расписание пар в Telegram через Vuzora. ${AFFILIATION_BOUNDARY}.`;
   if (withinBounds(compact, DESCRIPTION_MIN, DESCRIPTION_MAX)) return compact;
 
-  // Preserve the full name; trim only the trailing guidance when needed.
-  if (compact.length > DESCRIPTION_MAX) {
-    return compact.slice(0, DESCRIPTION_MAX - 1).trimEnd() + "…";
-  }
-  // Pad short edge-cases (should not occur with the current registry).
-  return `${compact} Расписание в Telegram.`;
+  // Long names cannot be shortened without breaking the identity or the
+  // affiliation boundary. Drop optional context in stages instead of slicing
+  // the string, so the disclaimer is always complete and word-aligned.
+  const boundedCandidates = [
+    `Расписание ${university.name}. ${university.city}. Статус: ${status}. ${AFFILIATION_BOUNDARY}.`,
+    `Расписание ${university.name}. ${university.city}. ${AFFILIATION_BOUNDARY}.`,
+    `Расписание ${university.name}. Статус: ${status}. ${AFFILIATION_BOUNDARY}.`,
+    `Расписание ${university.name}. ${AFFILIATION_BOUNDARY}.`,
+  ];
+  return boundedCandidates.find((candidate) =>
+    withinBounds(candidate, DESCRIPTION_MIN, DESCRIPTION_MAX),
+  ) ?? boundedCandidates[boundedCandidates.length - 1];
 }

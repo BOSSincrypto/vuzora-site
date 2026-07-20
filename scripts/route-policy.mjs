@@ -108,9 +108,9 @@ const CORE_ROUTE_EXPECTATIONS = {
     ],
   },
   "/pricing": {
-    title: "Тарифы Vuzora – подписка от 49 ₽",
+    title: "Тарифы Vuzora – от 49 ₽ до 999 ₽",
     description:
-      "Цена подписки на Vuzora: от 49 ₽ за месяц до 599 ₽ за весь срок обучения. Без рекламы и автопродления.",
+      "Цена подписки на Vuzora: от 49 ₽ до 999 ₽ за выбранный план. Без рекламы и автопродления.",
     heading: "Тарифы и подписка Vuzora",
     internalLinks: ["/pricing", "/unis", "/blog/"],
     jsonLdTypes: ["Product", "BreadcrumbList"],

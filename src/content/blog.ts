@@ -262,11 +262,13 @@ export function findPost(slug: string): BlogPost | undefined {
 
 /** Format an ISO date as `15 июня 2026`. */
 export function formatPostDate(iso: string): string {
-  const d = new Date(iso);
+  const dateValue = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00.000Z` : iso;
+  const d = new Date(dateValue);
   if (Number.isNaN(d.getTime())) return iso;
   return new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   }).format(d);
 }
