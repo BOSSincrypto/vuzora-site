@@ -7,6 +7,20 @@ const field = (record, name) => {
   const match = record.match(new RegExp(`\\b${name}\\s*:\\s*["']([^"']*)["']`));
   return match?.[1];
 };
+export const BLOG_SLUG_RE = /^[a-z0-9-]+$/;
+
+export function assertBlogSlugs(posts) {
+  if (!Array.isArray(posts)) throw new Error("Blog posts must be an array");
+  const slugs = new Set();
+  for (const post of posts) {
+    const slug = typeof post === "string" ? post : post?.slug;
+    if (!slug || !BLOG_SLUG_RE.test(slug))
+      throw new Error(`invalid blog post slug: ${slug ?? "missing"}`);
+    if (slugs.has(slug)) throw new Error(`duplicate blog post slug: ${slug}`);
+    slugs.add(slug);
+  }
+  return posts;
+}
 
 /** Extract the required affiliation-boundary wording from universities helpers. */
 export function readAffiliationBoundary(universitiesSource) {
@@ -47,7 +61,8 @@ export async function readRegistry(root = process.cwd()) {
       summary: field(record, "summary"),
       universitySlug: field(record, "universitySlug") ?? null,
     }))
-    .filter((record) => record.slug && record.title);
+    .filter((record) => record.slug || record.title || record.date || record.summary);
+  assertBlogSlugs(postRecords);
   const posts = postRecords.map((record) => record.slug);
   const focusedPosts = postRecords.filter((record) => record.universitySlug);
   const affiliationBoundary = readAffiliationBoundary(universitiesSource);
@@ -56,6 +71,7 @@ export async function readRegistry(root = process.cwd()) {
 }
 
 export function buildRoutes({ universities, posts }) {
+  assertBlogSlugs(posts);
   const core = ["/", "/pricing", "/unis", "/blog/", "/changelog", "/legal/terms", "/legal/privacy"];
   const blog = posts.map((slug) => `/blog/${slug}`);
   const university = universities
@@ -67,6 +83,10 @@ export function buildRoutes({ universities, posts }) {
 export function artifactFor(route) {
   if (route === "/") return "index.html";
   if (route === "/blog/rss.xml") return "blog/rss.xml";
+  if (route.startsWith("/blog/") && route !== "/blog/") {
+    const slug = route.slice("/blog/".length);
+    if (!BLOG_SLUG_RE.test(slug)) throw new Error(`invalid blog route slug: ${slug || "missing"}`);
+  }
   return `${route.replace(/\/$/, "")}/index.html`.replace(/^\//, "");
 }
 

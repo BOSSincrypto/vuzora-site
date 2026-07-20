@@ -29,7 +29,7 @@ function postUrl(slug) {
   return `${CANONICAL_ORIGIN}/blog/${slug}`;
 }
 
-function dateToRfc822(isoDate) {
+export function dateToRfc822(isoDate) {
   const date = new Date(`${isoDate}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) throw new Error(`Invalid blog post date: ${isoDate}`);
   return date.toUTCString();
@@ -325,8 +325,11 @@ export function assertRssJoin(xml, posts) {
     if (!title) throw new Error(`RSS item missing title for ${expected[index].slug}`);
     if (expected[index].title && title !== expected[index].title)
       throw new Error(`RSS title mismatch for ${expected[index].slug}`);
-    if (!extractTagValues(itemBodies[index], "pubDate")[0])
+    const pubDates = extractTagValues(itemBodies[index], "pubDate");
+    if (pubDates.length !== 1 || !pubDates[0])
       throw new Error(`RSS item missing publication date for ${expected[index].slug}`);
+    if (pubDates[0] !== dateToRfc822(expected[index].date))
+      throw new Error(`RSS publication date mismatch for ${expected[index].slug}`);
     if (!extractTagValues(itemBodies[index], "description")[0])
       throw new Error(`RSS item missing description for ${expected[index].slug}`);
   }

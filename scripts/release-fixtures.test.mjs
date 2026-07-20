@@ -15,7 +15,13 @@ import {
   validateRelease,
 } from "./release-validator.mjs";
 import { assertLlmsJoin, buildLlmsPacket, detailUrl } from "./llms-packet.mjs";
-import { artifactFor, buildRoutes, readRegistry, routeExpectationFor } from "./route-policy.mjs";
+import {
+  artifactFor,
+  assertBlogSlugs,
+  buildRoutes,
+  readRegistry,
+  routeExpectationFor,
+} from "./route-policy.mjs";
 import { hashReleaseBytes, normalizeSitemapLastmodBytes } from "./compare-release.mjs";
 
 const baseHtml = (body, head = "") =>
@@ -185,6 +191,10 @@ test("route discovery metadata rejects alternate-origin and duplicate variants",
       `<link rel="alternate" type="text/plain" href="https://example.com/llms.txt"/>`,
     ],
     [
+      "origin-prefix collision",
+      `<link rel="alternate" type="text/plain" href="https://vuzora.ru.evil.example/llms.txt"/>`,
+    ],
+    [
       "RSS query variant",
       `<link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml?format=xml"/>`,
     ],
@@ -205,6 +215,18 @@ test("route discovery metadata rejects alternate-origin and duplicate variants",
   }
 });
 
+test("release origin checks reject canonical-origin prefix collisions", () => {
+  const document = parseHtmlDocument(
+    `${metadataFixture("/pricing")}
+      <a href="//vuzora.ru.evil.example/unsafe">Unsafe origin</a>
+      <script type="application/ld+json">{"@id":"https://vuzora.ru.evil.example/subject"}</script>`,
+  );
+  const failures = [];
+  validateRouteDocument(document, "/pricing", ["/pricing"], [], failures);
+  assert.ok(failures.some((failure) => /external anchor must use target=_blank/.test(failure)));
+  assert.ok(failures.some((failure) => /JSON-LD uses alternate origin/.test(failure)));
+});
+
 test("validate:release rejects unrelated route discovery alternates", async () => {
   await releaseFixture(async (root) => {
     const path = join(root, "dist", artifactFor("/pricing"));
@@ -218,6 +240,39 @@ test("validate:release rejects unrelated route discovery alternates", async () =
       "utf8",
     );
   }, /pricing: discovery metadata/);
+});
+
+test("blog route policy rejects unsafe, duplicate, and non-canonical slugs before generation", async () => {
+  for (const slug of ["unsafe/child", "..", "unsafe?query", "unsafe#fragment", "UPPER_case"]) {
+    assert.throws(() => assertBlogSlugs([slug]), /invalid blog post slug/);
+    assert.throws(() => buildRoutes({ universities: [], posts: [slug] }), /invalid blog post slug/);
+    assert.throws(() => artifactFor(`/blog/${slug}`), /invalid blog route slug/);
+  }
+  assert.throws(
+    () => assertBlogSlugs(["valid-post", "valid-post"]),
+    /duplicate blog post slug/,
+  );
+  assert.doesNotThrow(() =>
+    assertBlogSlugs(["valid-post", "another-valid-post"]),
+  );
+});
+
+test("validate:release rejects unsafe blog slugs in the authoritative source registry", async () => {
+  await releaseFixture(async (root) => {
+    const blogPath = join(root, "src/content/blog.ts");
+    const source = await readFile(blogPath, "utf8");
+    await writeFile(blogPath, source.replace('slug: "pochemu-utro"', 'slug: "unsafe/child"'), "utf8");
+  }, /invalid blog post slug/);
+
+  await releaseFixture(async (root) => {
+    const blogPath = join(root, "src/content/blog.ts");
+    const source = await readFile(blogPath, "utf8");
+    await writeFile(
+      blogPath,
+      source.replace('slug: "pochemu-utro"', 'slug: "ranepa-raznye-korpusa"'),
+      "utf8",
+    );
+  }, /duplicate blog post slug/);
 });
 
 test("validate:release rejects route-matrix metadata drift fixtures", async () => {
@@ -571,6 +626,18 @@ test("sitemap parser rejects malformed, duplicate, alternate-origin, and artifac
   const valid =
     '<?xml version="1.0"?><urlset><url><loc>https://vuzora.ru/</loc><lastmod>2026-07-16</lastmod></url><url><loc>https://vuzora.ru/pricing</loc></url></urlset>';
   assert.equal(parseSitemapXml(valid).length, 2);
+  assert.throws(
+    () => parseSitemapXml("<sitemap><url><loc>https://vuzora.ru/</loc></url></sitemap>"),
+    /root must be urlset/i,
+  );
+  assert.throws(
+    () => parseSitemapXml("<urlset><unknown><loc>https://vuzora.ru/</loc></unknown></urlset>"),
+    /unexpected sitemap child/i,
+  );
+  assert.throws(
+    () => parseSitemapXml("<urlset><url><loc>https://vuzora.ru/</loc><unknown>x</unknown></url></urlset>"),
+    /unexpected sitemap child/i,
+  );
   assert.throws(
     () =>
       assertSitemap(

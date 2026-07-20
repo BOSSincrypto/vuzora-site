@@ -7,6 +7,7 @@ import { readRegistry } from "./route-policy.mjs";
 import {
   assertRssJoin,
   buildRssFeed,
+  dateToRfc822,
   extractRssPostUrls,
   RSS_PATH,
   RSS_URL,
@@ -99,6 +100,19 @@ test("RSS join fails closed on missing, malformed, insecure, and duplicate items
   );
 });
 
+test("RSS join requires authoritative RFC822 publication dates", () => {
+  const full = buildRssFeed(fixturePosts);
+  const expectedDate = dateToRfc822(fixturePosts[0].date);
+  for (const replacement of ["Tue, 02 Jun 2026 00:00:00 GMT", "not-a-date"]) {
+    const mutated = full.replace(
+      `<pubDate>${expectedDate}</pubDate>`,
+      `<pubDate>${replacement}</pubDate>`,
+    );
+    assert.notEqual(mutated, full);
+    assert.throws(() => assertRssJoin(mutated, fixturePosts), /publication date mismatch/i);
+  }
+});
+
 test("RSS XML validation rejects malformed text, entities, attributes, declarations, and nesting", () => {
   const full = buildRssFeed(fixturePosts);
   const malformedFixtures = {
@@ -162,6 +176,10 @@ test("validate:release rejects each malformed RSS release fixture", async () => 
     ),
     "mismatched tags": valid.replace("</item>", "</channel>"),
     "improperly nested tags": valid.replace("<title>Блог Vuzora</title>", "<title>Блог Vuzora</description>"),
+    "incorrect publication date": valid.replace(
+      /<pubDate>[^<]+<\/pubDate>/,
+      "<pubDate>Tue, 02 Jun 2026 00:00:00 GMT</pubDate>",
+    ),
   };
   const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-rss-"));
   try {

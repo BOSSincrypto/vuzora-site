@@ -25,6 +25,7 @@ import { assertMarkdownRelease } from "./markdown-artifacts.mjs";
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
 export const SUPPORT_CTA = "https://t.me/vuzora_support_bot";
+const TELEGRAM_ORIGIN = "https://t.me";
 
 const PLACEHOLDER_RE = /\b(?:undefined|null|todo|lorem ipsum|placeholder)\b/i;
 const ANALYTICS_RE =
@@ -37,6 +38,35 @@ const HTML_ENTITIES = {
   quot: '"',
   apos: "'",
 };
+
+function parseHttpUrl(value) {
+  if (typeof value !== "string" || !/^(?:https?:|\/\/)/i.test(value)) return undefined;
+  try {
+    return new URL(value, CANONICAL_ORIGIN);
+  } catch {
+    return undefined;
+  }
+}
+
+function hasExactOrigin(value, origin) {
+  return parseHttpUrl(value)?.origin === origin;
+}
+
+function canonicalPathFromUrl(value) {
+  const url = parseHttpUrl(value);
+  if (
+    !url ||
+    !/^https:\/\//i.test(value) ||
+    url.protocol !== "https:" ||
+    url.origin !== CANONICAL_ORIGIN ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  )
+    throw new Error(`sitemap.xml contains a non-canonical locator: ${value}`);
+  return url.pathname;
+}
 
 export function decodeHtmlEntities(value) {
   return value.replace(HTML_ENTITY_RE, (entity) => {
@@ -298,8 +328,9 @@ function expectedMarkerForHref(href) {
 function validateExternalAnchors(document, failures, route) {
   for (const anchor of document.anchors) {
     const href = anchor.href ?? "";
-    const isTelegram = href.startsWith("https://t.me/");
-    const isExternalHttp = /^https?:\/\//.test(href) && !href.startsWith(CANONICAL_ORIGIN);
+    const isHttpLike = Boolean(parseHttpUrl(href));
+    const isTelegram = hasExactOrigin(href, TELEGRAM_ORIGIN);
+    const isExternalHttp = isHttpLike && !hasExactOrigin(href, CANONICAL_ORIGIN);
     if (!isTelegram && !isExternalHttp) continue;
     if (isTelegram && !expectedMarkerForHref(href))
       failures.push(`${route}: unsupported Telegram destination ${href}`);
@@ -429,8 +460,8 @@ export function validateRouteDocument(
       if (
         node["@id"] &&
         typeof node["@id"] === "string" &&
-        node["@id"].startsWith("http") &&
-        !node["@id"].startsWith(CANONICAL_ORIGIN)
+        parseHttpUrl(node["@id"]) &&
+        !hasExactOrigin(node["@id"], CANONICAL_ORIGIN)
       )
         failures.push(`${route}: JSON-LD uses alternate origin`);
     }
@@ -492,9 +523,9 @@ export function validateRouteDocument(
       }
       const externalUniversityAnchors = document.anchors.filter(
         (anchor) =>
-          /^https?:\/\//.test(anchor.href ?? "") &&
-          !anchor.href.startsWith("https://t.me/") &&
-          !anchor.href.startsWith(CANONICAL_ORIGIN),
+          parseHttpUrl(anchor.href ?? "") &&
+          !hasExactOrigin(anchor.href, TELEGRAM_ORIGIN) &&
+          !hasExactOrigin(anchor.href, CANONICAL_ORIGIN),
       );
       if (university.officialUrl) {
         const officialAnchors = document.anchors.filter(
@@ -642,6 +673,7 @@ export function parseSitemapXml(xml) {
   const stack = [];
   const entries = [];
   let current;
+  let rootName;
   for (const token of tokens) {
     if (token.startsWith("<!--") || token.startsWith("<?")) continue;
     if (token.startsWith("<")) {
@@ -661,11 +693,23 @@ export function parseSitemapXml(xml) {
       if (!open) throw new Error("malformed sitemap XML token");
       const name = open[1];
       if (open[2]) throw new Error(`unexpected self-closing sitemap tag ${name}`);
+      if (!stack.length) {
+        if (rootName) throw new Error("sitemap XML contains multiple roots");
+        if (name !== "urlset") throw new Error(`sitemap root must be urlset, found ${name}`);
+        rootName = name;
+      } else if (stack.length === 1 && name !== "url") {
+        throw new Error(`unexpected sitemap child ${name}`);
+      } else if (
+        stack.length === 2 &&
+        (!current || !["loc", "lastmod", "changefreq", "priority"].includes(name))
+      ) {
+        throw new Error(`unexpected sitemap child ${name}`);
+      } else if (stack.length > 2) {
+        throw new Error(`unexpected nested sitemap element ${name}`);
+      }
       stack.push(name);
-      if (name === "urlset" && stack.length !== 1)
-        throw new Error("urlset must be the sitemap root");
       if (name === "url") {
-        if (stack.length !== 2 || current) throw new Error("invalid sitemap url nesting");
+        if (current) throw new Error("invalid sitemap url nesting");
         current = { _fields: new Set() };
       } else if (
         stack.length === 3 &&
@@ -696,14 +740,13 @@ export function assertSitemap(xml, routes, artifactExists = () => true, includeR
   const expected = expectedRoutes.map((route) => `${CANONICAL_ORIGIN}${route}`);
   if (new Set(locs).size !== locs.length)
     throw new Error("sitemap.xml contains duplicate loc entries");
-  if (locs.some((loc) => !/^https:\/\/vuzora\.ru\/(?:[^?#]+)?$/.test(loc)))
-    throw new Error("sitemap.xml contains a non-canonical locator");
+  const canonicalRoutes = locs.map((loc) => canonicalPathFromUrl(loc));
   if (locs.length !== expected.length || expected.some((loc) => !locs.includes(loc)))
     throw new Error(
       `sitemap route set mismatch: expected ${expected.length}, found ${locs.length}`,
     );
-  for (const entry of entries) {
-    const route = entry.loc.slice(CANONICAL_ORIGIN.length);
+  for (const [index, entry] of entries.entries()) {
+    const route = canonicalRoutes[index];
     if (!artifactExists(artifactFor(route)))
       throw new Error(`sitemap locator has no matching artifact: ${entry.loc}`);
     if (entry.lastmod && !/^\d{4}-\d{2}-\d{2}$/.test(entry.lastmod))
@@ -915,7 +958,7 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
           .filter(Boolean);
         const sitemapRoutes = (await exists(join(dist, "sitemap.xml")))
           ? parseSitemapXml(await read(join(dist, "sitemap.xml"))).map((entry) =>
-              entry.loc.slice(CANONICAL_ORIGIN.length),
+              canonicalPathFromUrl(entry.loc),
             )
           : [];
         const discoveryRoutes = deriveDiscoveryRoutes({
