@@ -17,7 +17,7 @@ const XML_ESCAPE = {
   "'": "&apos;",
   '"': "&quot;",
 };
-const POST_URL_RE = /<link>https:\/\/vuzora\.ru\/blog\/([a-z0-9-]+)<\/link>/g;
+const POST_URL_RE = /<link>https:\/\/vuzora\.ru\/blog\/([a-z0-9-]+)\/<\/link>/g;
 const SECRET_PATTERN_RE =
   /\b(?:api[_-]?key|cloudflare|cf[-_]?api(?:[_-]?token)?|sk_live|sk_test|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-|Bearer\s+[A-Za-z0-9\-._~+/]+=*|DATABASE_URL|postgres(?:ql)?:\/\/\S+:\S+@|mongodb(?:\+srv)?:\/\/\S+:\S+@|AKIA[0-9A-Z]{16})\b/i;
 
@@ -26,7 +26,7 @@ function escapeXml(value) {
 }
 
 function postUrl(slug) {
-  return `${CANONICAL_ORIGIN}/blog/${slug}`;
+  return `${CANONICAL_ORIGIN}/blog/${slug}/`;
 }
 
 export function dateToRfc822(isoDate) {
@@ -307,7 +307,7 @@ export function assertRssJoin(xml, posts) {
   const links = itemBodies.map((item) => extractTagValues(item, "link")[0] ?? "");
   const guids = itemBodies.map((item) => extractTagValues(item, "guid")[0] ?? "");
   const slugs = links.map((link) => {
-    const match = link.match(/^https:\/\/vuzora\.ru\/blog\/([a-z0-9-]+)$/);
+    const match = link.match(/^https:\/\/vuzora\.ru\/blog\/([a-z0-9-]+)\/$/);
     if (!match) throw new Error(`RSS item has non-canonical blog link: ${link || "missing"}`);
     return match[1];
   });

@@ -40,6 +40,8 @@ test("RSS builder emits well-formed RSS 2.0 with canonical item metadata", () =>
   assert.match(feed, /<channel>[\s\S]*<\/channel>/);
   assert.equal((feed.match(/<item>/g) ?? []).length, fixturePosts.length);
   assert.match(feed, new RegExp(`${RSS_URL}/?`));
+  assert.match(feed, /<link>https:\/\/vuzora\.ru\/blog\/first-post\/<\/link>/);
+  assert.doesNotMatch(feed, /<link>https:\/\/vuzora\.ru\/blog\/first-post<\/link>/);
   assert.deepEqual(
     extractRssPostUrls(feed).map((entry) => entry.slug),
     fixturePosts.map((post) => post.slug),
@@ -83,11 +85,11 @@ test("RSS join fails closed on missing, malformed, insecure, and duplicate items
   assert.throws(() => assertRssJoin("<rss version=\"2.0\"><channel /></rss>", fixturePosts), /encoding/i);
   const full = buildRssFeed(fixturePosts);
   assert.throws(
-    () => assertRssJoin(full.replace("https://vuzora.ru/blog/first-post", "/blog/first-post"), fixturePosts),
+    () => assertRssJoin(full.replace("https://vuzora.ru/blog/first-post/", "/blog/first-post"), fixturePosts),
     /non-canonical/i,
   );
   assert.throws(
-    () => assertRssJoin(full.replace("https://vuzora.ru/blog/second-post", "https://vuzora.ru/blog/first-post"), fixturePosts),
+    () => assertRssJoin(full.replace("https://vuzora.ru/blog/second-post/", "https://vuzora.ru/blog/first-post/"), fixturePosts),
     /duplicate/i,
   );
   assert.throws(
