@@ -1,0 +1,7 @@
+services:
+  web:
+    start: PORT=3100 node scripts/static-server.mjs dist
+    stop: lsof -ti :3100 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://127.0.0.1:3100/
+    port: 3100
+    depends_on: []
