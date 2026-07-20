@@ -5,6 +5,14 @@ Russian SEO-oriented marketing site for [Vuzora](https://vuzora.ru) — a Telegr
 - Live: https://vuzora.ru
 - Repo: https://github.com/BOSSincrypto/vuzora-site
 
+## For AI agents
+
+Start with [AI-CONTEXT.md](AI-CONTEXT.md) for architecture and product
+boundaries, then use [AI-CHANGE-CHECKLIST.md](AI-CHANGE-CHECKLIST.md) for
+editing and release steps. Repository rules are in [AGENTS.md](AGENTS.md);
+Cloudflare and edge boundaries are in
+[AGENT-DISCOVERY-EDGE-RUNBOOK.md](AGENT-DISCOVERY-EDGE-RUNBOOK.md).
+
 ## Stack
 
 - TanStack Start / TanStack Router
