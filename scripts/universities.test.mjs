@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { artifactFor, buildRoutes, readRegistry } from "./route-policy.mjs";
+import { runPinnedBun } from "./run-bun-test.mjs";
 
 const root = process.cwd();
 const SLUG_RE = /^[a-z0-9-]+$/;
@@ -214,7 +215,6 @@ test("detail content exposes query intent, required sections, and registry FAQ h
 });
 
 test("university FAQ framing varies by city cluster", async () => {
-  const { spawnSync } = await import("node:child_process");
   const script = `
 import { UNIVERSITIES, universityFaq } from "./src/content/universities.ts";
 
@@ -249,10 +249,7 @@ for (const faq of allFaq) {
 }
 console.log("OK FAQ clusters");
 `;
-  const result = spawnSync("npx", ["--yes", "bun@1.3.14", "-e", script], {
-    cwd: root,
-    encoding: "utf8",
-  });
+  const result = runPinnedBun(script);
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /OK FAQ clusters/);
 });
