@@ -208,6 +208,10 @@ fail-closed.
   primitives was removed along with 45 runtime dependencies; Tailwind's
   `@source "../src"` scan had been emitting their classes into the shipped
   stylesheet. Add a dependency only when something rendered actually imports it.
+- There is no client data-fetching library. Route loaders are synchronous
+  registry lookups over bundled content; TanStack Query was scaffold residue
+  with zero queries and was removed. Do not reintroduce a query client until a
+  rendered surface actually fetches data.
 - The build depends on no vendor toolchain and no package registry other than
   `registry.npmjs.org`; `scripts/release.test.mjs` fails the release if either
   changes.

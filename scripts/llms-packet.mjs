@@ -16,7 +16,6 @@ export const NAMED_AI_CRAWLERS = [
   "ChatGPT-User",
   "Google-Extended",
   "Meta-ExternalAgent",
-  "Gemini",
 ];
 export const APPROVED_CONTENT_SIGNAL = Object.freeze({
   "ai-train": "yes",

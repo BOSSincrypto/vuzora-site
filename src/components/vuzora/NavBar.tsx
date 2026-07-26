@@ -26,8 +26,12 @@ const MOBILE_MENU_ID = "vuzora-mobile-menu";
  * `lg:hidden`; once the viewport matches this query the compact menu must
  * force-close so we never leave aria-expanded=true + body scroll-lock after a
  * mobile→desktop resize (VAL-BROWSER-007).
+ *
+ * Kept in rem so it tracks Tailwind's rem-based `--breakpoint-lg` (64rem)
+ * under user font scaling — a px value would diverge and force-close a
+ * legitimately open mobile menu.
  */
-export const DESKTOP_NAV_MQ = "(min-width: 1024px)";
+export const DESKTOP_NAV_MQ = "(min-width: 64rem)";
 
 /**
  * Pure desktop-media handler used by {@link NavBar} and unit-tested for the
@@ -55,6 +59,13 @@ export function NavBar() {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeMenu = useCallback(() => setOpen(false), []);
   const toggleMenu = useCallback(() => setOpen((v) => !v), []);
+  // Closing from inside the panel hides the element that holds focus — return
+  // focus to the toggle (mirroring the Escape path) so it is never dropped
+  // into the inert panel.
+  const closeMenuFromPanel = useCallback(() => {
+    setOpen(false);
+    toggleRef.current?.focus();
+  }, []);
 
   /**
    * Give the clicked link a quick pop and flash the target section so users
@@ -139,9 +150,14 @@ export function NavBar() {
         toggleRef.current?.focus();
       }
       if (e.key === "Tab" && panelRef.current) {
-        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
-          'a, button, [tabindex]:not([tabindex="-1"])',
-        );
+        // The toggle (visible ✕) precedes the panel in the DOM — include it
+        // in the cycle so the close button stays keyboard-reachable.
+        const focusables = [
+          toggleRef.current,
+          ...panelRef.current.querySelectorAll<HTMLElement>(
+            'a, button, [tabindex]:not([tabindex="-1"])',
+          ),
+        ].filter((el): el is HTMLElement => el !== null);
         if (focusables.length === 0) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
@@ -260,7 +276,7 @@ export function NavBar() {
         </div>
       </nav>
 
-      <MobileMenu id={MOBILE_MENU_ID} open={open} onClose={closeMenu} ref={panelRef} />
+      <MobileMenu id={MOBILE_MENU_ID} open={open} onClose={closeMenuFromPanel} ref={panelRef} />
     </header>
   );
 }

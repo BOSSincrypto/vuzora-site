@@ -512,6 +512,34 @@ export function validateRouteDocument(
       failures.push(`${route}: social image markers are missing or disagree`);
   }
   validateExternalAnchors(document, failures, route);
+  if (route === "/unis/") {
+    // Nested ItemList items must carry the canonical trailing-slash identity
+    // so directory nodes join the CollegeOrUniversity nodes on detail pages.
+    const itemList = document.jsonLd
+      .flatMap(flattenJsonLd)
+      .find((node) => node["@type"] === "ItemList");
+    const elements = Array.isArray(itemList?.itemListElement) ? itemList.itemListElement : [];
+    const registrySlugs = universities.filter((record) => record.slug);
+    if (elements.length !== registrySlugs.length)
+      failures.push(`${route}: ItemList must carry one entry per registry university`);
+    elements.forEach((element, index) => {
+      if (element?.position !== index + 1)
+        failures.push(`${route}: ItemList positions must be sequential from 1`);
+    });
+    for (const university of registrySlugs) {
+      const expectedUrl = `${CANONICAL_ORIGIN}/unis/${university.slug}/`;
+      const item = elements
+        .map((element) => element?.item)
+        .find((candidate) => candidate?.url === expectedUrl);
+      if (
+        !item ||
+        item["@id"] !== `${expectedUrl}#university` ||
+        item.name !== university.name ||
+        item.address?.addressLocality !== university.city
+      )
+        failures.push(`${route}: ItemList item must use the canonical ${expectedUrl} identity`);
+    }
+  }
   if (route.startsWith("/unis/") && route !== "/unis/") {
     const university = universities.find(
       (record) => record.slug === routeSegment(route, "/unis/"),
@@ -844,6 +872,17 @@ async function htmlFiles(directory) {
   return files;
 }
 
+async function filesUnder(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...(await filesUnder(path)));
+    else files.push(path);
+  }
+  return files;
+}
+
 export async function validateRelease({ root = process.cwd(), dist = join(root, "dist") } = {}) {
   const failures = [];
   const fail = (message) => failures.push(message);
@@ -1113,23 +1152,20 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
           fail(`artifact scan failed for ${relative(dist, path)}: ${error.message}`);
         }
       }
-      // Scan CSS/JS assets under dist/assets for collector endpoints.
+      // Scan every text asset in the dist tree for collector endpoints —
+      // nested asset directories and files outside dist/assets included.
       try {
-        const assetDir = join(dist, "assets");
-        if (await exists(assetDir)) {
-          const assets = await readdir(assetDir);
-          for (const name of assets) {
-            if (!/\.(js|css|html|txt|xml|json)$/i.test(name)) continue;
-            const body = await read(join(assetDir, name));
-            // React minifiers can produce the substring "gtag" inside unrelated symbols;
-            // require a real collector/domain token rather than bare 4-letter coincidence.
-            if (
-              /\b(?:plausible\.io|google-analytics|googletagmanager\.com|yandex(?:\.ru)?\/metrika|mc\.yandex|metrika\.yandex|hotjar\.com|segment\.com|fullstory\.com|mixpanel\.com|amplitude\.com)\b/i.test(
-                body,
-              )
+        for (const path of await filesUnder(dist)) {
+          if (!/\.(js|css|txt|xml|json|svg|md|webmanifest)$/i.test(path)) continue;
+          const body = await read(path);
+          // React minifiers can produce the substring "gtag" inside unrelated symbols;
+          // require a real collector/domain token rather than bare 4-letter coincidence.
+          if (
+            /\b(?:plausible\.io|google-analytics|googletagmanager\.com|yandex(?:\.ru)?\/metrika|mc\.yandex|metrika\.yandex|hotjar\.com|segment\.com|fullstory\.com|mixpanel\.com|amplitude\.com)\b/i.test(
+              body,
             )
-              fail(`analytics collector domain found in assets/${name}`);
-          }
+          )
+            fail(`analytics collector domain found in ${relative(dist, path)}`);
         }
       } catch (error) {
         fail(`asset analytics scan failed: ${error.message}`);

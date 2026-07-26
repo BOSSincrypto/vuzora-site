@@ -2,52 +2,36 @@
  * Router factory.
  *
  * TanStack Start invokes {@link getRouter} once per request (SSR) and once
- * per page load (browser). Returning a fresh `QueryClient` per call is
- * critical: a module-level singleton would leak cached query data between
- * concurrent server requests.
+ * per page load (browser).
  *
  * Globally registered here:
  *  - `defaultErrorComponent` — branded fallback when a route's own
  *    `errorComponent` isn't set.
  *  - `defaultNotFoundComponent` — branded 404 for unmatched URLs.
- *  - `defaultPreloadStaleTime: 0` — lets TanStack Query own cache
- *    freshness instead of the router's own SWR.
  *
  * @module router
  */
 
-import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { RouteErrorFallback, RouteNotFoundFallback } from "./components/vuzora/ui/RouteFallbacks";
 
 /**
- * Build a configured TanStack Router instance with its own QueryClient.
+ * Build a configured TanStack Router instance.
  *
  * @returns A router ready to be handed to `RouterProvider` (client) or
  *          TanStack Start's SSR entry (server).
  */
 export const getRouter = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        // Sane defaults so transient network blips don't blank a page.
-        retry: 1,
-        staleTime: 30_000,
-      },
-    },
-  });
-
   const router = createRouter({
     routeTree,
-    context: { queryClient },
     scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
     // GitHub Pages serves every prerendered route from `<route>/index.html`, so
     // the slashless form 301-redirects. The router default is "never", which
-    // would emit exactly that redirecting form from every <Link>. Keep `to`
-    // props slashless (that is what the generated route union accepts) and let
-    // this normalize the rendered href.
+    // would emit exactly that redirecting form from every <Link>. With
+    // `trailingSlash: "always"` the generated `to` union spells page routes in
+    // the canonical slashed form — write `to` props with the slash, as the
+    // rest of the codebase does.
     trailingSlash: "always",
     defaultErrorComponent: ({ error, reset }) => (
       <RouteErrorFallback error={error} reset={reset} label="default" />

@@ -244,11 +244,11 @@ test("validate:release rejects robots policies that drift from named crawler acc
       recursive: true,
       filter: (source) => !source.includes("node_modules"),
     });
-    const missingNamedAgent = original.replace(/^User-agent:\s*Gemini[\s\S]*?^Allow:\s*\/\s*$/im, "");
+    const missingNamedAgent = original.replace(/^User-agent:\s*GPTBot[\s\S]*?^Allow:\s*\/\s*$/im, "");
     await writeFile(join(fixtureRoot, "dist/robots.txt"), missingNamedAgent, "utf8");
     await assert.rejects(
       () => validateRelease({ root: fixtureRoot, dist: join(fixtureRoot, "dist") }),
-      /robots\.txt.*(?:named|Gemini|AI crawler)|GPTBot|Gemini/i,
+      /robots\.txt.*(?:named|AI crawler)|GPTBot/i,
     );
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });

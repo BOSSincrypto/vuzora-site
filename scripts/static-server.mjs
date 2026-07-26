@@ -48,8 +48,30 @@ function resolveFile(pathname) {
 
 const server = http.createServer((request, response) => {
   const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
-  const pathname = decodeURIComponent(url.pathname);
-  const file = resolveFile(pathname);
+  // Malformed percent-encoding must 404, not kill the process: WHATWG URL
+  // preserves invalid sequences (`/%`, `/%zz`), so decodeURIComponent throws.
+  let pathname;
+  try {
+    pathname = decodeURIComponent(url.pathname);
+  } catch {
+    pathname = null;
+  }
+
+  // GitHub Pages answers a slashless directory request with a 301 to the
+  // slashed form; mirror it so regressions exercise the redirect users get.
+  // An extensionless `.html` sibling wins over the redirect, as on Pages.
+  if (pathname !== null && !pathname.endsWith("/") && !path.extname(pathname)) {
+    if (
+      fileIfExists(path.join(root, pathname, "index.html")) &&
+      !fileIfExists(path.join(root, `${pathname}.html`))
+    ) {
+      response.writeHead(301, { Location: `${url.pathname}/${url.search}` });
+      response.end();
+      return;
+    }
+  }
+
+  const file = pathname === null ? null : resolveFile(pathname);
 
   if (!file) {
     const notFound = fileIfExists(path.join(root, "404.html"));

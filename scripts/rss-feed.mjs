@@ -42,7 +42,7 @@ export function dateToRfc822(isoDate) {
 
 /**
  * Build a deterministic RSS 2.0 feed from the committed blog posts.
- * @param {Array<{ slug: string, title: string, date: string, summary: string, body: readonly string[] }>} posts
+ * @param {Array<{ slug: string, title: string, date: string, summary: string }>} posts
  */
 export function buildRssFeed(posts) {
   if (!Array.isArray(posts)) throw new Error("RSS posts input must be an array");
@@ -52,7 +52,8 @@ export function buildRssFeed(posts) {
         throw new Error(`RSS post is incomplete: ${post?.slug ?? "unknown"}`);
       }
       const url = postUrl(post.slug);
-      const description = [post.summary, ...(post.body ?? [])].join(" ");
+      // readRegistry supplies summaries only — descriptions are summaries.
+      const description = post.summary;
       return [
         "    <item>",
         `      <title>${escapeXml(post.title)}</title>`,

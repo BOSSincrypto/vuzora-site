@@ -25,20 +25,16 @@ export default defineConfig({
   // transform can break the static output while the dev preview looks fine.
   // Pinning both to Lightning CSS keeps the preview honest.
   css: { transformer: "lightningcss" },
+  // Baked in at build time so SSR HTML and the client bundle always agree —
+  // no hydration drift — while the daily cron rebuild keeps the year fresh.
+  define: { __BUILD_YEAR__: JSON.stringify(new Date().getUTCFullYear()) },
   resolve: {
     // `tsConfigPaths` already maps `@/*`; the alias keeps resolution working
     // for tools that read the Vite config without the tsconfig.
     alias: { "@": new URL("./src", import.meta.url).pathname },
-    // A second copy of React or the query client breaks hooks and cache
-    // identity across the SSR/client boundary.
-    dedupe: [
-      "react",
-      "react-dom",
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-      "@tanstack/react-query",
-      "@tanstack/query-core",
-    ],
+    // A second copy of React breaks hooks identity across the SSR/client
+    // boundary.
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },
   plugins: [
     tailwindcss(),

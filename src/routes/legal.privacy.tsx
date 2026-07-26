@@ -27,6 +27,8 @@ export const Route = createFileRoute("/legal/privacy")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: abs("/legal/privacy/") },
       { property: "og:image", content: abs(ogCover) },
+      { property: "og:image:width", content: "1216" },
+      { property: "og:image:height", content: "640" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Политика конфиденциальности – Vuzora" },
       {
@@ -138,8 +140,8 @@ function PrivacyPage() {
           <li>Платёжный провайдер – обработка оплаты подписки.</li>
         </ul>
         <p className="mt-3">
-          Vuzora не передаёт данные рекламным сетям и не использует сторонние трекеры на сайте:
-          только обезличенная веб-аналитика без cookie.
+          Vuzora не передаёт данные рекламным сетям и не использует на сайте cookie,
+          веб-аналитику и сторонние трекеры.
         </p>
       </Section>
 

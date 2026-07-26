@@ -4,10 +4,11 @@
  * NOT the shipped artifact. `scripts/prepare-release.mjs` overwrites
  * `dist/sitemap.xml` with the registry/route-policy set so seeds and release
  * validation share one explicit list; this handler only answers `vite dev` and
- * `vite preview`. The two agree on the URL set — this one additionally emits
- * `changefreq`/`priority`, which the released file omits. Fix drift in
- * `scripts/route-policy.mjs` first; editing this file alone changes nothing
- * that GitHub Pages serves.
+ * `vite preview`. The two agree on the URL set and lastmod semantics (post
+ * dates for blog surfaces, current/build day elsewhere) — this one
+ * additionally emits `changefreq`/`priority`, which the released file omits.
+ * Fix drift in `scripts/route-policy.mjs` first; editing this file alone
+ * changes nothing that GitHub Pages serves.
  *
  * @module routes/sitemap.xml
  */

@@ -1,7 +1,7 @@
 /**
  * Shared 1 Hz clock tick.
  *
- * Every component that needs the current time (LiveClock, UntilNextDelivery,
+ * Every component that needs the current time (LiveClock, SunriseEgg,
  * future countdowns, …) subscribes to one global `setInterval` instead of
  * spinning up its own. This keeps the JS main-thread cost flat regardless of
  * how many clocks are rendered.

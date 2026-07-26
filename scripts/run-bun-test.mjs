@@ -14,5 +14,7 @@ export function runPinnedBun(source, options = {}) {
   ) {
     return direct;
   }
-  return spawnSync(process.execPath, ["--import", "tsx", "-e", source], spawnOptions);
+  // No local bun: fetch the pinned version, matching the suite's other callers.
+  // (`node --import tsx` is not an option — tsx is not a dependency here.)
+  return spawnSync("npx", ["--yes", "bun@1.3.14", "-e", source], spawnOptions);
 }

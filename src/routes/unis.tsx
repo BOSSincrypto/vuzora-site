@@ -10,7 +10,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { NavBar } from "@/components/vuzora/NavBar";
 import { Universities } from "@/components/vuzora/Universities";
 import { Footer } from "@/components/vuzora/Footer";
-import { AFFILIATION_BOUNDARY, UNIVERSITIES, abs, SITE_URL } from "@/content/vuzora";
+import {
+  AFFILIATION_BOUNDARY,
+  UNIVERSITIES,
+  abs,
+  SITE_URL,
+  universityPageUrl,
+} from "@/content/vuzora";
 import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
@@ -28,6 +34,8 @@ export const Route = createFileRoute("/unis")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: abs("/unis/") },
       { property: "og:image", content: abs(ogCover) },
+      { property: "og:image:width", content: "1216" },
+      { property: "og:image:height", content: "640" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
@@ -49,9 +57,11 @@ export const Route = createFileRoute("/unis")({
             position: i + 1,
             item: {
               "@type": "CollegeOrUniversity",
-              "@id": abs(`/unis/${u.slug}#university`),
+              // Canonical trailing-slash form via universityPageUrl so these
+              // @ids join the CollegeOrUniversity nodes on the detail pages.
+              "@id": `${universityPageUrl(u.slug)}#university`,
               name: u.name,
-              url: abs(`/unis/${u.slug}`),
+              url: universityPageUrl(u.slug),
               address: {
                 "@type": "PostalAddress",
                 addressLocality: u.city,

@@ -100,7 +100,7 @@ export function Pricing() {
 
             <div className="mt-6 flex flex-wrap items-center gap-4">
               <CtaButton href={LINKS.genericBotUrl} variant="primary" data-cta="generic-conversion">
-                Открыть бесплатно · 2 недели
+                Открыть бесплатно · до 31.10.2026
               </CtaButton>
               {/* Root-relative: this section is also mounted on `/pricing`,
                   where no `#faq` block exists. Same-document on `/`. */}
