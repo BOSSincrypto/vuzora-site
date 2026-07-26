@@ -17,6 +17,7 @@ import {
   CHECKS_MAX,
   CHECKS_MIN,
   MINUTES_PER_CHECK,
+  checksNoun,
   useCalculator,
 } from "./calculator/useCalculator";
 
@@ -72,9 +73,7 @@ export const Calculator = memo(function Calculator() {
               >
                 {checks}
               </span>
-              <span className="text-sm text-white/55">
-                {checks === 1 ? "раз в день" : checks < 5 ? "раза в день" : "раз в день"}
-              </span>
+              <span className="text-sm text-white/55">{checksNoun(checks)} в день</span>
             </div>
 
             <label htmlFor={sliderId} className="sr-only">
