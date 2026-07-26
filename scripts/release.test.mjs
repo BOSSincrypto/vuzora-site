@@ -11,6 +11,14 @@ test("release configuration pins static prerendering and fails on errors", async
   const config = await read("vite.config.ts");
   assert.equal(await read(".bun-version"), "1.3.14\n");
   assert.match(await read("package.json"), /"packageManager":\s*"bun@1\.3\.14"/);
+  // Every generator, validator, test and browser regression runs under `node`,
+  // so the runtime is pinned alongside Bun rather than inherited from whatever
+  // the runner image ships.
+  const nodeVersion = (await read(".node-version")).trim();
+  assert.match(nodeVersion, /^\d+\.\d+\.\d+$/);
+  const workflow = await read(".github/workflows/deploy.yml");
+  assert.match(workflow, /actions\/setup-node@[0-9a-f]{40}/);
+  assert.match(workflow, /node-version-file:\s*"\.node-version"/);
   assert.match(config, /prerender:\s*\{/);
   assert.match(config, /enabled:\s*true/);
   assert.match(config, /failOnError:\s*true/);
