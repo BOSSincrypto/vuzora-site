@@ -34,18 +34,18 @@ test("Markdown artifact validation rejects HTML, binary, unsupported claims, and
   assert.ok(entry);
   assert.doesNotThrow(() =>
     assertMarkdownArtifact(
-      "# Поддерживаемые вузы – Vuzora\n\nМаршрут: `/unis`.\n",
+      "# Поддерживаемые вузы – Vuzora\n\nМаршрут: `/unis/`.\n",
       entry,
     ),
   );
   const fixtures = [
     ["HTML", "<!doctype html><html><h1>Поддерживаемые вузы – Vuzora</h1></html>"],
-    ["binary", "# Поддерживаемые вузы – Vuzora\n\0\nМаршрут: `/unis`."],
+    ["binary", "# Поддерживаемые вузы – Vuzora\n\0\nМаршрут: `/unis/`."],
     [
       "unsupported API",
-      "# Поддерживаемые вузы – Vuzora\n\nМаршрут: `/unis`.\nAPI endpoint: https://vuzora.ru/api.\n",
+      "# Поддерживаемые вузы – Vuzora\n\nМаршрут: `/unis/`.\nAPI endpoint: https://vuzora.ru/api.\n",
     ],
-    ["identity", "# Каталог\n\nМаршрут: `/unis`.\n"],
+    ["identity", "# Каталог\n\nМаршрут: `/unis/`.\n"],
   ];
   for (const [label, body] of fixtures) {
     assert.throws(
@@ -67,7 +67,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "",
         "HTTP API is not available.",
         "The site provides an HTTP API.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -77,7 +77,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "",
         "OAuth/OIDC вход не поддерживается.",
         "OAuth login is available.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -87,7 +87,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "",
         "Удалённый MCP-сервер отсутствует.",
         "Remote MCP integration is available.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -97,7 +97,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "",
         "MCP Server Card не публикуется.",
         "The MCP Server Card is published.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -107,7 +107,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "",
         "Сервис не является официальным сервисом вуза.",
         "Vuzora is an official university service.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -116,7 +116,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "# Поддерживаемые вузы – Vuzora",
         "",
         "Vuzora предоставляет HTTP API.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -125,7 +125,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "# Поддерживаемые вузы – Vuzora",
         "",
         "OAuth вход доступен.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -134,7 +134,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "# Поддерживаемые вузы – Vuzora",
         "",
         "Поддержка защищённого ресурса доступна.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -143,7 +143,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
         "# Поддерживаемые вузы – Vuzora",
         "",
         "Vuzora — официальный сервис вуза.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
   ];
@@ -168,7 +168,7 @@ test("Markdown artifact validation preserves local negative boundaries", () => {
     "MCP Server Card не публикуется.",
     "Сервис не является официальным сервисом вуза.",
     "Static-only, browser-local WebMCP is a read-only enhancement.",
-    "Маршрут: `/unis`.",
+    "Маршрут: `/unis/`.",
   ].join("\n");
   assert.doesNotThrow(() => assertMarkdownArtifact(body, entry));
 });
@@ -183,7 +183,7 @@ test("Markdown artifact validation rejects direct MCP server claims in either la
         "# Поддерживаемые вузы – Vuzora",
         "",
         "HTTP API is not available but the site provides an MCP server.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -192,7 +192,7 @@ test("Markdown artifact validation rejects direct MCP server claims in either la
         "# Поддерживаемые вузы – Vuzora",
         "",
         "The site provides an MCP server but HTTP API is not available.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -201,7 +201,7 @@ test("Markdown artifact validation rejects direct MCP server claims in either la
         "# Поддерживаемые вузы – Vuzora",
         "",
         "HTTP API не поддерживается и сайт предоставляет MCP-сервер.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -210,7 +210,7 @@ test("Markdown artifact validation rejects direct MCP server claims in either la
         "# Поддерживаемые вузы – Vuzora",
         "",
         "Сайт предоставляет MCP-сервер и HTTP API не поддерживается.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
     [
@@ -219,7 +219,7 @@ test("Markdown artifact validation rejects direct MCP server claims in either la
         "# Поддерживаемые вузы – Vuzora",
         "",
         "Удалённый MCP-сервер отсутствует, but an MCP server is available.",
-        "Маршрут: `/unis`.",
+        "Маршрут: `/unis/`.",
       ].join("\n"),
     ],
   ];
@@ -240,25 +240,25 @@ test("Markdown artifact validation evaluates conjunction-linked claims independe
       "# Поддерживаемые вузы – Vuzora",
       "",
       "The site has no MCP server and HTTP API is not available.",
-      "Маршрут: `/unis`.",
+      "Маршрут: `/unis/`.",
     ].join("\n"),
     [
       "# Поддерживаемые вузы – Vuzora",
       "",
       "HTTP API is not available and the site has no MCP server.",
-      "Маршрут: `/unis`.",
+      "Маршрут: `/unis/`.",
     ].join("\n"),
     [
       "# Поддерживаемые вузы – Vuzora",
       "",
       "MCP-сервер отсутствует, а HTTP API не поддерживается.",
-      "Маршрут: `/unis`.",
+      "Маршрут: `/unis/`.",
     ].join("\n"),
     [
       "# Поддерживаемые вузы – Vuzora",
       "",
       "HTTP API не поддерживается, а MCP-сервер отсутствует.",
-      "Маршрут: `/unis`.",
+      "Маршрут: `/unis/`.",
     ].join("\n"),
   ];
   for (const body of validBodies) assert.doesNotThrow(() => assertMarkdownArtifact(body, entry));
@@ -271,7 +271,7 @@ test("Markdown artifact validation preserves static browser-local WebMCP wording
     "# Поддерживаемые вузы – Vuzora",
     "",
     "Static-only, browser-local WebMCP is a read-only enhancement; no remote MCP server is provided.",
-    "Маршрут: `/unis`.",
+    "Маршрут: `/unis/`.",
   ].join("\n");
   assert.doesNotThrow(() => assertMarkdownArtifact(body, entry));
 });
@@ -343,7 +343,7 @@ test("Markdown release validation fails closed on missing, extra, empty, and div
       "",
       "HTTP API не реализован.",
       "OAuth/OIDC login is available.",
-      "Маршрут: `/unis`.",
+      "Маршрут: `/unis/`.",
     ].join("\n");
     await writeFile(join(fixtureRoot, "public", "unis.md"), activeAfterNegative, "utf8");
     await writeFile(join(fixtureRoot, "dist", "unis.md"), activeAfterNegative, "utf8");

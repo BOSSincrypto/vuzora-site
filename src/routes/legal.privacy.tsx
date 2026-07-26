@@ -25,7 +25,7 @@ export const Route = createFileRoute("/legal/privacy")({
         content: "Какие персональные данные собирает Vuzora и как с ними обращается.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: abs("/legal/privacy") },
+      { property: "og:url", content: abs("/legal/privacy/") },
       { property: "og:image", content: abs(ogCover) },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Политика конфиденциальности – Vuzora" },
@@ -37,23 +37,23 @@ export const Route = createFileRoute("/legal/privacy")({
       ...INDEXABLE_META,
     ],
 
-    links: [{ rel: "canonical", href: abs("/legal/privacy") }, ...DISCOVERY_LINKS],
+    links: [{ rel: "canonical", href: abs("/legal/privacy/") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          "@id": "https://vuzora.ru/legal/privacy#breadcrumb",
+          "@id": "https://vuzora.ru/legal/privacy/#breadcrumb",
           name: "Политика конфиденциальности – Vuzora",
-          url: abs("/legal/privacy"),
+          url: abs("/legal/privacy/"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
             {
               "@type": "ListItem",
               position: 2,
               name: "Конфиденциальность",
-              item: abs("/legal/privacy"),
+              item: abs("/legal/privacy/"),
             },
           ],
         }),

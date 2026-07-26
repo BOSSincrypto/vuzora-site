@@ -6,6 +6,7 @@ import {
   manifestFor,
   readRegistry,
   routeExpectationFor,
+  routeSegment,
 } from "./route-policy.mjs";
 import {
   assertLlmsJoin,
@@ -379,6 +380,29 @@ function flattenJsonLd(value) {
   return value["@graph"] ? [value, ...flattenJsonLd(value["@graph"])] : [value];
 }
 
+/**
+ * Every internal page link must already be the canonical trailing-slash form.
+ *
+ * GitHub Pages 301s the slashless form, so a raw `<a href="/pricing">` costs a
+ * redirect and re-splits the URL that the canonical, sitemap, feed, and llms
+ * packet all agree on. Route-level checks only cover metadata, so an anchor
+ * added by hand would otherwise slip through.
+ */
+export function internalLinkFailures(document, route, expectedRoutes) {
+  const failures = [];
+  const canonicalRoutes = new Set(expectedRoutes);
+  for (const anchor of document.anchors) {
+    const href = anchor.href ?? "";
+    if (!href.startsWith("/") || href.startsWith("//")) continue;
+    const [path] = href.split(/[?#]/);
+    if (!path || path.endsWith("/")) continue;
+    if (canonicalRoutes.has(`${path}/`)) {
+      failures.push(`${route}: internal link ${href} omits the canonical trailing slash`);
+    }
+  }
+  return failures;
+}
+
 export function validateRouteDocument(
   document,
   route,
@@ -473,7 +497,7 @@ export function validateRouteDocument(
     }
   }
   if (
-    ["/", "/unis", ...universities.filter((u) => u.slug).map((u) => `/unis/${u.slug}`)].includes(
+    ["/", "/unis/", ...universities.filter((u) => u.slug).map((u) => `/unis/${u.slug}/`)].includes(
       route,
     )
   ) {
@@ -488,8 +512,10 @@ export function validateRouteDocument(
       failures.push(`${route}: social image markers are missing or disagree`);
   }
   validateExternalAnchors(document, failures, route);
-  if (route.startsWith("/unis/")) {
-    const university = universities.find((record) => record.slug === route.slice("/unis/".length));
+  if (route.startsWith("/unis/") && route !== "/unis/") {
+    const university = universities.find(
+      (record) => record.slug === routeSegment(route, "/unis/"),
+    );
     if (!university) failures.push(`${route}: route is not registry-derived`);
     else {
       if (document.headings.length !== 1 || !document.headings[0].includes(university.name))
@@ -606,7 +632,7 @@ export function validateRouteDocument(
         items[0]?.name !== "Главная" ||
         items[0]?.item !== `${CANONICAL_ORIGIN}/` ||
         items[1]?.name !== "Вузы" ||
-        items[1]?.item !== `${CANONICAL_ORIGIN}/unis` ||
+        items[1]?.item !== `${CANONICAL_ORIGIN}/unis/` ||
         items[2]?.name !== university.name ||
         items[2]?.item !== `${CANONICAL_ORIGIN}${route}`
       )
@@ -651,9 +677,10 @@ export function validateRouteDocument(
   }
   if (ANALYTICS_RE.test(document.html))
     failures.push(`${route}: analytics or collector reference found in initial HTML`);
-  if (route === "/unis") {
+  failures.push(...internalLinkFailures(document, route, expectedRoutes));
+  if (route === "/unis/") {
     for (const university of universities.filter((record) => record.slug)) {
-      const href = `/unis/${university.slug}`;
+      const href = `/unis/${university.slug}/`;
       if (
         !document.anchors.some(
           (anchor) => anchor.href === href && document.text.includes(university.name),

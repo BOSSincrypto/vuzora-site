@@ -12,7 +12,6 @@
 
 import { useEffect } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
-import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { BLOG_INDEX_PATH } from "@/content/blog";
 
 type ErrorProps = {
@@ -35,7 +34,6 @@ export function RouteErrorFallback({
   useEffect(() => {
     try {
       console.error(`[vuzora:${label}]`, error);
-      reportLovableError(error, { boundary: `route:${label}` });
     } catch {
       /* never let reporting crash the fallback */
     }

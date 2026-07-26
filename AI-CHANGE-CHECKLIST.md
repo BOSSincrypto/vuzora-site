@@ -134,6 +134,16 @@ VUZORA_ORIGIN=http://127.0.0.1:3100 bun run test:browser:webmcp
 Use `npx --yes bun@1.3.14 run ...` instead of each `bun run ...` command when
 Bun is unavailable.
 
+## 6a. URL form
+
+Public page paths end in a trailing slash (`/pricing/`, `/unis/<slug>/`,
+`/blog/<slug>/`); artifact paths (`/llms.txt`, `/sitemap.xml`, `/blog/rss.xml`,
+`/unis.md`, `/auth.md`) do not. GitHub Pages 301s the slashless form, so a
+canonical, sitemap entry, feed permalink, or raw `<a href>` without the slash
+points at a redirect. `validate:release` fails on a slashless internal link;
+`<Link to>` takes the value from the generated route union and the router's
+`trailingSlash: "always"` renders the canonical href.
+
 ## 7. Run the full release gates
 
 Before handoff or publishing, run:
@@ -191,7 +201,7 @@ cookies, private URLs, or temporary tokens in files or logs.
 
 - Confirm the intended branch, review the complete diff, and make a focused
   commit. Never use `git push --force`, `--force-with-lease`, rebase, amend,
-  or squash published history in this Lovable-connected repository.
+  or squash published history.
 - Push normally only after all gates pass:
 
 ```sh

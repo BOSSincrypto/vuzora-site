@@ -6,8 +6,8 @@
  * broken internal link cannot ship alongside a valid RSS/sitemap set.
  */
 
-const BLOG_DETAIL_RE = /^\/blog\/([a-z0-9-]+)$/;
-const UNIVERSITY_DETAIL_RE = /^\/unis\/([a-z0-9-]+)$/;
+const BLOG_DETAIL_RE = /^\/blog\/([a-z0-9-]+)\/$/;
+const UNIVERSITY_DETAIL_RE = /^\/unis\/([a-z0-9-]+)\/$/;
 export const EDITORIAL_HUB_SLUG = "raspisanie-vuzov-v-telegram";
 export const FOCUSED_POST_MIN = 8;
 export const FOCUSED_POST_MAX = 12;
@@ -64,7 +64,7 @@ export function assertBlogIndexJoin(document, posts) {
  * }} input
  */
 export function assertEditorialGraph({ documents, posts, universities }) {
-  const hubRoute = `/blog/${EDITORIAL_HUB_SLUG}`;
+  const hubRoute = `/blog/${EDITORIAL_HUB_SLUG}/`;
   const hub = documents.get(hubRoute);
   if (!hub) throw new Error(`editorial hub artifact is missing: ${hubRoute}`);
 
@@ -108,7 +108,7 @@ export function assertEditorialGraph({ documents, posts, universities }) {
   const focusedSlugs = focusedPosts.map((post) => post.slug);
   for (const post of posts) {
     if (post.slug === EDITORIAL_HUB_SLUG || post.universitySlug) continue;
-    const links = routeHrefs(documents.get(`/blog/${post.slug}`), UNIVERSITY_DETAIL_RE);
+    const links = routeHrefs(documents.get(`/blog/${post.slug}/`), UNIVERSITY_DETAIL_RE);
     if (links.length) {
       throw new Error(`post with a university detail link lacks focused metadata: ${post.slug}`);
     }
@@ -119,8 +119,8 @@ export function assertEditorialGraph({ documents, posts, universities }) {
     "editorial hub focused post links",
   );
   for (const slug of focusedSlugs) {
-    const postDocument = documents.get(`/blog/${slug}`);
-    if (!postDocument) throw new Error(`focused post artifact is missing: /blog/${slug}`);
+    const postDocument = documents.get(`/blog/${slug}/`);
+    if (!postDocument) throw new Error(`focused post artifact is missing: /blog/${slug}/`);
     // Ignore the generated previous/next navigation. The authored editorial
     // body links use the amber link class and must contain exactly one hub edge.
     const postHubLinks = routeHrefs(
@@ -144,7 +144,7 @@ export function assertEditorialGraph({ documents, posts, universities }) {
         `focused post links wrong university: ${slug} -> ${postUniversitySlugs[0]} (expected ${configuredUniversitySlug})`,
       );
     }
-    const detailDocument = documents.get(`/unis/${configuredUniversitySlug}`);
+    const detailDocument = documents.get(`/unis/${configuredUniversitySlug}/`);
     if (!detailDocument)
       throw new Error(`focused post target artifact is missing: ${configuredUniversitySlug}`);
     const detailEditorialLinks = routeHrefs(detailDocument, BLOG_DETAIL_RE).filter((linkedSlug) =>

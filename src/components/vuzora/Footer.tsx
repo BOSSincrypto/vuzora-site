@@ -40,7 +40,7 @@ export function Footer() {
             >
               {LINKS.botHandle}
             </a>
-            <a href="/pricing" className="hover:text-white">
+            <a href="/pricing/" className="hover:text-white">
               Тарифы
             </a>
             <a href={`mailto:${BRAND.email}`} className="hover:text-white">
@@ -49,7 +49,7 @@ export function Footer() {
             <a href={BRAND.legal.termsUrl} className="hover:text-white">
               Публичная оферта
             </a>
-            <a href="/unis" className="hover:text-white">
+            <a href="/unis/" className="hover:text-white">
               Поддерживаемые вузы
             </a>
             <a href={BRAND.legal.privacyUrl} className="hover:text-white">
@@ -58,7 +58,7 @@ export function Footer() {
             <a href={BLOG_INDEX_PATH} className="hover:text-white">
               Блог
             </a>
-            <a href="/changelog" className="hover:text-white">
+            <a href="/changelog/" className="hover:text-white">
               Что нового
             </a>
           </nav>

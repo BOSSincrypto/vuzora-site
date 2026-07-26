@@ -40,10 +40,10 @@ test("central helpers map slug to detail path and Telegram attribution", async (
 test("prerender and artifact policy include every university detail route", async () => {
   const { universities, posts } = await readRegistry(root);
   const routes = buildRoutes({ universities, posts });
-  const detailRoutes = universities.map((university) => `/unis/${university.slug}`);
+  const detailRoutes = universities.map((university) => `/unis/${university.slug}/`);
   for (const route of detailRoutes) {
     assert.ok(routes.includes(route), `missing prerender seed ${route}`);
-    assert.equal(artifactFor(route), `unis/${route.slice("/unis/".length)}/index.html`);
+    assert.equal(artifactFor(route), `unis/${route.replace(/\/$/, "").slice("/unis/".length)}/index.html`);
   }
   assert.equal(detailRoutes.length, universities.length);
 });
@@ -70,7 +70,7 @@ test("registry omits guessed official URLs and keeps optional field explicit", a
 
 test("detail route module exists and rejects unknown slugs", async () => {
   const source = await readFile(join(root, "src/routes/unis_.$slug.tsx"), "utf8");
-  // Flat-route file id is `/unis_/$slug`; public path remains `/unis/$slug`.
+  // Flat-route file id is `/unis_/$slug`; public path is `/unis/$slug/`.
   assert.match(source, /createFileRoute\("\/unis_\/\$slug"\)/);
   assert.match(source, /notFound\(\)/);
   assert.match(source, /findUniversity/);
@@ -81,7 +81,7 @@ test("detail route module exists and rejects unknown slugs", async () => {
   );
   assert.match(source, /data-detail-content/);
   assert.match(source, /data-cta="university-conversion"/);
-  assert.match(source, /href="\/unis"/);
+  assert.match(source, /href="\/unis\/"/);
   assert.match(source, /CollegeOrUniversity/);
   assert.match(source, /#university/);
   assert.match(source, /#service/);

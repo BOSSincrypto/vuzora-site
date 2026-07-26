@@ -36,6 +36,14 @@ jobs:
         with:
           bun-version: "1.3.14"
 
+      # Bun is pinned, but the build, the tests, every generator, every
+      # validator and all four browser regressions run under `node`. Left
+      # unpinned that is whatever the runner image ships this week, so a Node
+      # bump could change the release without a commit.
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: ".node-version"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 

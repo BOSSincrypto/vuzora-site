@@ -29,7 +29,7 @@ const offers = PLANS.map((p) => ({
   price: p.price,
   priceCurrency: "RUB",
   availability: "https://schema.org/InStock",
-  url: abs("/pricing"),
+  url: abs("/pricing/"),
   category: "subscription",
 }));
 
@@ -57,7 +57,7 @@ export const Route = createFileRoute("/pricing")({
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: abs("/pricing") },
+      { property: "og:url", content: abs("/pricing/") },
       { property: "og:image", content: abs(ogCover) },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: TITLE },
@@ -65,7 +65,7 @@ export const Route = createFileRoute("/pricing")({
       { name: "twitter:image", content: abs(ogCover) },
       ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/pricing") }, ...DISCOVERY_LINKS],
+    links: [{ rel: "canonical", href: abs("/pricing/") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",
@@ -78,7 +78,7 @@ export const Route = createFileRoute("/pricing")({
           "@type": "BreadcrumbList",
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
-            { "@type": "ListItem", position: 2, name: "Тарифы", item: abs("/pricing") },
+            { "@type": "ListItem", position: 2, name: "Тарифы", item: abs("/pricing/") },
           ],
         }),
       },

@@ -19,7 +19,7 @@ export const MARKDOWN_ARTIFACTS = [
   },
   {
     path: "unis.md",
-    route: "/unis",
+    route: "/unis/",
     identity: "Поддерживаемые вузы – Vuzora",
     mediaType: MARKDOWN_MEDIA_TYPE,
   },
@@ -127,7 +127,7 @@ function assertNegativeUnsupportedClaim(value, label) {
   }
 }
 
-const UNIS_DETAIL_LINK_RE = /\(\/unis\/([a-z0-9-]+)\)/g;
+const UNIS_DETAIL_LINK_RE = /\(\/unis\/([a-z0-9-]+)\/\)/g;
 
 /**
  * Bijective join between `public/unis.md` and the university registry.
@@ -174,7 +174,7 @@ export function assertUnisMarkdownRegistryJoin(body, universities, label = "unis
   // cannot leave a stale display name or city behind in the catalogue.
   const lines = body.split("\n");
   for (const university of registry) {
-    const line = lines.find((candidate) => candidate.includes(`(/unis/${university.slug})`));
+    const line = lines.find((candidate) => candidate.includes(`(/unis/${university.slug}/)`));
     for (const [field, value] of [
       ["code", university.code],
       ["name", university.name],

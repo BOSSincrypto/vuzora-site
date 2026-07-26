@@ -91,7 +91,7 @@ export function Pricing() {
               </p>
               <p className="mt-2">
                 Полные условия в{" "}
-                <a href="/legal/terms" className="underline hover:text-white">
+                <a href="/legal/terms/" className="underline hover:text-white">
                   публичной оферте
                 </a>
                 .

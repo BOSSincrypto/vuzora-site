@@ -52,8 +52,8 @@ test("editorial index join fails closed on missing or phantom post links", async
   const missing = {
     ...index,
     anchors: index.anchors.map((anchor) =>
-      anchor.href === "/blog/chto-budet-posle-31-oktyabrya"
-        ? { ...anchor, href: "/blog/not-a-real-post" }
+      anchor.href === "/blog/chto-budet-posle-31-oktyabrya/"
+        ? { ...anchor, href: "/blog/not-a-real-post/" }
         : anchor,
     ),
   };
@@ -75,8 +75,8 @@ test("validate:release rejects editorial index and hub drift", async () => {
     await writeFile(
       indexPath,
       originalIndex.replace(
-        'href="/blog/chto-budet-posle-31-oktyabrya"',
-        'href="/blog/not-a-real-post"',
+        'href="/blog/chto-budet-posle-31-oktyabrya/"',
+        'href="/blog/not-a-real-post/"',
       ),
       "utf8",
     );
@@ -88,7 +88,7 @@ test("validate:release rejects editorial index and hub drift", async () => {
     await writeFile(indexPath, originalIndex, "utf8");
     await writeFile(
       hubPath,
-      originalHub.replace('href="/unis/reu-plekhanov"', 'href="/unis/not-a-real-university"'),
+      originalHub.replace('href="/unis/reu-plekhanov/"', 'href="/unis/not-a-real-university/"'),
       "utf8",
     );
     await assert.rejects(
@@ -128,7 +128,7 @@ test("validate:release rejects missing, swapped, and unknown focused-post target
 
     await writeFile(
       focusedPath,
-      originalFocused.replace('href="/unis/msu"', 'href="/unis"'),
+      originalFocused.replace('href="/unis/msu/"', 'href="/unis/"'),
       "utf8",
     );
     await assert.rejects(
@@ -138,7 +138,7 @@ test("validate:release rejects missing, swapped, and unknown focused-post target
 
     await writeFile(
       focusedPath,
-      originalFocused.replace('href="/unis/msu"', 'href="/unis/hse"'),
+      originalFocused.replace('href="/unis/msu/"', 'href="/unis/hse/"'),
       "utf8",
     );
     await assert.rejects(
@@ -167,7 +167,7 @@ test("validate:release rejects duplicate hub backlinks and detail editorial link
 
     await writeFile(
       focusedPath,
-      duplicateAnchor(originalFocused, "/blog/raspisanie-vuzov-v-telegram"),
+      duplicateAnchor(originalFocused, "/blog/raspisanie-vuzov-v-telegram/"),
       "utf8",
     );
     await assert.rejects(
@@ -178,7 +178,7 @@ test("validate:release rejects duplicate hub backlinks and detail editorial link
     await writeFile(focusedPath, originalFocused, "utf8");
     await writeFile(
       detailPath,
-      duplicateAnchor(originalDetail, "/blog/raspisanie-vuzov-v-telegram"),
+      duplicateAnchor(originalDetail, "/blog/raspisanie-vuzov-v-telegram/"),
       "utf8",
     );
     await assert.rejects(
@@ -199,7 +199,7 @@ test("validate:release rejects sitemap omissions for committed posts", async () 
     });
     const sitemapPath = join(fixtureRoot, "dist/sitemap.xml");
     const sitemap = await readFile(sitemapPath, "utf8");
-    const postLoc = "https://vuzora.ru/blog/raspisanie-vuzov-v-telegram";
+    const postLoc = "https://vuzora.ru/blog/raspisanie-vuzov-v-telegram/";
     await writeFile(
       sitemapPath,
       sitemap.replace(

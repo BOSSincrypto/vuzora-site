@@ -70,24 +70,45 @@ export async function readRegistry(root = process.cwd()) {
   return { universities, posts, postRecords, focusedPosts, affiliationBoundary };
 }
 
+/**
+ * Public page routes always carry a trailing slash: GitHub Pages serves each
+ * prerendered route from `<route>/index.html`, so the slashless form is only a
+ * 301 to the slashed one. `/` and real file paths are the exceptions.
+ */
 export function buildRoutes({ universities, posts }) {
   assertBlogSlugs(posts);
-  const core = ["/", "/pricing", "/unis", "/blog/", "/changelog", "/legal/terms", "/legal/privacy"];
-  const blog = posts.map((slug) => `/blog/${slug}`);
+  const core = [
+    "/",
+    "/pricing/",
+    "/unis/",
+    "/blog/",
+    "/changelog/",
+    "/legal/terms/",
+    "/legal/privacy/",
+  ];
+  const blog = posts.map((slug) => `/blog/${slug}/`);
   const university = universities
     .filter((record) => record.slug)
-    .map((record) => `/unis/${record.slug}`);
+    .map((record) => `/unis/${record.slug}/`);
   return [...core, ...blog, ...university];
+}
+
+/** Strip the canonical trailing slash to recover the internal route segment. */
+export function routeSegment(route, prefix) {
+  return route.replace(/\/$/, "").slice(prefix.length);
 }
 
 export function artifactFor(route) {
   if (route === "/") return "index.html";
   if (route === "/blog/rss.xml") return "blog/rss.xml";
-  if (route.startsWith("/blog/") && route !== "/blog/") {
-    const slug = route.slice("/blog/".length);
+  // `/blog/<slug>/` and `/blog/<slug>` must resolve to the same artifact, so
+  // drop the canonical slash before reading the slug out of the path.
+  const normalized = route.replace(/\/$/, "");
+  if (normalized.startsWith("/blog/")) {
+    const slug = normalized.slice("/blog/".length);
     if (!BLOG_SLUG_RE.test(slug)) throw new Error(`invalid blog route slug: ${slug || "missing"}`);
   }
-  return `${route.replace(/\/$/, "")}/index.html`.replace(/^\//, "");
+  return `${normalized}/index.html`.replace(/^\//, "");
 }
 
 const CORE_ROUTE_EXPECTATIONS = {
@@ -96,7 +117,7 @@ const CORE_ROUTE_EXPECTATIONS = {
     description:
       "Telegram-бот сам присылает расписание твоего вуза каждое утро в удобный тебе слот с 05:00 до 10:00 МСК. Без поиска, без рекламы, без шума.",
     heading: "Расписание твоего вуза. Каждое утро.",
-    internalLinks: ["/pricing", "/unis", "/blog/", "/changelog", "/legal/terms", "/legal/privacy"],
+    internalLinks: ["/pricing/", "/unis/", "/blog/", "/changelog/", "/legal/terms/", "/legal/privacy/"],
     jsonLdTypes: ["SoftwareApplication", "FAQPage"],
     jsonLdIdentity: [
       { type: "SoftwareApplication", name: "Vuzora", url: "https://t.me/vuzora_bot" },
@@ -107,12 +128,12 @@ const CORE_ROUTE_EXPECTATIONS = {
       { marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 },
     ],
   },
-  "/pricing": {
+  "/pricing/": {
     title: "Тарифы Vuzora – от 49 ₽ до 999 ₽",
     description:
       "Цена подписки на Vuzora: от 49 ₽ до 999 ₽ за выбранный план. Без рекламы и автопродления.",
     heading: "Тарифы и подписка Vuzora",
-    internalLinks: ["/pricing", "/unis", "/blog/"],
+    internalLinks: ["/pricing/", "/unis/", "/blog/"],
     jsonLdTypes: ["Product", "BreadcrumbList"],
     jsonLdIdentity: [{ type: "Product", name: "Vuzora — подписка" }],
     ctas: [
@@ -120,19 +141,19 @@ const CORE_ROUTE_EXPECTATIONS = {
       { marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 },
     ],
   },
-  "/unis": {
+  "/unis/": {
     title: "Поддерживаемые вузы – Vuzora",
     description:
       "Список вузов, для которых Vuzora уже умеет присылать расписание. Нет твоего вуза – напиши, добавим.",
     heading: "Поддерживаемые вузы",
-    internalLinks: ["/unis", "/pricing", "/blog/"],
+    internalLinks: ["/unis/", "/pricing/", "/blog/"],
     jsonLdTypes: ["ItemList", "BreadcrumbList"],
     jsonLdIdentity: [
       {
         type: "ItemList",
-        "@id": "https://vuzora.ru/unis#directory",
+        "@id": "https://vuzora.ru/unis/#directory",
         name: "Поддерживаемые вузы – Vuzora",
-        url: "https://vuzora.ru/unis",
+        url: "https://vuzora.ru/unis/",
       },
     ],
     ctas: [
@@ -145,7 +166,7 @@ const CORE_ROUTE_EXPECTATIONS = {
     description:
       "Заметки про утренний ритуал, парсинг расписаний и устройство Vuzora. Без воды и SEO-выжимок.",
     heading: "Блог Vuzora",
-    internalLinks: ["/blog/", "/pricing", "/unis", "/changelog", "/legal/terms", "/legal/privacy"],
+    internalLinks: ["/blog/", "/pricing/", "/unis/", "/changelog/", "/legal/terms/", "/legal/privacy/"],
     jsonLdTypes: ["Blog", "BreadcrumbList"],
     jsonLdIdentity: [
       {
@@ -163,36 +184,36 @@ const CORE_ROUTE_EXPECTATIONS = {
     ],
     ctas: [{ marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 }],
   },
-  "/changelog": {
+  "/changelog/": {
     title: "Что нового – Vuzora",
     description:
       "Публичная история изменений Vuzora: что добавили в бот, на сайт и в подписку.",
     heading: "Что нового",
-    internalLinks: ["/changelog", "/pricing", "/unis", "/blog/", "/legal/terms", "/legal/privacy"],
+    internalLinks: ["/changelog/", "/pricing/", "/unis/", "/blog/", "/legal/terms/", "/legal/privacy/"],
     jsonLdTypes: ["BreadcrumbList"],
     jsonLdIdentity: [
       {
         type: "BreadcrumbList",
-        "@id": "https://vuzora.ru/changelog#breadcrumb",
+        "@id": "https://vuzora.ru/changelog/#breadcrumb",
         name: "Что нового – Vuzora",
-        url: "https://vuzora.ru/changelog",
+        url: "https://vuzora.ru/changelog/",
       },
     ],
     ctas: [{ marker: "bot-navigation", href: "https://t.me/vuzora_bot", count: 4 }],
   },
-  "/legal/terms": {
+  "/legal/terms/": {
     title: "Публичная оферта – Vuzora",
     description:
       "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств и ответственность сторон.",
     heading: "Публичная оферта",
-    internalLinks: ["/", "/pricing"],
+    internalLinks: ["/", "/pricing/"],
     jsonLdTypes: ["BreadcrumbList"],
     jsonLdIdentity: [
       {
         type: "BreadcrumbList",
-        "@id": "https://vuzora.ru/legal/terms#breadcrumb",
+        "@id": "https://vuzora.ru/legal/terms/#breadcrumb",
         name: "Публичная оферта – Vuzora",
-        url: "https://vuzora.ru/legal/terms",
+        url: "https://vuzora.ru/legal/terms/",
       },
     ],
     ctas: [
@@ -200,7 +221,7 @@ const CORE_ROUTE_EXPECTATIONS = {
       { marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 },
     ],
   },
-  "/legal/privacy": {
+  "/legal/privacy/": {
     title: "Политика конфиденциальности – Vuzora",
     description:
       "Какие персональные данные собирает Vuzora, как они хранятся и как пользователь может их удалить.",
@@ -210,9 +231,9 @@ const CORE_ROUTE_EXPECTATIONS = {
     jsonLdIdentity: [
       {
         type: "BreadcrumbList",
-        "@id": "https://vuzora.ru/legal/privacy#breadcrumb",
+        "@id": "https://vuzora.ru/legal/privacy/#breadcrumb",
         name: "Политика конфиденциальности – Vuzora",
-        url: "https://vuzora.ru/legal/privacy",
+        url: "https://vuzora.ru/legal/privacy/",
       },
     ],
     ctas: [{ marker: "support", href: "https://t.me/vuzora_support_bot", count: 1 }],
@@ -221,13 +242,13 @@ const CORE_ROUTE_EXPECTATIONS = {
 
 export function routeExpectationFor(route, { postRecords = [], universities = [] } = {}) {
   if (CORE_ROUTE_EXPECTATIONS[route]) return CORE_ROUTE_EXPECTATIONS[route];
-  if (route.startsWith("/unis/")) {
-    const slug = route.slice("/unis/".length);
+  if (route.startsWith("/unis/") && route !== "/unis/") {
+    const slug = routeSegment(route, "/unis/");
     const university = universities.find((record) => record.slug === slug);
     if (university) {
       return {
         heading: university.name,
-        internalLinks: ["/unis"],
+        internalLinks: ["/unis/"],
         jsonLdTypes: ["BreadcrumbList", "CollegeOrUniversity", "Service", "FAQPage"],
         jsonLdIdentity: [
           {
@@ -253,8 +274,8 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
       };
     }
   }
-  if (route.startsWith("/blog/")) {
-    const slug = route.slice("/blog/".length);
+  if (route.startsWith("/blog/") && route !== "/blog/") {
+    const slug = routeSegment(route, "/blog/");
     const post = postRecords.find((record) => record.slug === slug);
     if (post) {
       return {
@@ -263,11 +284,11 @@ export function routeExpectationFor(route, { postRecords = [], universities = []
         heading: post.title,
         internalLinks: [
           "/blog/",
-          "/pricing",
-          "/unis",
-          "/changelog",
-          "/legal/terms",
-          "/legal/privacy",
+          "/pricing/",
+          "/unis/",
+          "/changelog/",
+          "/legal/terms/",
+          "/legal/privacy/",
         ],
         jsonLdTypes: ["BlogPosting", "BreadcrumbList"],
         jsonLdIdentity: [

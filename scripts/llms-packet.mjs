@@ -23,10 +23,16 @@ export const APPROVED_CONTENT_SIGNAL = Object.freeze({
   search: "yes",
   "ai-input": "yes",
 });
+// Canonical detail locator is exactly https://vuzora.ru/unis/<slug>/ — the
+// trailing slash is the form GitHub Pages answers 200 for.
 export const DETAIL_URL_RE =
-  /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?=$|[\s)\]}>.,;:`])/g;
+  /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)\/(?=$|[\s)\]}>.,;:`])/g;
+// Anything else starting that way is non-canonical: slashless (which 301s),
+// a deeper path, a query, or a fragment. `(?![a-z0-9-])` forces the slug to
+// match maximally so backtracking cannot manufacture a false positive out of a
+// correctly slashed URL.
 const NON_CANONICAL_DETAIL_URL_RE =
-  /https:\/\/vuzora\.ru\/unis\/([a-z0-9-]+)(?:[/?#][^\s<>"'`]*)/g;
+  /https:\/\/vuzora\.ru\/unis\/[a-z0-9-]+(?![a-z0-9-])(?:\/[^\s<>"'`]+|[?#][^\s<>"'`]*|(?!\/))/g;
 const MARKDOWN_LINK_RE = /\]\(([^)\s]+)\)/g;
 
 /** Loose secret / credential patterns that must never appear in public AEO text. */
@@ -41,7 +47,21 @@ export const OFFICIAL_PARTNER_RE =
  * @param {string} slug
  */
 export function detailUrl(slug) {
-  return `${CANONICAL_ORIGIN}/unis/${slug}`;
+  return `${CANONICAL_ORIGIN}/unis/${slug}/`;
+}
+
+/**
+ * Normalise an observed route to its canonical public form: page paths carry a
+ * trailing slash, real file paths (`/llms.txt`, `/sitemap.xml`) do not.
+ * Accepting both input forms keeps the join tolerant of callers that still pass
+ * a slashless route while the emitted packet stays canonical.
+ *
+ * @param {string} route
+ */
+function canonicalDiscoveryPath(route) {
+  if (route === "/") return "/";
+  const bare = route.replace(/\/+$/, "");
+  return /\.[a-z0-9]+$/i.test(bare) ? bare : `${bare}/`;
 }
 
 /**
@@ -54,15 +74,15 @@ export function detailUrl(slug) {
  */
 export function deriveDiscoveryRoutes(observed = {}) {
   const available = new Set(
-    [...(observed.routes ?? []), ...(observed.artifactRoutes ?? []), ...(observed.sitemapRoutes ?? [])]
-      .map((route) => (route === "/" ? "/" : route.replace(/\/+$/, "")))
-      .map((route) => (route === "/blog" ? "/blog/" : route)),
+    [...(observed.routes ?? []), ...(observed.artifactRoutes ?? []), ...(observed.sitemapRoutes ?? [])].map(
+      canonicalDiscoveryPath,
+    ),
   );
   const core = [
     "/",
-    "/pricing",
-    "/changelog",
-    "/unis",
+    "/pricing/",
+    "/changelog/",
+    "/unis/",
     "/blog/",
     "/blog/rss.xml",
     "/sitemap.xml",
@@ -81,9 +101,9 @@ function discoveryLabel(path) {
   return (
     {
       "/": "Главная",
-      "/pricing": "Тарифы",
-      "/changelog": "Что нового",
-      "/unis": "Поддерживаемые вузы",
+      "/pricing/": "Тарифы",
+      "/changelog/": "Что нового",
+      "/unis/": "Поддерживаемые вузы",
       "/blog/": "Блог",
       "/blog/rss.xml": "RSS блога",
       "/sitemap.xml": "Карта сайта",
@@ -232,10 +252,10 @@ export function assertLlmsJoin(body, universities, options = {}) {
   // Relative-only university detail paths are not acceptable as the sole listing form.
   // Absolute join already required; still reject relative-only entries used as primary list bullets.
   const relativeOnly = [
-    ...body.matchAll(/(?:^|\s)(\/unis\/[a-z0-9-]+)(?![a-z0-9-])/gm),
+    ...body.matchAll(/(?:^|\s)(\/unis\/[a-z0-9-]+\/?)(?![a-z0-9-])/gm),
   ].map((match) => match[1]);
   for (const path of relativeOnly) {
-    const slug = path.slice("/unis/".length);
+    const slug = path.replace(/\/$/, "").slice("/unis/".length);
     if (expectedSet.has(slug) && !body.includes(detailUrl(slug))) {
       throw new Error(`llms.txt lists relative-only detail path without absolute URL: ${path}`);
     }

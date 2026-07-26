@@ -63,11 +63,15 @@ Custom domain: **vuzora.ru**.
 | Path | Notes |
 | --- | --- |
 | `/` | Landing |
-| `/unis` | University directory |
-| `/unis/<slug>` | University detail pages from the registry in `src/content/universities.ts` (**25** entries) |
-| `/blog/`, `/blog/<slug>` | Blog index and posts |
-| `/pricing`, `/changelog` | Product pages |
-| `/legal/terms`, `/legal/privacy` | Legal |
+| `/unis/` | University directory |
+| `/unis/<slug>/` | University detail pages from the registry in `src/content/universities.ts` (**25** entries) |
+| `/blog/`, `/blog/<slug>/` | Blog index and posts |
+| `/pricing/`, `/changelog/` | Product pages |
+| `/legal/terms/`, `/legal/privacy/` | Legal |
+
+Page paths end in a trailing slash — that is the form GitHub Pages answers with
+200, and the slashless form 301-redirects to it. Artifact paths
+(`/llms.txt`, `/sitemap.xml`, `/blog/rss.xml`, `/unis.md`, `/auth.md`) do not.
 
 Neither `sitemap.xml` nor `404.html` is prerendered from a route:
 `scripts/prepare-release.mjs` writes the authoritative `dist/sitemap.xml` from

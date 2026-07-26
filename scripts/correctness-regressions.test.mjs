@@ -106,3 +106,36 @@ test("concurrent global error captures refuse unsafe attribution", () => {
   `);
   assert.equal(output, "undefined");
 });
+
+test("refund terms state one rule across the offer, the FAQ, and the pricing block", async () => {
+  const [offer, faq, pricing] = await Promise.all([
+    readFile(join(root, "src/routes/legal.terms.tsx"), "utf8"),
+    readFile(join(root, "src/content/faq.ts"), "utf8"),
+    readFile(join(root, "src/components/vuzora/Pricing.tsx"), "utf8"),
+  ]);
+  const refundClause = offer.match(/Возврат полной стоимости[\s\S]*?подписки\./)?.[0] ?? "";
+  assert.ok(refundClause, "offer must keep an explicit refund clause");
+
+  // The binding offer once granted the full refund only «по вине Исполнителя»,
+  // a condition neither consumer-facing surface mentioned. One rule, or the
+  // marketing promises something the contract does not.
+  for (const [label, source] of [
+    ["offer", refundClause],
+    ["faq", faq],
+    ["pricing", pricing],
+  ]) {
+    assert.doesNotMatch(source, /по вине|вине Исполнителя/, `${label} adds a fault condition`);
+  }
+  // All three must trigger on the same objectively checkable fact.
+  assert.match(refundClause, /14 календарных дней/);
+  assert.match(refundClause, /не получил ни одной доставки/);
+  assert.match(faq, /в течение 14 дней после оплаты ни одна доставка не пришла/);
+  assert.match(pricing, /в течение 14 дней с оплаты/);
+  for (const [label, source] of [
+    ["offer", refundClause],
+    ["faq", faq],
+    ["pricing", pricing],
+  ]) {
+    assert.match(source, /пропорционально/, `${label} must state the pro-rata fallback`);
+  }
+});

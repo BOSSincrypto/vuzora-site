@@ -207,7 +207,7 @@ function BlogPost() {
             <div className="flex-1">
               {prev && (
                 <Link
-                  to="/blog/$slug"
+                  to="/blog/$slug/"
                   params={{ slug: prev.slug }}
                   className="block rounded-lg text-white/55 hover:text-white"
                 >
@@ -221,7 +221,7 @@ function BlogPost() {
             <div className="flex-1 text-right">
               {next && (
                 <Link
-                  to="/blog/$slug"
+                  to="/blog/$slug/"
                   params={{ slug: next.slug }}
                   className="block rounded-lg text-white/55 hover:text-white"
                 >

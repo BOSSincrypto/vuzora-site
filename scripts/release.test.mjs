@@ -11,14 +11,44 @@ test("release configuration pins static prerendering and fails on errors", async
   const config = await read("vite.config.ts");
   assert.equal(await read(".bun-version"), "1.3.14\n");
   assert.match(await read("package.json"), /"packageManager":\s*"bun@1\.3\.14"/);
+  // Every generator, validator, test and browser regression runs under `node`,
+  // so the runtime is pinned alongside Bun rather than inherited from whatever
+  // the runner image ships.
+  const nodeVersion = (await read(".node-version")).trim();
+  assert.match(nodeVersion, /^\d+\.\d+\.\d+$/);
+  const workflow = await read(".github/workflows/deploy.yml");
+  assert.match(workflow, /actions\/setup-node@[0-9a-f]{40}/);
+  assert.match(workflow, /node-version-file:\s*"\.node-version"/);
   assert.match(config, /prerender:\s*\{/);
   assert.match(config, /enabled:\s*true/);
   assert.match(config, /failOnError:\s*true/);
   assert.match(config, /crawlLinks:\s*false/);
-  assert.match(config, /nitro:\s*false/);
+  // Previously this asserted the `nitro: false` opt-out of the vendored config
+  // wrapper. The build now composes plugins directly, so assert the stronger
+  // property: no server runtime is imported or instantiated at all.
+  assert.doesNotMatch(config, /from\s+["'][^"']*nitro/i);
+  assert.doesNotMatch(config, /\bnitro\s*\(/i);
   assert.match(config, /outDir:\s*["']dist["']/);
   assert.match(await read("package.json"), /scripts[\s\S]*build[\s\S]*prepare-release/);
   assert.match(await read("scripts/prepare-release.mjs"), /u:\\d\{13\}/);
+});
+
+test("the build depends on no vendor toolchain and no vendor package registry", async () => {
+  // The release must be buildable from a plain npm registry by anyone. A
+  // vendored config wrapper or a lockfile pinned to a private mirror makes
+  // every deploy — including the daily cron — depend on a third party.
+  for (const path of ["vite.config.ts", "package.json", "bun.lock", "bunfig.toml"]) {
+    assert.doesNotMatch(await read(path), /lovable/i, `${path} still references the vendor`);
+  }
+  const lock = await read("bun.lock");
+  const foreignRegistries = [...lock.matchAll(/"(https?:\/\/[^"]+\/-\/[^"]+)"/g)]
+    .map((match) => new URL(match[1]).host)
+    .filter((host) => host !== "registry.npmjs.org");
+  assert.deepEqual(
+    [...new Set(foreignRegistries)],
+    [],
+    "bun.lock pins tarballs outside registry.npmjs.org",
+  );
 });
 
 test("prerender seeds derive the complete public route policy", async () => {
@@ -28,15 +58,15 @@ test("prerender seeds derive the complete public route policy", async () => {
   assert.match(config, /PRERENDER_ROUTES\.map\(\(path\) => \(\{ path \}\)\)/);
   assert.deepEqual(routes.slice(0, 7), [
     "/",
-    "/pricing",
-    "/unis",
+    "/pricing/",
+    "/unis/",
     "/blog/",
-    "/changelog",
-    "/legal/terms",
-    "/legal/privacy",
+    "/changelog/",
+    "/legal/terms/",
+    "/legal/privacy/",
   ]);
   assert.equal(
-    routes.filter((route) => route.startsWith("/unis/")).length,
+    routes.filter((route) => route.startsWith("/unis/") && route !== "/unis/").length,
     universities.filter((university) => university.slug).length,
   );
   assert.equal(artifactFor("/blog/"), "blog/index.html");

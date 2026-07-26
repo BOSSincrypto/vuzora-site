@@ -112,7 +112,7 @@ function BlogIndex() {
             {SORTED.map((p) => (
               <article key={p.slug} className="group py-8">
                 <Link
-                  to="/blog/$slug"
+                  to="/blog/$slug/"
                   params={{ slug: p.slug }}
                   className="block rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber"
                 >

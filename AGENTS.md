@@ -1,15 +1,7 @@
-<!-- LOVABLE:BEGIN -->
-
 > [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-
-<!-- LOVABLE:END -->
+> Do not rewrite published git history — no force pushing, and no rebasing,
+> amending, or squashing commits that are already pushed. Keep every pushed
+> branch in a working state.
 
 ## Mission and boundaries
 
@@ -85,10 +77,9 @@ Release validation is fail-closed. Inspect `git diff --check`, the complete
 diff, and secret-like patterns before publishing. Keep generated artifacts
 consistent with their source generators.
 
-This repository is connected to Lovable. Do not force-push, rebase, amend,
-squash, or otherwise rewrite published history. Push only reviewed commits
-after the full release gates pass, then verify the changed route and key live
-artifacts at `https://vuzora.ru`.
+Do not force-push, rebase, amend, squash, or otherwise rewrite published
+history. Push only reviewed commits after the full release gates pass, then
+verify the changed route and key live artifacts at `https://vuzora.ru`.
 
 ## Cloudflare and edge rule
 

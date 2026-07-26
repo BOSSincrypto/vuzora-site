@@ -25,7 +25,7 @@ export const Route = createFileRoute("/legal/terms")({
         content: "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: abs("/legal/terms") },
+      { property: "og:url", content: abs("/legal/terms/") },
       { property: "og:image", content: abs(ogCover) },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Публичная оферта – Vuzora" },
@@ -37,19 +37,19 @@ export const Route = createFileRoute("/legal/terms")({
       ...INDEXABLE_META,
     ],
 
-    links: [{ rel: "canonical", href: abs("/legal/terms") }, ...DISCOVERY_LINKS],
+    links: [{ rel: "canonical", href: abs("/legal/terms/") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          "@id": "https://vuzora.ru/legal/terms#breadcrumb",
+          "@id": "https://vuzora.ru/legal/terms/#breadcrumb",
           name: "Публичная оферта – Vuzora",
-          url: abs("/legal/terms"),
+          url: abs("/legal/terms/"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
-            { "@type": "ListItem", position: 2, name: "Оферта", item: abs("/legal/terms") },
+            { "@type": "ListItem", position: 2, name: "Оферта", item: abs("/legal/terms/") },
           ],
         }),
       },
@@ -99,7 +99,7 @@ function TermsPage() {
       <Section title="3. Подписка и оплата">
         <p>
           Стоимость и срок действия тарифов указаны на странице{" "}
-          <Link to="/pricing" className="underline">
+          <Link to="/pricing/" className="underline">
             «Тарифы»
           </Link>{" "}
           и являются неотъемлемой частью оферты. Действующие тарифы на момент редакции:
@@ -120,9 +120,9 @@ function TermsPage() {
       <Section title="4. Возврат средств">
         <p>
           Возврат полной стоимости подписки возможен в течение 14 календарных дней с момента оплаты,
-          если Пользователь не получил ни одной доставки расписания по вине Исполнителя. По
-          истечении 14 дней либо при штатной работе сервиса возврат осуществляется пропорционально
-          неиспользованному сроку подписки.
+          если Пользователь не получил ни одной доставки расписания. По истечении 14 дней, а также
+          если доставки выполнялись, возврат осуществляется пропорционально неиспользованному сроку
+          подписки.
         </p>
         <p className="mt-2">
           Заявка на возврат направляется на{" "}

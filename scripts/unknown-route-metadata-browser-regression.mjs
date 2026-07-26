@@ -67,8 +67,14 @@ function metadataSnapshot() {
   }))()`);
 }
 
+// Canonical public paths carry a trailing slash. `location.pathname` may hold
+// either form — a hard load keeps what the address bar had, while the router
+// re-renders it on client navigation — so compare route identity on the
+// canonical form rather than asserting that normalisation detail.
 function normalizeBrowserPath(pathname) {
-  return pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (pathname === "/") return "/";
+  const bare = pathname.replace(/\/+$/, "");
+  return /\.[a-z0-9]+$/i.test(bare) ? bare : `${bare}/`;
 }
 
 function assertSupported(snapshot, expectedPath, expectedType = "website") {
@@ -121,39 +127,39 @@ async function navigateWithRouter(route, params, expectedPath, expectedRobots) {
 }
 
 try {
-  browser(["open", `${ORIGIN}/unis/msu`]);
+  browser(["open", `${ORIGIN}/unis/msu/`]);
   waitForPage();
-  assertSupported(metadataSnapshot(), "/unis/msu");
+  assertSupported(metadataSnapshot(), "/unis/msu/");
 
   await navigateWithRouter(
-    "/unis/$slug",
+    "/unis/$slug/",
     { slug: "not-a-real-university-xyz" },
-    "/unis/not-a-real-university-xyz",
+    "/unis/not-a-real-university-xyz/",
     "noindex",
   );
-  assertUnknown(metadataSnapshot(), "/unis/not-a-real-university-xyz");
+  assertUnknown(metadataSnapshot(), "/unis/not-a-real-university-xyz/");
 
-  browser(["open", `${ORIGIN}/blog/msu-utrenniy-plan`]);
+  browser(["open", `${ORIGIN}/blog/msu-utrenniy-plan/`]);
   waitForPage();
-  assertSupported(metadataSnapshot(), "/blog/msu-utrenniy-plan", "article");
+  assertSupported(metadataSnapshot(), "/blog/msu-utrenniy-plan/", "article");
 
   await navigateWithRouter(
-    "/blog/$slug",
+    "/blog/$slug/",
     { slug: "not-a-real-post-xyz" },
-    "/blog/not-a-real-post-xyz",
+    "/blog/not-a-real-post-xyz/",
     "noindex",
   );
-  assertUnknown(metadataSnapshot(), "/blog/not-a-real-post-xyz");
+  assertUnknown(metadataSnapshot(), "/blog/not-a-real-post-xyz/");
 
   browser(["open", `${ORIGIN}/unis/not-a-real-university-direct-xyz`]);
   waitForPage();
-  waitForMetadata("/unis/not-a-real-university-direct-xyz", "noindex");
-  assertUnknown(metadataSnapshot(), "/unis/not-a-real-university-direct-xyz");
+  waitForMetadata("/unis/not-a-real-university-direct-xyz/", "noindex");
+  assertUnknown(metadataSnapshot(), "/unis/not-a-real-university-direct-xyz/");
 
   browser(["open", `${ORIGIN}/blog/not-a-real-post-direct-xyz`]);
   waitForPage();
-  waitForMetadata("/blog/not-a-real-post-direct-xyz", "noindex");
-  assertUnknown(metadataSnapshot(), "/blog/not-a-real-post-direct-xyz");
+  waitForMetadata("/blog/not-a-real-post-direct-xyz/", "noindex");
+  assertUnknown(metadataSnapshot(), "/blog/not-a-real-post-direct-xyz/");
 
   console.log(
     JSON.stringify(

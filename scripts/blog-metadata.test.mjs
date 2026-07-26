@@ -40,7 +40,7 @@ function html(
           "@id": `${canonical}#blog`,
           url: jsonLdUrl,
           inLanguage: "ru",
-          blogPost: [{ "@type": "BlogPosting", headline: post.title, url: blogRouteUrl(`/blog/${post.slug}`) }],
+          blogPost: [{ "@type": "BlogPosting", headline: post.title, url: blogRouteUrl(`/blog/${post.slug}/`) }],
         },
         {
           "@context": "https://schema.org",
@@ -93,7 +93,7 @@ test("blog metadata parser preserves exact slash variants and JSON-LD nodes", ()
 
 test("blog index and detail fixtures satisfy the shared URL policy", () => {
   assert.doesNotThrow(() => assertBlogMetadataConsistency(html(BLOG_INDEX_ROUTE), BLOG_INDEX_ROUTE, posts));
-  assert.doesNotThrow(() => assertBlogMetadataConsistency(html(`/blog/${post.slug}`), `/blog/${post.slug}`, posts));
+  assert.doesNotThrow(() => assertBlogMetadataConsistency(html(`/blog/${post.slug}/`), `/blog/${post.slug}/`, posts));
 });
 
 test("blog metadata rejects mixed slash, cross-post, missing locale, duplicate canonical, and non-article detail fixtures", () => {
@@ -102,26 +102,26 @@ test("blog metadata rejects mixed slash, cross-post, missing locale, duplicate c
     /canonical mismatch/,
   );
   assert.throws(
-    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}`, { canonical: "https://vuzora.ru/blog/another-post" }), `/blog/${post.slug}`, posts),
+    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}/`, { canonical: "https://vuzora.ru/blog/another-post/" }), `/blog/${post.slug}/`, posts),
     /canonical mismatch|BlogPosting/,
   );
   assert.throws(
-    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}`, { locale: "" }), `/blog/${post.slug}`, posts),
+    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}/`, { locale: "" }), `/blog/${post.slug}/`, posts),
     /locale/,
   );
   assert.throws(
-    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}`, { duplicateCanonical: true }), `/blog/${post.slug}`, posts),
+    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}/`, { duplicateCanonical: true }), `/blog/${post.slug}/`, posts),
     /canonical mismatch/,
   );
   assert.throws(
-    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}`, { ogType: "website" }), `/blog/${post.slug}`, posts),
+    () => assertBlogMetadataConsistency(html(`/blog/${post.slug}/`, { ogType: "website" }), `/blog/${post.slug}/`, posts),
     /og:type/,
   );
 });
 
 test("blog metadata rejects independent cross-post JSON-LD and breadcrumb URLs", () => {
-  const route = `/blog/${post.slug}`;
-  const crossPostUrl = blogRouteUrl("/blog/another-post");
+  const route = `/blog/${post.slug}/`;
+  const crossPostUrl = blogRouteUrl("/blog/another-post/");
 
   assert.throws(
     () => assertBlogMetadataConsistency(html(route, { jsonLdUrl: crossPostUrl }), route, posts),

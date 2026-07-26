@@ -26,7 +26,7 @@ test("detail FAQ uses native keyboard disclosures with crawlable closed answers"
   assert.doesNotMatch(routeSource, /onKeyDown|onKeyUp|preventDefault/);
 
   for (const university of universities) {
-    const route = `/unis/${university.slug}`;
+    const route = `/unis/${university.slug}/`;
     const artifact = artifactFor(route);
     const html = (await read(join("dist", artifact))).replaceAll("\0", "");
     const section = faqSection(html, route);
