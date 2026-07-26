@@ -71,6 +71,7 @@ export async function readRegistry(root = process.cwd()) {
       name: field(record, "name") ?? null,
       city: field(record, "city") ?? null,
       status: field(record, "status") ?? null,
+      shortName: field(record, "shortName") ?? null,
       officialUrl: field(record, "officialUrl") ?? null,
       scheduleUrl: field(record, "scheduleUrl") ?? null,
     };

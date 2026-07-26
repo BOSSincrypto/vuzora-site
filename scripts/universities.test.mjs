@@ -156,22 +156,33 @@ for (const u of UNIVERSITIES) {
     console.error("TITLE_OMITS_KEYWORD", u.slug, title);
     process.exit(8);
   }
-  // The full registry name must be present — nominative or declined, since
-  // «Расписание <родительный падеж>» is the grammatical Russian phrasing.
-  // Dropping to the bare code is allowed only when no name-bearing template
-  // fits TITLE_MAX; re-derive them here so a silent regression cannot pass.
+  // Identity preference, strongest first: full registry name (nominative or
+  // declined, since «Расписание <родительный падеж>» is the grammatical
+  // phrasing), then the recognizable short name, then the bare code — which is
+  // often ambiguous. Each step down is allowed only when nothing above it fits
+  // TITLE_MAX, so re-derive the candidates here: a silent regression to a
+  // weaker identity than the budget allowed must not pass.
   const genitive = universityGenitiveName(u);
+  const fits = (candidate) => candidate.length >= TITLE_MIN && candidate.length <= TITLE_MAX;
   const nameBearing = [
     \`Расписание \${genitive} – Vuzora\`,
     \`Расписание \${genitive}\`,
     \`\${u.name}: расписание в Telegram\`,
-  ].filter((candidate) => candidate.length >= TITLE_MIN && candidate.length <= TITLE_MAX);
+  ].filter(fits);
+  const shortBearing = u.shortName
+    ? [\`Расписание \${u.shortName} – Vuzora\`, \`Расписание \${u.shortName}\`].filter(fits)
+    : [];
   const carriesName = title.includes(u.name) || title.includes(genitive);
+  const carriesShort = Boolean(u.shortName) && title.includes(u.shortName);
   if (!carriesName && nameBearing.length > 0) {
     console.error("TITLE_OMITS_NAME", u.slug, title, "fits:", nameBearing[0]);
     process.exit(2);
   }
-  if (!carriesName && !title.includes(u.code)) {
+  if (!carriesName && !carriesShort && shortBearing.length > 0) {
+    console.error("TITLE_OMITS_SHORT_NAME", u.slug, title, "fits:", shortBearing[0]);
+    process.exit(10);
+  }
+  if (!carriesName && !carriesShort && !title.includes(u.code)) {
     console.error("TITLE_NO_IDENTITY", u.slug, title);
     process.exit(9);
   }
