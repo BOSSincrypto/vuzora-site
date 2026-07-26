@@ -194,3 +194,18 @@ test("prerender seeds, public-routes, and release validator share registry route
   assert.match(validator, /JSON-LD breadcrumb positions/);
   assert.match(validator, /description must include the registry name/);
 });
+
+test("pull requests run the full gate but never publish", async () => {
+  const workflow = await read(".github/workflows/deploy.yml");
+  // Auto-merge is only safe if the gate runs BEFORE the merge. Without a
+  // pull_request trigger the first verification happens after main already has
+  // the commit.
+  assert.match(workflow, /^\s{2}pull_request:\s*$/m);
+  // ...and a pull request must never reach the production origin.
+  assert.match(workflow, /if:\s*github\.event_name\s*!=\s*'pull_request'/);
+  const deploySection = workflow.slice(workflow.indexOf("\n  deploy:"));
+  assert.match(deploySection, /if:\s*github\.event_name\s*!=\s*'pull_request'/);
+  assert.match(deploySection, /actions\/deploy-pages@[0-9a-f]{40}/);
+  // Production runs must not cancel a deployment that is already publishing.
+  assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.event_name == 'pull_request'\s*\}\}/);
+});
