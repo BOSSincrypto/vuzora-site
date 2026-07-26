@@ -125,6 +125,9 @@ export function parseHtmlDocument(html) {
   const alternateLinks = findAll("link").filter((element) =>
     element.attrs.rel?.toLowerCase().split(/\s+/).includes("alternate"),
   );
+  const apiCatalogLinks = findAll("link").filter((element) =>
+    element.attrs.rel?.toLowerCase().split(/\s+/).includes("api-catalog"),
+  );
   const htmlTag = elements.find((element) => element.tag === "html");
   const headings = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((match) =>
     textContent(match[1]),
@@ -168,6 +171,7 @@ export function parseHtmlDocument(html) {
     descriptions: description.map((element) => element.attrs.content ?? ""),
     canonicals: canonical.map((element) => element.attrs.href ?? ""),
     alternateLinks: alternateLinks.map((element) => element.attrs),
+    apiCatalogLinks: apiCatalogLinks.map((element) => element.attrs),
     htmlLang: htmlTag?.attrs.lang ?? "",
     meta,
     jsonLd: parsedJsonLd,
@@ -242,6 +246,20 @@ export function routeMetadataFailures(document, route, expectedDescription) {
   if (unexpectedDiscovery.length) {
     failures.push(
       `${route}: discovery metadata contains unrelated, non-canonical, duplicate, or wrong-origin alternate link(s)`,
+    );
+  }
+  // GitHub Pages cannot emit a Link response header, so the RFC 9727
+  // `api-catalog` relation is carried by the HTML serialization instead. It
+  // must stay joined to the one canonical catalog path on every route.
+  const apiCatalogLinks = document.apiCatalogLinks ?? [];
+  const validApiCatalog = apiCatalogLinks.filter(
+    (link) =>
+      link.href === `${CANONICAL_ORIGIN}/.well-known/api-catalog` &&
+      link.type === "application/linkset+json",
+  );
+  if (apiCatalogLinks.length !== 1 || validApiCatalog.length !== 1) {
+    failures.push(
+      `${route}: expected exactly one canonical api-catalog link (RFC 9727)`,
     );
   }
   return failures;

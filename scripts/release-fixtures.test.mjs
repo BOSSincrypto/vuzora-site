@@ -56,6 +56,11 @@ const metadataFixture = (route, overrides = {}) => {
     <link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml"/>
     <link rel="alternate" type="text/plain" href="https://vuzora.ru/llms.txt"/>
   `;
+  // Kept outside `alternates` so discovery-drift fixtures can mutate the
+  // alternate links without also dropping the RFC 9727 catalog relation.
+  const apiCatalog = overrides.apiCatalog ?? `
+    <link rel="api-catalog" type="application/linkset+json" href="https://vuzora.ru/.well-known/api-catalog"/>
+  `;
   return `<!doctype html><html lang="ru"><head>
     <title>Маршрут Vuzora для проверки</title>
     <meta name="description" content="${description}"/>
@@ -63,6 +68,7 @@ const metadataFixture = (route, overrides = {}) => {
     <meta property="og:locale" content="${locale}"/>
     <link rel="canonical" href="${canonical}"/>
     ${alternates}
+    ${apiCatalog}
   </head><body><main><h1>Проверка маршрута</h1></main></body></html>`;
 };
 const approvedDiscoveryAlternates = `
@@ -212,6 +218,45 @@ test("route discovery metadata rejects alternate-origin and duplicate variants",
       "/pricing/",
     );
     assert.match(failures.join("\n"), /discovery metadata|discovery link/, label);
+  }
+});
+
+test("route metadata rejects missing, duplicated, and drifted api-catalog links", () => {
+  const approvedApiCatalog = `
+    <link rel="api-catalog" type="application/linkset+json" href="https://vuzora.ru/.well-known/api-catalog"/>
+  `;
+  assert.deepEqual(
+    routeMetadataFailures(parseHtmlDocument(metadataFixture("/pricing/")), "/pricing/"),
+    [],
+  );
+
+  const fixtures = [
+    ["missing entirely", ""],
+    ["duplicated", `${approvedApiCatalog}${approvedApiCatalog}`],
+    [
+      "alternate origin",
+      `<link rel="api-catalog" type="application/linkset+json" href="https://example.com/.well-known/api-catalog"/>`,
+    ],
+    [
+      "origin-prefix collision",
+      `<link rel="api-catalog" type="application/linkset+json" href="https://vuzora.ru.evil.example/.well-known/api-catalog"/>`,
+    ],
+    [
+      "wrong media type",
+      `<link rel="api-catalog" type="application/json" href="https://vuzora.ru/.well-known/api-catalog"/>`,
+    ],
+    [
+      "phantom endpoint path",
+      `<link rel="api-catalog" type="application/linkset+json" href="https://vuzora.ru/api/"/>`,
+    ],
+  ];
+
+  for (const [label, apiCatalog] of fixtures) {
+    const failures = routeMetadataFailures(
+      parseHtmlDocument(metadataFixture("/pricing/", { apiCatalog })),
+      "/pricing/",
+    );
+    assert.match(failures.join("\n"), /api-catalog link/, label);
   }
 });
 
