@@ -83,6 +83,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://synergy.ru/",
+    // scheduleUrl omitted: no public schedule page; access is via the student account.
   },
   {
     slug: "spbstu",
@@ -110,6 +111,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.rudn.ru/",
+    scheduleUrl: "https://www.rudn.ru/education/schedule",
   },
   {
     slug: "mgimo",
@@ -118,6 +120,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://mgimo.ru/",
+    // scheduleUrl omitted: schedule lives in the university portal and mobile app, not a public page.
   },
   {
     slug: "dgtu",
@@ -144,7 +147,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.mirea.ru/",
-    // scheduleUrl omitted: mirea.ru is behind DDoS-Guard and could not be verified.
+    scheduleUrl: "https://www.mirea.ru/schedule/",
   },
   {
     slug: "ranepa",
@@ -153,6 +156,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.ranepa.ru/",
+    // scheduleUrl omitted: each faculty and branch publishes its own schedule; no central page.
   },
   {
     slug: "miit",
@@ -161,6 +165,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.rut-miit.ru/",
+    scheduleUrl: "https://rut-miit.ru/timetable",
   },
   {
     slug: "hse",
@@ -187,6 +192,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Долгопрудный",
     status: "online",
     officialUrl: "https://mipt.ru/",
+    // scheduleUrl omitted: schedule section is client-rendered and could not be confirmed.
   },
   {
     slug: "mpei",
@@ -231,6 +237,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.msu.ru/",
+    // scheduleUrl omitted: schedules are published per faculty; no central page.
   },
   {
     slug: "sfu",
@@ -239,6 +246,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Красноярск",
     status: "online",
     officialUrl: "https://www.sfu-kras.ru/",
+    // scheduleUrl omitted: edu.sfu-kras.ru did not respond during verification.
   },
   {
     slug: "nngu",
@@ -247,6 +255,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Нижний Новгород",
     status: "online",
     // officialUrl omitted: public https endpoint redirects to insecure http://www.unn.ru/.
+    // scheduleUrl omitted: each faculty publishes its own schedule; no central page.
   },
   {
     slug: "bmstu",
@@ -255,6 +264,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     // officialUrl omitted: bmstu.ru currently redirects to mirror.bmstu.ru; keep omitted until stable.
+    // scheduleUrl omitted: schedules are published per faculty; no central page.
   },
   {
     slug: "susu",

@@ -86,8 +86,9 @@ lowercase slug, code, display name, city, status, an optional official URL, and
 an optional `scheduleUrl` — the university's own timetable page. `scheduleUrl`
 follows the same verify-or-omit rule as `officialUrl`: every address is opened
 and confirmed to be a schedule page before it lands in the registry, and a
-login-only student portal does not qualify. It is currently set for 12 of 25;
-the omissions carry a comment naming the reason. The release validator fails if
+login-only student portal does not qualify. It is currently set for 15 of 25;
+the omissions carry a comment naming the reason — most often that the
+university publishes schedules per faculty with no central page. The release validator fails if
 a registry-verified external URL is not rendered exactly once on its detail
 page, or if any other external destination appears there.
 The detail route, sitemap, release manifest, `unis.md`, and WebMCP all derive
