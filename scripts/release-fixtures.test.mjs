@@ -27,7 +27,7 @@ import { hashReleaseBytes, normalizeSitemapLastmodBytes } from "./compare-releas
 const baseHtml = (body, head = "") =>
   `<!doctype html><html><head><title>Страница Vuzora для проверки</title><meta name="description" content="Достаточно длинное описание страницы Vuzora для детерминированной проверки релизного контракта без заглушек."/><link rel="canonical" href="https://vuzora.ru/test"/><meta property="og:url" content="https://vuzora.ru/test"/><meta property="og:type" content="website"/>${head}</head><body><main><h1>Страница Vuzora для проверки</h1>${body}</main></body></html>`;
 
-const routes = ["/", "/pricing"];
+const routes = ["/", "/pricing/"];
 
 async function releaseFixture(mutator, expectedMessage) {
   const root = process.cwd();
@@ -92,13 +92,13 @@ test("indexable route matrix requires shared discovery metadata and preserves no
   const indexableRoutes = buildRoutes({ universities, posts });
   const routeClasses = [
     "/",
-    "/pricing",
-    "/changelog",
-    "/unis",
+    "/pricing/",
+    "/changelog/",
+    "/unis/",
     "/blog/",
-    ...posts.map((slug) => `/blog/${slug}`),
-    "/legal/terms",
-    "/legal/privacy",
+    ...posts.map((slug) => `/blog/${slug}/`),
+    "/legal/terms/",
+    "/legal/privacy/",
   ];
 
   for (const route of routeClasses) {
@@ -115,48 +115,48 @@ test("indexable route matrix requires shared discovery metadata and preserves no
   }
 
   const missingDescription = parseHtmlDocument(
-    metadataFixture("/pricing", { description: "коротко" }),
+    metadataFixture("/pricing/", { description: "коротко" }),
   );
   assert.match(
     routeMetadataFailures(
       missingDescription,
-      "/pricing",
-      routeExpectationFor("/pricing", { universities, postRecords }).description,
+      "/pricing/",
+      routeExpectationFor("/pricing/", { universities, postRecords }).description,
     ).join("\n"),
     /description/,
   );
 
   const crossRouteDescription = parseHtmlDocument(
-    metadataFixture("/pricing", {
-      description: routeExpectationFor("/legal/privacy", { universities, postRecords }).description,
+    metadataFixture("/pricing/", {
+      description: routeExpectationFor("/legal/privacy/", { universities, postRecords }).description,
     }),
   );
   assert.match(
     routeMetadataFailures(
       crossRouteDescription,
-      "/pricing",
-      routeExpectationFor("/pricing", { universities, postRecords }).description,
+      "/pricing/",
+      routeExpectationFor("/pricing/", { universities, postRecords }).description,
     ).join("\n"),
     /route-specific description/,
   );
 
   const duplicateCanonical = parseHtmlDocument(
-    metadataFixture("/changelog", {
+    metadataFixture("/changelog/", {
       alternates: `
-        <link rel="canonical" href="https://vuzora.ru/changelog"/>
-        <link rel="canonical" href="https://vuzora.ru/changelog"/>
+        <link rel="canonical" href="https://vuzora.ru/changelog/"/>
+        <link rel="canonical" href="https://vuzora.ru/changelog/"/>
       `,
     }),
   );
-  assert.match(routeMetadataFailures(duplicateCanonical, "/changelog").join("\n"), /canonical/);
+  assert.match(routeMetadataFailures(duplicateCanonical, "/changelog/").join("\n"), /canonical/);
 
   const wrongOrigin = parseHtmlDocument(
-    metadataFixture("/unis", { canonical: "https://example.com/unis" }),
+    metadataFixture("/unis/", { canonical: "https://example.com/unis" }),
   );
-  assert.match(routeMetadataFailures(wrongOrigin, "/unis").join("\n"), /canonical/);
+  assert.match(routeMetadataFailures(wrongOrigin, "/unis/").join("\n"), /canonical/);
 
-  const noindex = parseHtmlDocument(metadataFixture("/legal/privacy", { robots: "noindex" }));
-  assert.match(routeMetadataFailures(noindex, "/legal/privacy").join("\n"), /robots/);
+  const noindex = parseHtmlDocument(metadataFixture("/legal/privacy/", { robots: "noindex" }));
+  assert.match(routeMetadataFailures(noindex, "/legal/privacy/").join("\n"), /robots/);
 
   const phantomRoute = "/not-in-release-manifest";
   assert.equal(indexableRoutes.includes(phantomRoute), false);
@@ -170,8 +170,8 @@ test("indexable route matrix requires shared discovery metadata and preserves no
 });
 
 test("route discovery metadata rejects alternate-origin and duplicate variants", () => {
-  const valid = parseHtmlDocument(metadataFixture("/pricing"));
-  assert.deepEqual(routeMetadataFailures(valid, "/pricing"), []);
+  const valid = parseHtmlDocument(metadataFixture("/pricing/"));
+  assert.deepEqual(routeMetadataFailures(valid, "/pricing/"), []);
 
   const fixtures = [
     [
@@ -207,9 +207,9 @@ test("route discovery metadata rejects alternate-origin and duplicate variants",
   for (const [label, extraLink] of fixtures) {
     const failures = routeMetadataFailures(
       parseHtmlDocument(
-        metadataFixture("/pricing", { alternates: `${approvedDiscoveryAlternates}${extraLink}` }),
+        metadataFixture("/pricing/", { alternates: `${approvedDiscoveryAlternates}${extraLink}` }),
       ),
-      "/pricing",
+      "/pricing/",
     );
     assert.match(failures.join("\n"), /discovery metadata|discovery link/, label);
   }
@@ -217,19 +217,19 @@ test("route discovery metadata rejects alternate-origin and duplicate variants",
 
 test("release origin checks reject canonical-origin prefix collisions", () => {
   const document = parseHtmlDocument(
-    `${metadataFixture("/pricing")}
+    `${metadataFixture("/pricing/")}
       <a href="//vuzora.ru.evil.example/unsafe">Unsafe origin</a>
       <script type="application/ld+json">{"@id":"https://vuzora.ru.evil.example/subject"}</script>`,
   );
   const failures = [];
-  validateRouteDocument(document, "/pricing", ["/pricing"], [], failures);
+  validateRouteDocument(document, "/pricing/", ["/pricing/"], [], failures);
   assert.ok(failures.some((failure) => /external anchor must use target=_blank/.test(failure)));
   assert.ok(failures.some((failure) => /JSON-LD uses alternate origin/.test(failure)));
 });
 
 test("validate:release rejects unrelated route discovery alternates", async () => {
   await releaseFixture(async (root) => {
-    const path = join(root, "dist", artifactFor("/pricing"));
+    const path = join(root, "dist", artifactFor("/pricing/"));
     const html = await readFile(path, "utf8");
     await writeFile(
       path,
@@ -239,14 +239,14 @@ test("validate:release rejects unrelated route discovery alternates", async () =
       ),
       "utf8",
     );
-  }, /pricing: discovery metadata/);
+  }, /pricing\/: discovery metadata/);
 });
 
 test("blog route policy rejects unsafe, duplicate, and non-canonical slugs before generation", async () => {
   for (const slug of ["unsafe/child", "..", "unsafe?query", "unsafe#fragment", "UPPER_case"]) {
     assert.throws(() => assertBlogSlugs([slug]), /invalid blog post slug/);
     assert.throws(() => buildRoutes({ universities: [], posts: [slug] }), /invalid blog post slug/);
-    assert.throws(() => artifactFor(`/blog/${slug}`), /invalid blog route slug/);
+    assert.throws(() => artifactFor(`/blog/${slug}/`), /invalid blog route slug/);
   }
   assert.throws(
     () => assertBlogSlugs(["valid-post", "valid-post"]),
@@ -276,12 +276,12 @@ test("validate:release rejects unsafe blog slugs in the authoritative source reg
 });
 
 test("validate:release rejects route-matrix metadata drift fixtures", async () => {
-  const pricingArtifact = artifactFor("/pricing");
+  const pricingArtifact = artifactFor("/pricing/");
   await releaseFixture(async (root) => {
     const path = join(root, "dist", pricingArtifact);
     const html = await readFile(path, "utf8");
     await writeFile(path, html.replace(/<meta name="description"[^>]*>/, ""), "utf8");
-  }, /pricing: description/);
+  }, /pricing\/: description/);
 
   await releaseFixture(async (root) => {
     const path = join(root, "dist", pricingArtifact);
@@ -294,7 +294,7 @@ test("validate:release rejects route-matrix metadata drift fixtures", async () =
       ),
       "utf8",
     );
-  }, /pricing: description/);
+  }, /pricing\/: description/);
 
   await releaseFixture(async (root) => {
     const path = join(root, "dist", pricingArtifact);
@@ -307,11 +307,11 @@ test("validate:release rejects route-matrix metadata drift fixtures", async () =
       html.replace(/<meta name="description"[^>]*>/, homepageDescription),
       "utf8",
     );
-  }, /pricing: route-specific description|duplicate indexable route description/);
+  }, /pricing\/: route-specific description|duplicate indexable route description/);
 
   await releaseFixture(async (root) => {
-    const route = `/blog/${(await readRegistry(root)).posts[0]}`;
-    const otherRoute = `/blog/${(await readRegistry(root)).posts[1]}`;
+    const route = `/blog/${(await readRegistry(root)).posts[0]}/`;
+    const otherRoute = `/blog/${(await readRegistry(root)).posts[1]}/`;
     const path = join(root, "dist", artifactFor(route));
     const otherPath = join(root, "dist", artifactFor(otherRoute));
     const html = await readFile(path, "utf8");
@@ -326,33 +326,33 @@ test("validate:release rejects route-matrix metadata drift fixtures", async () =
   }, /route-specific description|duplicate indexable route description/);
 
   await releaseFixture(async (root) => {
-    const path = join(root, "dist", artifactFor("/changelog"));
+    const path = join(root, "dist", artifactFor("/changelog/"));
     const html = await readFile(path, "utf8");
     await writeFile(
       path,
-      html.replace("</head>", '<link rel="canonical" href="https://vuzora.ru/changelog"/></head>'),
+      html.replace("</head>", '<link rel="canonical" href="https://vuzora.ru/changelog/"/></head>'),
       "utf8",
     );
-  }, /changelog: canonical/);
+  }, /changelog\/: canonical/);
 
   await releaseFixture(async (root) => {
-    const path = join(root, "dist", artifactFor("/unis"));
+    const path = join(root, "dist", artifactFor("/unis/"));
     const html = await readFile(path, "utf8");
     await writeFile(
       path,
-      html.replace('href="https://vuzora.ru/unis"', 'href="https://example.com/unis"'),
+      html.replace('href="https://vuzora.ru/unis/"', 'href="https://example.com/unis"'),
       "utf8",
     );
-  }, /unis: canonical|og:url/);
+  }, /unis\/: canonical|og:url/);
 
   await releaseFixture(async (root) => {
-    const path = join(root, "dist", artifactFor("/legal/privacy"));
+    const path = join(root, "dist", artifactFor("/legal/privacy/"));
     const html = await readFile(path, "utf8");
     await writeFile(path, html.replace('content="index, follow"', 'content="noindex"'), "utf8");
-  }, /legal\/privacy: robots/);
+  }, /legal\/privacy\/: robots/);
 
   await releaseFixture(async (root) => {
-    const source = join(root, "dist", artifactFor("/pricing"));
+    const source = join(root, "dist", artifactFor("/pricing/"));
     const destination = join(root, "dist", "not-in-release-manifest", "index.html");
     await mkdir(join(destination, ".."), { recursive: true });
     await writeFile(destination, await readFile(source));
@@ -362,8 +362,8 @@ test("validate:release rejects route-matrix metadata drift fixtures", async () =
 test("validate:release rejects independent blog JSON-LD and breadcrumb cross-post fixtures", async () => {
   const { posts } = await readRegistry();
   assert.ok(posts.length >= 2, "cross-post fixtures require at least two blog posts");
-  const route = `/blog/${posts[0]}`;
-  const crossPostUrl = `https://vuzora.ru/blog/${posts[1]}`;
+  const route = `/blog/${posts[0]}/`;
+  const crossPostUrl = `https://vuzora.ru/blog/${posts[1]}/`;
   const artifact = artifactFor(route);
 
   await releaseFixture(async (root) => {
@@ -396,7 +396,7 @@ test("university CTA order requires one immediate above-content anchor", () => {
       '<a href="https://t.me/vuzora_bot?start=from-site_msu" data-cta="university-conversion" target="_blank" rel="noopener noreferrer">Подключить</a>' +
       '<div data-detail-content>Контент</div>',
   );
-  assert.doesNotThrow(() => assertUniversityCtaOrder(valid, university, "/unis/msu"));
+  assert.doesNotThrow(() => assertUniversityCtaOrder(valid, university, "/unis/msu/"));
 
   const misplaced = parseHtmlDocument(
     '<header data-identity-status><h1>МГУ</h1><span>Онлайн Москва</span></header>' +
@@ -404,7 +404,7 @@ test("university CTA order requires one immediate above-content anchor", () => {
       '<a href="https://t.me/vuzora_bot?start=from-site_msu" data-cta="university-conversion" target="_blank" rel="noopener noreferrer">Подключить</a>',
   );
   assert.throws(
-    () => assertUniversityCtaOrder(misplaced, university, "/unis/msu"),
+    () => assertUniversityCtaOrder(misplaced, university, "/unis/msu/"),
     /does not immediately follow|missing detail-content/,
   );
 
@@ -415,7 +415,7 @@ test("university CTA order requires one immediate above-content anchor", () => {
       '<div data-detail-content>Контент</div>',
   );
   assert.throws(
-    () => assertUniversityCtaOrder(duplicated, university, "/unis/msu"),
+    () => assertUniversityCtaOrder(duplicated, university, "/unis/msu/"),
     /contains 2 university-scoped CTAs/,
   );
 });
@@ -440,8 +440,8 @@ test("parsed route rejects copied or cross-route identity", () => {
   const failures = [];
   validateRouteDocument(
     document,
-    "/unis/msu",
-    ["/unis/msu"],
+    "/unis/msu/",
+    ["/unis/msu/"],
     [{ slug: "msu", name: "МГУ", city: "Москва", status: "online" }],
     failures,
   );
@@ -450,10 +450,10 @@ test("parsed route rejects copied or cross-route identity", () => {
 
 test("explicit core route expectations reject copied HTML", () => {
   const copied = parseHtmlDocument(
-    baseHtml('<a href="/">Главная</a><a href="/pricing">Тарифы</a>'),
+    baseHtml('<a href="/">Главная</a><a href="/pricing/">Тарифы</a>'),
   );
   const failures = [];
-  validateRouteDocument(copied, "/pricing", routes, [], failures);
+  validateRouteDocument(copied, "/pricing/", routes, [], failures);
   assert.ok(
     failures.some((failure) => /route-specific title|route-specific H1|JSON-LD/.test(failure)),
   );
@@ -463,7 +463,7 @@ test("sitemap parser rejects duplicate child fields instead of overwriting", () 
   assert.throws(
     () =>
       parseSitemapXml(
-        "<urlset><url><loc>https://vuzora.ru/</loc><loc>https://vuzora.ru/pricing</loc></url></urlset>",
+        "<urlset><url><loc>https://vuzora.ru/</loc><loc>https://vuzora.ru/pricing/</loc></url></urlset>",
       ),
     /duplicate sitemap field loc/,
   );
@@ -488,25 +488,25 @@ test("invalid UTF-8 bytes remain distinguishable in release hashes", () => {
 });
 
 test("exact route JSON-LD identities reject identical duplicate subjects", () => {
-  const expectation = routeExpectationFor("/changelog", { universities: [] });
+  const expectation = routeExpectationFor("/changelog/", { universities: [] });
   const duplicated = parseHtmlDocument(
     baseHtml(
       '<a href="/">Главная</a>',
-      '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog"}</script>' +
-        '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog"}</script>',
+      '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog/#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog/"}</script>' +
+        '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog/#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog/"}</script>',
     ),
   );
   const failures = [];
   validateRouteDocument(
     duplicated,
-    "/changelog",
-    ["/changelog"],
+    "/changelog/",
+    ["/changelog/"],
     [],
     failures,
     new Set(),
     new Set(),
     {
-      "/changelog": {
+      "/changelog/": {
         ...expectation,
         title: duplicated.title,
         heading: duplicated.headings[0],
@@ -518,25 +518,25 @@ test("exact route JSON-LD identities reject identical duplicate subjects", () =>
 });
 
 test("exact route JSON-LD identities reject contradictory duplicate subjects", () => {
-  const expectation = routeExpectationFor("/changelog", { universities: [] });
+  const expectation = routeExpectationFor("/changelog/", { universities: [] });
   const contradictory = parseHtmlDocument(
     baseHtml(
       '<a href="/">Главная</a>',
-      '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog"}</script>' +
-        '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog#breadcrumb","name":"Другая страница","url":"https://vuzora.ru/other"}</script>',
+      '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog/#breadcrumb","name":"Что нового – Vuzora","url":"https://vuzora.ru/changelog/"}</script>' +
+        '<script type="application/ld+json">{"@type":"BreadcrumbList","@id":"https://vuzora.ru/changelog/#breadcrumb","name":"Другая страница","url":"https://vuzora.ru/other"}</script>',
     ),
   );
   const failures = [];
   validateRouteDocument(
     contradictory,
-    "/changelog",
-    ["/changelog"],
+    "/changelog/",
+    ["/changelog/"],
     [],
     failures,
     new Set(),
     new Set(),
     {
-      "/changelog": {
+      "/changelog/": {
         ...expectation,
         title: contradictory.title,
         heading: contradictory.headings[0],
@@ -569,7 +569,7 @@ test("semantic CTA rules reject confusion, cardinality, and unsafe attributes", 
     '<a href="/">Главная</a><a href="https://t.me/vuzora_bot" data-cta="bot-navigation">Bot</a>',
   );
   const unsafeFailures = [];
-  validateRouteDocument(parseHtmlDocument(unsafe), "/pricing", ["/pricing"], [], unsafeFailures);
+  validateRouteDocument(parseHtmlDocument(unsafe), "/pricing/", ["/pricing/"], [], unsafeFailures);
   assert.ok(
     unsafeFailures.some((failure) => /unsafe external attributes|target=_blank/.test(failure)),
   );
@@ -624,7 +624,7 @@ test("llms join fails closed on underlist and overlist fixtures", () => {
 
 test("sitemap parser rejects malformed, duplicate, alternate-origin, and artifact-mismatched locators", () => {
   const valid =
-    '<?xml version="1.0"?><urlset><url><loc>https://vuzora.ru/</loc><lastmod>2026-07-16</lastmod></url><url><loc>https://vuzora.ru/pricing</loc></url></urlset>';
+    '<?xml version="1.0"?><urlset><url><loc>https://vuzora.ru/</loc><lastmod>2026-07-16</lastmod></url><url><loc>https://vuzora.ru/pricing/</loc></url></urlset>';
   assert.equal(parseSitemapXml(valid).length, 2);
   assert.throws(
     () => parseSitemapXml("<sitemap><url><loc>https://vuzora.ru/</loc></url></sitemap>"),
@@ -641,7 +641,7 @@ test("sitemap parser rejects malformed, duplicate, alternate-origin, and artifac
   assert.throws(
     () =>
       assertSitemap(
-        valid.replace("https://vuzora.ru/pricing", "https://example.com/pricing"),
+        valid.replace("https://vuzora.ru/pricing/", "https://example.com/pricing"),
         routes,
       ),
     /canonical|route set/,

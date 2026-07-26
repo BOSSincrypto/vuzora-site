@@ -14,8 +14,8 @@ export const BRAND = {
     inn: "773437258289",
     city: "г. Москва",
     disclaimer: "Сервис не является официальным сервисом вузов.",
-    termsUrl: "/legal/terms",
-    privacyUrl: "/legal/privacy",
+    termsUrl: "/legal/terms/",
+    privacyUrl: "/legal/privacy/",
     revision: "27.06.2026",
   },
 } as const;

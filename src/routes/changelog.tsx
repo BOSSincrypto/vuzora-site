@@ -27,7 +27,7 @@ export const Route = createFileRoute("/changelog")({
       { property: "og:title", content: PAGE_TITLE },
       { property: "og:description", content: PAGE_DESC },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: abs("/changelog") },
+      { property: "og:url", content: abs("/changelog/") },
       { property: "og:image", content: abs(ogCover) },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: PAGE_TITLE },
@@ -35,19 +35,19 @@ export const Route = createFileRoute("/changelog")({
       { name: "twitter:image", content: abs(ogCover) },
       ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/changelog") }, ...DISCOVERY_LINKS],
+    links: [{ rel: "canonical", href: abs("/changelog/") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          "@id": "https://vuzora.ru/changelog#breadcrumb",
+          "@id": "https://vuzora.ru/changelog/#breadcrumb",
           name: PAGE_TITLE,
-          url: abs("/changelog"),
+          url: abs("/changelog/"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
-            { "@type": "ListItem", position: 2, name: "Что нового", item: abs("/changelog") },
+            { "@type": "ListItem", position: 2, name: "Что нового", item: abs("/changelog/") },
           ],
         }),
       },

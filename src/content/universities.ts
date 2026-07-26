@@ -13,7 +13,7 @@ import { BRAND, LINKS, SITE_URL } from "./site";
 export type UniversityStatus = "online" | "soon";
 
 export type University = {
-  /** Stable public URL segment for `/unis/<slug>`. Must match `[a-z0-9-]+`. */
+  /** Stable public URL segment for `/unis/<slug>/`. Must match `[a-z0-9-]+`. */
   slug: string;
   /** Short display code shown in the directory grid. */
   code: string;
@@ -291,9 +291,14 @@ export function universityGenitiveName(university: University): string {
   return UNIVERSITY_GENITIVE_NAMES[university.slug] ?? university.name;
 }
 
-/** Public no-slash path for a university detail page. */
-export function universityPagePath(slug: string): `/unis/${string}` {
-  return `/unis/${slug}`;
+/**
+ * Public path for a university detail page.
+ *
+ * Trailing slash is canonical: GitHub Pages serves the page from
+ * `unis/<slug>/index.html`, so the slashless form only 301-redirects here.
+ */
+export function universityPagePath(slug: string): `/unis/${string}/` {
+  return `/unis/${slug}/`;
 }
 
 /** Absolute canonical detail URL. */

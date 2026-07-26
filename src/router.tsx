@@ -43,6 +43,12 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // GitHub Pages serves every prerendered route from `<route>/index.html`, so
+    // the slashless form 301-redirects. The router default is "never", which
+    // would emit exactly that redirecting form from every <Link>. Keep `to`
+    // props slashless (that is what the generated route union accepts) and let
+    // this normalize the rendered href.
+    trailingSlash: "always",
     defaultErrorComponent: ({ error, reset }) => (
       <RouteErrorFallback error={error} reset={reset} label="default" />
     ),

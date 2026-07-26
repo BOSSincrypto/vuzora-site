@@ -63,14 +63,23 @@ repository.
 Current application routes are:
 
 - `/` landing page
-- `/pricing`
-- `/unis`
-- `/unis/<slug>` university detail pages
+- `/pricing/`
+- `/unis/`
+- `/unis/<slug>/` university detail pages
 - `/blog/` blog index
-- `/blog/<slug>` blog posts
-- `/changelog`
-- `/legal/terms`
-- `/legal/privacy`
+- `/blog/<slug>/` blog posts
+- `/changelog/`
+- `/legal/terms/`
+- `/legal/privacy/`
+
+Every public page path ends in a trailing slash. GitHub Pages serves each
+prerendered route from `<route>/index.html`, so the slashless form only issues
+a 301 to the slashed one — a canonical, sitemap entry, or feed permalink
+without the slash points at a redirect. Real file paths (`/llms.txt`,
+`/sitemap.xml`, `/blog/rss.xml`, `/unis.md`, `/auth.md`) have no slash. The
+router is configured with `trailingSlash: "always"` so `<Link>` renders the
+canonical form; note that `to` props still use the route id, which the
+generated union spells with the slash.
 
 The registry currently contains 25 universities. Each record has a stable
 lowercase slug, code, display name, city, status, and an optional official URL.
@@ -80,7 +89,7 @@ casually.
 
 Blog posts are plain paragraph arrays in `POSTS`. The index, detail route, RSS
 feed, sitemap, and release checks derive from the post records. Blog detail
-URLs are slashless; the only published blog index URL is `/blog/`.
+URLs carry a trailing slash, like every other public page path.
 
 Other public discovery and artifact routes include:
 
@@ -126,8 +135,9 @@ part of the current CTA model.
 
 ## SEO, AEO, and structured-data rules
 
-- Keep canonical URLs on `https://vuzora.ru`, with route metadata authored in
-  the route or shared SEO content modules.
+- Keep canonical URLs on `https://vuzora.ru` with the trailing slash on page
+  paths, and author route metadata in the route or shared SEO content modules.
+  A canonical that omits the slash advertises a URL that 301-redirects.
 - Keep primary CTA links and meaningful answers in server-rendered initial HTML,
   not only behind client JavaScript.
 - The landing and university detail FAQ data powers both native

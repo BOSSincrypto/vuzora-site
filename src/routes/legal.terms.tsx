@@ -25,7 +25,7 @@ export const Route = createFileRoute("/legal/terms")({
         content: "Условия оказания услуг сервиса Vuzora: подписка, оплата, возврат средств.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: abs("/legal/terms") },
+      { property: "og:url", content: abs("/legal/terms/") },
       { property: "og:image", content: abs(ogCover) },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Публичная оферта – Vuzora" },
@@ -37,19 +37,19 @@ export const Route = createFileRoute("/legal/terms")({
       ...INDEXABLE_META,
     ],
 
-    links: [{ rel: "canonical", href: abs("/legal/terms") }, ...DISCOVERY_LINKS],
+    links: [{ rel: "canonical", href: abs("/legal/terms/") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          "@id": "https://vuzora.ru/legal/terms#breadcrumb",
+          "@id": "https://vuzora.ru/legal/terms/#breadcrumb",
           name: "Публичная оферта – Vuzora",
-          url: abs("/legal/terms"),
+          url: abs("/legal/terms/"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
-            { "@type": "ListItem", position: 2, name: "Оферта", item: abs("/legal/terms") },
+            { "@type": "ListItem", position: 2, name: "Оферта", item: abs("/legal/terms/") },
           ],
         }),
       },
@@ -99,7 +99,7 @@ function TermsPage() {
       <Section title="3. Подписка и оплата">
         <p>
           Стоимость и срок действия тарифов указаны на странице{" "}
-          <Link to="/pricing" className="underline">
+          <Link to="/pricing/" className="underline">
             «Тарифы»
           </Link>{" "}
           и являются неотъемлемой частью оферты. Действующие тарифы на момент редакции:

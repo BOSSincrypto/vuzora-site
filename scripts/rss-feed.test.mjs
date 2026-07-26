@@ -85,7 +85,7 @@ test("RSS join fails closed on missing, malformed, insecure, and duplicate items
   assert.throws(() => assertRssJoin("<rss version=\"2.0\"><channel /></rss>", fixturePosts), /encoding/i);
   const full = buildRssFeed(fixturePosts);
   assert.throws(
-    () => assertRssJoin(full.replace("https://vuzora.ru/blog/first-post/", "/blog/first-post"), fixturePosts),
+    () => assertRssJoin(full.replace("https://vuzora.ru/blog/first-post/", "/blog/first-post/"), fixturePosts),
     /non-canonical/i,
   );
   assert.throws(

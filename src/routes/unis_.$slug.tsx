@@ -47,7 +47,7 @@ export const Route = createFileRoute("/unis_/$slug")({
     <RouteNotFoundFallback
       title="Такого вуза нет в списке"
       description="Возможно, ссылка устарела или вуз ещё не добавлен. Открой полный список поддерживаемых вузов."
-      primaryHref="/unis"
+      primaryHref="/unis/"
       primaryLabel="Все вузы"
     />
   ),
@@ -109,7 +109,7 @@ export const Route = createFileRoute("/unis_/$slug")({
                     "@type": "ListItem",
                     position: 2,
                     name: "Вузы",
-                    item: abs("/unis"),
+                    item: abs("/unis/"),
                   },
                   {
                     "@type": "ListItem",
@@ -175,7 +175,7 @@ function UniversityDetailPage() {
   const genitiveName = universityGenitiveName(university);
   const ctaHref = universityBotUrl(university.slug);
   const label = statusLabel(university.status);
-  const returnHref = "/unis";
+  const returnHref = "/unis/";
 
   // Satisfy the published content floor at build/typecheck time without runtime work.
   if (import.meta.env.DEV && copy.length < DETAIL_CONTENT_MIN_LENGTH) {
@@ -290,13 +290,13 @@ function UniversityDetailPage() {
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a
-              href="/blog/raspisanie-vuzov-v-telegram"
+              href="/blog/raspisanie-vuzov-v-telegram/"
               className="inline-flex items-center gap-1 text-sm text-white/65 underline decoration-white/20 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm"
             >
               Как устроена доставка расписания
             </a>
             <a
-              href="/unis"
+              href="/unis/"
               className="inline-flex items-center gap-1 text-sm text-white/65 underline decoration-white/20 decoration-1 underline-offset-4 transition-colors hover:text-white hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm"
             >
               ← Все вузы

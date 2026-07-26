@@ -77,10 +77,9 @@ Release validation is fail-closed. Inspect `git diff --check`, the complete
 diff, and secret-like patterns before publishing. Keep generated artifacts
 consistent with their source generators.
 
-This repository is connected to Lovable. Do not force-push, rebase, amend,
-squash, or otherwise rewrite published history. Push only reviewed commits
-after the full release gates pass, then verify the changed route and key live
-artifacts at `https://vuzora.ru`.
+Do not force-push, rebase, amend, squash, or otherwise rewrite published
+history. Push only reviewed commits after the full release gates pass, then
+verify the changed route and key live artifacts at `https://vuzora.ru`.
 
 ## Cloudflare and edge rule
 

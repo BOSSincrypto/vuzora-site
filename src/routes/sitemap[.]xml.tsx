@@ -13,7 +13,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { POSTS } from "@/content/blog";
+import { blogPostPath, POSTS } from "@/content/blog";
 import { UNIVERSITIES, abs, universityPagePath } from "@/content/vuzora";
 
 type Entry = { path: string; lastmod: string; changefreq: string; priority: string };
@@ -23,19 +23,19 @@ function buildEntries(): Entry[] {
   const latestPost = POSTS.reduce((acc, p) => (p.date > acc ? p.date : acc), "1970-01-01");
   return [
     { path: "/", lastmod: today, changefreq: "weekly", priority: "1.0" },
-    { path: "/pricing", lastmod: today, changefreq: "weekly", priority: "0.9" },
-    { path: "/unis", lastmod: today, changefreq: "monthly", priority: "0.7" },
+    { path: "/pricing/", lastmod: today, changefreq: "weekly", priority: "0.9" },
+    { path: "/unis/", lastmod: today, changefreq: "monthly", priority: "0.7" },
     { path: "/blog/", lastmod: latestPost, changefreq: "weekly", priority: "0.8" },
     { path: "/blog/rss.xml", lastmod: latestPost, changefreq: "weekly", priority: "0.4" },
-    { path: "/changelog", lastmod: today, changefreq: "weekly", priority: "0.5" },
+    { path: "/changelog/", lastmod: today, changefreq: "weekly", priority: "0.5" },
     ...POSTS.map<Entry>((p) => ({
-      path: `/blog/${p.slug}`,
+      path: blogPostPath(p.slug),
       lastmod: p.date,
       changefreq: "monthly",
       priority: "0.6",
     })),
-    { path: "/legal/terms", lastmod: today, changefreq: "yearly", priority: "0.3" },
-    { path: "/legal/privacy", lastmod: today, changefreq: "yearly", priority: "0.3" },
+    { path: "/legal/terms/", lastmod: today, changefreq: "yearly", priority: "0.3" },
+    { path: "/legal/privacy/", lastmod: today, changefreq: "yearly", priority: "0.3" },
     ...UNIVERSITIES.map<Entry>((u) => ({
       path: universityPagePath(u.slug),
       lastmod: today,

@@ -50,15 +50,15 @@ test("prerender seeds derive the complete public route policy", async () => {
   assert.match(config, /PRERENDER_ROUTES\.map\(\(path\) => \(\{ path \}\)\)/);
   assert.deepEqual(routes.slice(0, 7), [
     "/",
-    "/pricing",
-    "/unis",
+    "/pricing/",
+    "/unis/",
     "/blog/",
-    "/changelog",
-    "/legal/terms",
-    "/legal/privacy",
+    "/changelog/",
+    "/legal/terms/",
+    "/legal/privacy/",
   ]);
   assert.equal(
-    routes.filter((route) => route.startsWith("/unis/")).length,
+    routes.filter((route) => route.startsWith("/unis/") && route !== "/unis/").length,
     universities.filter((university) => university.slug).length,
   );
   assert.equal(artifactFor("/blog/"), "blog/index.html");

@@ -110,7 +110,7 @@ function runCapabilityPresent() {
   })()`);
   assert.equal(results.search[0].slug, "msu");
   assert.equal(results.lookup.slug, "msu");
-  assert.equal(results.lookup.detailPath, "/unis/msu");
+  assert.equal(results.lookup.detailPath, "/unis/msu/");
   assert.equal(results.unknown, null);
   assert.doesNotMatch(JSON.stringify(results), /password|token|secret|schedule table|oauth/i);
   assertNoPageErrors();
@@ -132,14 +132,14 @@ function runCapabilityAbsent() {
   assert.equal(evaluate("window.__vuzoraWebMcpTrace.length"), 0);
   assertNoPageErrors();
 
-  browser(["open", `${ORIGIN}/unis/msu`], { timeout: 30_000 });
+  browser(["open", `${ORIGIN}/unis/msu/`], { timeout: 30_000 });
   waitForPage();
   const detail = evaluate(`(() => ({
     path: location.pathname,
     h1: document.querySelector("h1")?.textContent.trim() ?? null,
     cta: document.querySelector('[data-cta="university-conversion"]')?.href ?? null
   }))()`);
-  assert.equal(detail.path, "/unis/msu");
+  assert.equal(detail.path, "/unis/msu/");
   assert.match(detail.h1, /Московский государственный университет/);
   assert.equal(detail.cta, "https://t.me/vuzora_bot?start=from-site_msu");
   assertNoPageErrors();

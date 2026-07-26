@@ -26,7 +26,7 @@ export const Route = createFileRoute("/unis")({
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: abs("/unis") },
+      { property: "og:url", content: abs("/unis/") },
       { property: "og:image", content: abs(ogCover) },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: TITLE },
@@ -34,16 +34,16 @@ export const Route = createFileRoute("/unis")({
       { name: "twitter:image", content: abs(ogCover) },
       ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/unis") }, ...DISCOVERY_LINKS],
+    links: [{ rel: "canonical", href: abs("/unis/") }, ...DISCOVERY_LINKS],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "ItemList",
-          "@id": "https://vuzora.ru/unis#directory",
+          "@id": "https://vuzora.ru/unis/#directory",
           name: TITLE,
-          url: abs("/unis"),
+          url: abs("/unis/"),
           itemListElement: UNIVERSITIES.map((u, i) => ({
             "@type": "ListItem",
             position: i + 1,
@@ -66,12 +66,12 @@ export const Route = createFileRoute("/unis")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          "@id": "https://vuzora.ru/unis#breadcrumb",
+          "@id": "https://vuzora.ru/unis/#breadcrumb",
           name: TITLE,
-          url: abs("/unis"),
+          url: abs("/unis/"),
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Главная", item: `${SITE_URL}/` },
-            { "@type": "ListItem", position: 2, name: "Вузы", item: abs("/unis") },
+            { "@type": "ListItem", position: 2, name: "Вузы", item: abs("/unis/") },
           ],
         }),
       },

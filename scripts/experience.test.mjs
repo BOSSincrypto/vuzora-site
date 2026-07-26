@@ -170,7 +170,7 @@ test("not-found recovery UI has known-route recovery without university CTA", as
   assert.match(rootNotFound, /Такого расписания нет|Такой страницы нет/);
   assert.match(fallbacks, /RouteNotFoundFallback/);
   assert.match(detail, /Такого вуза нет в списке/);
-  assert.match(detail, /primaryHref="\/unis"/);
+  assert.match(detail, /primaryHref="\/unis\/"/);
   // Isolate the notFoundComponent block only — the success path still has
   // a university-conversion CTA which must not be part of recovery UI.
   const notFoundBlock = detail.match(

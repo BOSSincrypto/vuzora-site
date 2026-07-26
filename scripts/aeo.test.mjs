@@ -104,30 +104,30 @@ test("llms packet derives and joins every published discovery surface", async ()
   const discoveryRoutes = deriveDiscoveryRoutes({
     routes: [
       "/",
-      "/pricing",
-      "/changelog",
-      "/unis",
+      "/pricing/",
+      "/changelog/",
+      "/unis/",
       "/blog/",
       "/blog/rss.xml",
       "/sitemap.xml",
-      "/legal/terms",
-      "/legal/privacy",
+      "/legal/terms/",
+      "/legal/privacy/",
     ],
   });
   const body = buildLlmsPacket(universities, { affiliationBoundary, discoveryRoutes });
   assert.doesNotThrow(() => assertLlmsJoin(body, universities, { affiliationBoundary, discoveryRoutes }));
   for (const path of discoveryRoutes) assert.equal((body.match(new RegExp(`https://vuzora\\.ru${path === "/" ? "/" : path}`, "g")) ?? []).length >= 1, true);
-  assert.equal(deriveDiscoveryRoutes({ routes: ["/", "/pricing", "/unis"] }).includes("/changelog"), false);
-  assert.equal(deriveDiscoveryRoutes({ routes: ["/", "/legal/terms"] }).includes("/legal/privacy"), false);
+  assert.equal(deriveDiscoveryRoutes({ routes: ["/", "/pricing/", "/unis/"] }).includes("/changelog/"), false);
+  assert.equal(deriveDiscoveryRoutes({ routes: ["/", "/legal/terms/"] }).includes("/legal/privacy/"), false);
 });
 
 test("discovery join rejects missing, phantom, duplicate, and alternate-origin surfaces", async () => {
   const { universities, affiliationBoundary } = await readRegistry(root);
   const discoveryRoutes = deriveDiscoveryRoutes({
-    routes: ["/", "/pricing", "/changelog", "/unis", "/blog/", "/blog/rss.xml", "/sitemap.xml", "/legal/terms"],
+    routes: ["/", "/pricing/", "/changelog/", "/unis/", "/blog/", "/blog/rss.xml", "/sitemap.xml", "/legal/terms/"],
   });
   const valid = buildLlmsPacket(universities, { affiliationBoundary, discoveryRoutes });
-  const missing = valid.replace(`- [Что нового](https://vuzora.ru/changelog)\n`, "");
+  const missing = valid.replace(`- [Что нового](https://vuzora.ru/changelog/)\n`, "");
   assert.throws(
     () => assertLlmsJoin(missing, universities, { affiliationBoundary, discoveryRoutes }),
     /discovery underlist|missing/i,
@@ -143,7 +143,7 @@ test("discovery join rejects missing, phantom, duplicate, and alternate-origin s
     /discovery join|duplicate/i,
   );
   const alternateOrigin = valid.replace(
-    "https://vuzora.ru/pricing",
+    "https://vuzora.ru/pricing/",
     "https://example.com/pricing",
   );
   assert.throws(
@@ -327,7 +327,7 @@ test("validate:release rejects missing and phantom discovery-surface fixtures", 
     const fixtures = [
       [
         "missing discovery surface",
-        original.replace("- [Что нового](https://vuzora.ru/changelog)\n", ""),
+        original.replace("- [Что нового](https://vuzora.ru/changelog/)\n", ""),
         /llms\.txt.*(?:discovery|underlist|missing)/i,
       ],
       [
@@ -351,13 +351,13 @@ test("validate:release rejects missing and phantom discovery-surface fixtures", 
 
 test("extractDetailUrls only accepts exact canonical detail URLs", () => {
   const body = [
-    "https://vuzora.ru/unis/msu",
+    "https://vuzora.ru/unis/msu/",
     "https://vuzora.ru/unis/hse/overview",
     "https://vuzora.ru/unis/mipt?tab=about",
     "https://vuzora.ru/unis/bmstu#faq",
     "http://vuzora.ru/unis/sfu",
     "https://example.com/unis/rggu",
-    "/unis/susu",
+    "/unis/susu/",
   ].join("\n");
   assert.deepEqual(
     extractDetailUrls(body).map((entry) => entry.slug),

@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 const ORIGIN = process.env.VUZORA_ORIGIN ?? "http://127.0.0.1:3100";
 const SESSION =
   process.env.AGENT_BROWSER_SESSION ?? `vuzora-blog-metadata-${process.pid}`;
-const POST_ROUTE = "/blog/msu-utrenniy-plan";
+const POST_ROUTE = "/blog/msu-utrenniy-plan/";
 
 function browser(args, timeout = 30_000) {
   const output = execFileSync(
@@ -78,7 +78,7 @@ try {
   assert.deepEqual(detail.published, ["2026-07-08"]);
   assert.deepEqual(detail.modified, ["2026-07-08"]);
   const posting = detail.jsonLd.find((node) => node["@type"] === "BlogPosting");
-  assert.equal(posting.url, "https://vuzora.ru/blog/msu-utrenniy-plan");
+  assert.equal(posting.url, "https://vuzora.ru/blog/msu-utrenniy-plan/");
   assert.equal(posting.mainEntityOfPage, posting.url);
   const breadcrumb = detail.jsonLd.find((node) => node["@type"] === "BreadcrumbList");
   assert.equal(breadcrumb.itemListElement[1].item, "https://vuzora.ru/blog/");

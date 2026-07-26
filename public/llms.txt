@@ -16,40 +16,40 @@
 
 Каждая запись — страница вуза на vuzora.ru (абсолютный URL) с кодом/названием из реестра.
 
-- РЭУ им. Г. В. Плеханова (РЭУ): https://vuzora.ru/unis/reu-plekhanov
-- Финансовый университет при Правительстве РФ (ФУ): https://vuzora.ru/unis/financial-university
-- Санкт-Петербургский государственный университет (СПбГУ): https://vuzora.ru/unis/spbu
-- Университет «Синергия» (Синергия): https://vuzora.ru/unis/sinergiya
-- Санкт-Петербургский политехнический университет Петра Великого (СПбПУ): https://vuzora.ru/unis/spbstu
-- Уральский федеральный университет им. Б. Н. Ельцина (УрФУ): https://vuzora.ru/unis/urfu
-- Российский университет дружбы народов (РУДН): https://vuzora.ru/unis/rudn
-- Московский государственный институт международных отношений (МГИМО): https://vuzora.ru/unis/mgimo
-- Донской государственный технический университет (ДГТУ): https://vuzora.ru/unis/dgtu
-- Казанский федеральный университет (КФУ): https://vuzora.ru/unis/kfu
-- Российский технологический университет МИРЭА (МИРЭА): https://vuzora.ru/unis/mirea
-- Российская академия народного хозяйства и государственной службы (РАНХиГС): https://vuzora.ru/unis/ranepa
-- Российский университет транспорта (МИИТ) (МИИТ): https://vuzora.ru/unis/miit
-- Национальный исследовательский университет «Высшая школа экономики» (ВШЭ): https://vuzora.ru/unis/hse
-- Национальный исследовательский ядерный университет «МИФИ» (МИФИ): https://vuzora.ru/unis/mephi
-- Московский физико-технический институт (МФТИ): https://vuzora.ru/unis/mipt
-- Национальный исследовательский университет «МЭИ» (МЭИ): https://vuzora.ru/unis/mpei
-- Тольяттинский государственный университет (ТГУ): https://vuzora.ru/unis/tgu-tolyatti
-- Санкт-Петербургский государственный экономический университет (СПбГЭУ): https://vuzora.ru/unis/unecon
-- Российский государственный гуманитарный университет (РГГУ): https://vuzora.ru/unis/rggu
-- Московский государственный университет им. М. В. Ломоносова (МГУ): https://vuzora.ru/unis/msu
-- Сибирский федеральный университет (СФУ): https://vuzora.ru/unis/sfu
-- Нижегородский государственный университет им. Н. И. Лобачевского (ННГУ): https://vuzora.ru/unis/nngu
-- Московский государственный технический университет им. Н. Э. Баумана (МГТУ): https://vuzora.ru/unis/bmstu
-- Южно-Уральский государственный университет (ЮУрГУ): https://vuzora.ru/unis/susu
+- РЭУ им. Г. В. Плеханова (РЭУ): https://vuzora.ru/unis/reu-plekhanov/
+- Финансовый университет при Правительстве РФ (ФУ): https://vuzora.ru/unis/financial-university/
+- Санкт-Петербургский государственный университет (СПбГУ): https://vuzora.ru/unis/spbu/
+- Университет «Синергия» (Синергия): https://vuzora.ru/unis/sinergiya/
+- Санкт-Петербургский политехнический университет Петра Великого (СПбПУ): https://vuzora.ru/unis/spbstu/
+- Уральский федеральный университет им. Б. Н. Ельцина (УрФУ): https://vuzora.ru/unis/urfu/
+- Российский университет дружбы народов (РУДН): https://vuzora.ru/unis/rudn/
+- Московский государственный институт международных отношений (МГИМО): https://vuzora.ru/unis/mgimo/
+- Донской государственный технический университет (ДГТУ): https://vuzora.ru/unis/dgtu/
+- Казанский федеральный университет (КФУ): https://vuzora.ru/unis/kfu/
+- Российский технологический университет МИРЭА (МИРЭА): https://vuzora.ru/unis/mirea/
+- Российская академия народного хозяйства и государственной службы (РАНХиГС): https://vuzora.ru/unis/ranepa/
+- Российский университет транспорта (МИИТ) (МИИТ): https://vuzora.ru/unis/miit/
+- Национальный исследовательский университет «Высшая школа экономики» (ВШЭ): https://vuzora.ru/unis/hse/
+- Национальный исследовательский ядерный университет «МИФИ» (МИФИ): https://vuzora.ru/unis/mephi/
+- Московский физико-технический институт (МФТИ): https://vuzora.ru/unis/mipt/
+- Национальный исследовательский университет «МЭИ» (МЭИ): https://vuzora.ru/unis/mpei/
+- Тольяттинский государственный университет (ТГУ): https://vuzora.ru/unis/tgu-tolyatti/
+- Санкт-Петербургский государственный экономический университет (СПбГЭУ): https://vuzora.ru/unis/unecon/
+- Российский государственный гуманитарный университет (РГГУ): https://vuzora.ru/unis/rggu/
+- Московский государственный университет им. М. В. Ломоносова (МГУ): https://vuzora.ru/unis/msu/
+- Сибирский федеральный университет (СФУ): https://vuzora.ru/unis/sfu/
+- Нижегородский государственный университет им. Н. И. Лобачевского (ННГУ): https://vuzora.ru/unis/nngu/
+- Московский государственный технический университет им. Н. Э. Баумана (МГТУ): https://vuzora.ru/unis/bmstu/
+- Южно-Уральский государственный университет (ЮУрГУ): https://vuzora.ru/unis/susu/
 
 ## Страницы сайта
 
 - [Главная](https://vuzora.ru/)
-- [Тарифы](https://vuzora.ru/pricing)
-- [Что нового](https://vuzora.ru/changelog)
-- [Поддерживаемые вузы](https://vuzora.ru/unis)
+- [Тарифы](https://vuzora.ru/pricing/)
+- [Что нового](https://vuzora.ru/changelog/)
+- [Поддерживаемые вузы](https://vuzora.ru/unis/)
 - [Блог](https://vuzora.ru/blog/)
 - [RSS блога](https://vuzora.ru/blog/rss.xml)
 - [Карта сайта](https://vuzora.ru/sitemap.xml)
-- [Публичная страница /legal/privacy](https://vuzora.ru/legal/privacy)
-- [Публичная страница /legal/terms](https://vuzora.ru/legal/terms)
+- [Публичная страница /legal/privacy/](https://vuzora.ru/legal/privacy/)
+- [Публичная страница /legal/terms/](https://vuzora.ru/legal/terms/)

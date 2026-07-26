@@ -68,7 +68,7 @@ test("editorial cluster has one complete hub and ten focused posts", async () =>
   );
 
   const hubLinks = internalLinks(hub.body.join(" "));
-  const expectedUniversityLinks = universities.map((university) => `/unis/${university.slug}`);
+  const expectedUniversityLinks = universities.map((university) => `/unis/${university.slug}/`);
   assert.equal(new Set(hubLinks).size, hubLinks.length);
   assert.deepEqual(
     hubLinks.filter((href) => href.startsWith("/unis/")).sort(),
@@ -76,15 +76,15 @@ test("editorial cluster has one complete hub and ten focused posts", async () =>
   );
   assert.deepEqual(
     hubLinks.filter((href) => href.startsWith("/blog/")).sort(),
-    focused.map((post) => `/blog/${post.slug}`).sort(),
+    focused.map((post) => `/blog/${post.slug}/`).sort(),
   );
 
   for (const [postSlug, universitySlug] of focusedPairs) {
     const post = bySlug.get(postSlug);
     assert.ok(post, `${postSlug} is present`);
     const links = internalLinks(post.body.join(" "));
-    assert.equal(links.filter((href) => href === "/blog/raspisanie-vuzov-v-telegram").length, 1);
-    assert.equal(links.filter((href) => href === `/unis/${universitySlug}`).length, 1);
+    assert.equal(links.filter((href) => href === "/blog/raspisanie-vuzov-v-telegram/").length, 1);
+    assert.equal(links.filter((href) => href === `/unis/${universitySlug}/`).length, 1);
   }
 });
 
@@ -115,5 +115,5 @@ test("all blog posts participate in static prerender route generation", async ()
   ]);
   assert.match(publicRoutes, /const BLOG_ROUTES = POSTS\.map/);
   assert.match(publicRoutes, /PRERENDER_ROUTES = \[\.\.\.CORE_ROUTES, \.\.\.BLOG_ROUTES/);
-  assert.match(policy, /const blog = posts\.map\(\(slug\) => `\/blog\/\$\{slug\}`\)/);
+  assert.match(policy, /const blog = posts\.map\(\(slug\) => `\/blog\/\$\{slug\}\/`\)/);
 });

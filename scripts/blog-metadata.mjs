@@ -1,7 +1,7 @@
 export const BLOG_INDEX_ROUTE = "/blog/";
 
 export function blogDetailRoute(slug) {
-  return `/blog/${slug}`;
+  return `/blog/${slug}/`;
 }
 
 export function blogRouteUrl(route) {
@@ -97,7 +97,7 @@ export function assertBlogMetadataConsistency(source, route, posts = []) {
   const document = parseBlogMetadata(source);
   const failures = [];
   const isIndex = route === BLOG_INDEX_ROUTE;
-  const post = posts.find((candidate) => `/blog/${candidate.slug}` === route);
+  const post = posts.find((candidate) => `/blog/${candidate.slug}/` === route);
   const expectedUrl = blogRouteUrl(route);
   const canonical = document.canonicals;
   const ogUrl = document.meta("property", "og:url");
