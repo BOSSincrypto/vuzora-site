@@ -26,11 +26,13 @@ export type University = {
   /** Optional verified official homepage. Omitted when not verified. */
   officialUrl?: string;
   /**
-   * Optional verified official schedule page — the university's own timetable,
-   * not this site's. Vuzora publishes no class tables, so the honest answer to
-   * "где расписание" is a link to the source. Same rule as `officialUrl`: each
-   * address is opened and confirmed to be a schedule page before it lands here,
-   * and omitted otherwise. A login-only student portal is not a schedule page.
+   * Optional official schedule page — the university's own timetable, not this
+   * site's. Vuzora publishes no class tables, so the honest answer to "где
+   * расписание" is a link to the source. Same rule as `officialUrl`: confirmed
+   * before it lands here, omitted when uncertain. Some universities put the
+   * timetable inside a student portal and some publish it per faculty with no
+   * central page — the entry is the university's real entry point, whatever
+   * shape that takes, and stays empty when there is no single one.
    */
   scheduleUrl?: string;
 };
@@ -83,7 +85,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://synergy.ru/",
-    // scheduleUrl omitted: no public schedule page; access is via the student account.
+    scheduleUrl: "https://synergyuniversity.ru/students/schedule",
   },
   {
     slug: "spbstu",
@@ -120,7 +122,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://mgimo.ru/",
-    // scheduleUrl omitted: schedule lives in the university portal and mobile app, not a public page.
+    scheduleUrl: "https://ruz.mgimo.ru/ruz/",
   },
   {
     slug: "dgtu",
@@ -129,7 +131,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Ростов-на-Дону",
     status: "online",
     officialUrl: "https://donstu.ru/",
-    // scheduleUrl omitted: edu.donstu.ru schedule sits behind a student login.
+    scheduleUrl: "https://edu.donstu.ru/Default.aspx",
   },
   {
     slug: "kfu",
@@ -156,7 +158,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.ranepa.ru/",
-    // scheduleUrl omitted: each faculty and branch publishes its own schedule; no central page.
+    scheduleUrl: "https://my.ranepa.ru/schedule/",
   },
   {
     slug: "miit",
@@ -165,7 +167,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.rut-miit.ru/",
-    scheduleUrl: "https://rut-miit.ru/timetable",
+    scheduleUrl: "https://www.miit.ru/timetable",
   },
   {
     slug: "hse",
@@ -174,7 +176,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва · СПб · Нижний · Пермь",
     status: "online",
     officialUrl: "https://www.hse.ru/",
-    scheduleUrl: "https://www.hse.ru/eduland/schedule/",
+    scheduleUrl: "https://ruz.hse.ru/",
   },
   {
     slug: "mephi",
@@ -183,7 +185,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://mephi.ru/",
-    // scheduleUrl omitted: home.mephi.ru did not respond during verification.
+    scheduleUrl: "https://mephi.ru/students/schedule",
   },
   {
     slug: "mipt",
@@ -192,7 +194,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Долгопрудный",
     status: "online",
     officialUrl: "https://mipt.ru/",
-    // scheduleUrl omitted: schedule section is client-rendered and could not be confirmed.
+    scheduleUrl: "https://edu-mipt.ru/raspisanie",
   },
   {
     slug: "mpei",
@@ -201,7 +203,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://mpei.ru/",
-    scheduleUrl: "https://mpei.ru/Education/timetable/Pages/default.aspx",
+    scheduleUrl: "https://mpei.ru/education/timetable/Pages/default.aspx",
   },
   {
     slug: "tgu-tolyatti",
@@ -210,7 +212,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Тольятти",
     status: "online",
     officialUrl: "https://www.tltsu.ru/",
-    scheduleUrl: "https://www.tltsu.ru/sveden/struct/uchebno_metodicheskoe_upravlenie/rasp",
+    scheduleUrl: "https://rasp.tltsu.ru/",
   },
   {
     slug: "unecon",
@@ -219,7 +221,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Санкт-Петербург",
     status: "online",
     officialUrl: "https://unecon.ru/",
-    scheduleUrl: "https://rasp.unecon.ru/raspisanie.php",
+    scheduleUrl: "https://rasp.unecon.ru/",
   },
   {
     slug: "rggu",
@@ -237,7 +239,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.msu.ru/",
-    // scheduleUrl omitted: schedules are published per faculty; no central page.
+    // scheduleUrl omitted: each faculty publishes its own schedule; no central page.
   },
   {
     slug: "sfu",
@@ -246,7 +248,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Красноярск",
     status: "online",
     officialUrl: "https://www.sfu-kras.ru/",
-    // scheduleUrl omitted: edu.sfu-kras.ru did not respond during verification.
+    scheduleUrl: "https://edu.sfu-kras.ru/timetable",
   },
   {
     slug: "nngu",
@@ -255,7 +257,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Нижний Новгород",
     status: "online",
     // officialUrl omitted: public https endpoint redirects to insecure http://www.unn.ru/.
-    // scheduleUrl omitted: each faculty publishes its own schedule; no central page.
+    scheduleUrl: "https://rasp.unn.ru/",
   },
   {
     slug: "bmstu",
@@ -264,7 +266,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     // officialUrl omitted: bmstu.ru currently redirects to mirror.bmstu.ru; keep omitted until stable.
-    // scheduleUrl omitted: schedules are published per faculty; no central page.
+    scheduleUrl: "https://lks.bmstu.ru/schedule/list",
   },
   {
     slug: "susu",
@@ -273,7 +275,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Челябинск",
     status: "online",
     // officialUrl omitted: root redirects to language-specific /en; Russian homepage not stable enough.
-    scheduleUrl: "https://www.susu.ru/ru/lessons",
+    scheduleUrl: "https://www.susu.ru/ru/lessons/",
   },
 ] as const;
 
