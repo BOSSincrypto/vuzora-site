@@ -84,11 +84,10 @@ generated union spells with the slash.
 The registry currently contains 25 universities. Each record has a stable
 lowercase slug, code, display name, city, status, an optional official URL, and
 an optional `scheduleUrl` — the university's own timetable page. `scheduleUrl`
-follows the same verify-or-omit rule as `officialUrl`: every address is opened
-and confirmed to be a schedule page before it lands in the registry, and a
-login-only student portal does not qualify. It is currently set for 15 of 25;
-the omissions carry a comment naming the reason — most often that the
-university publishes schedules per faculty with no central page. The release validator fails if
+follows the same verify-or-omit rule as `officialUrl`: confirmed before it
+lands in the registry, omitted when uncertain. It is currently set for 24 of
+25. The one omission (МГУ) carries a comment naming the reason: faculties
+publish their own schedules and there is no central page to link. The release validator fails if
 a registry-verified external URL is not rendered exactly once on its detail
 page, or if any other external destination appears there.
 The detail route, sitemap, release manifest, `unis.md`, and WebMCP all derive
