@@ -1,0 +1,43 @@
+name: Arm auto-merge
+
+# Auto-merge has to be armed per pull request; GitHub has no repository-wide
+# "merge everything automatically" switch. This arms it as soon as a PR opens,
+# so the merge happens by itself the moment the required checks in deploy.yml
+# go green.
+#
+# Two repository settings are still required and cannot be set from a workflow:
+#   1. Settings → General → Pull Requests → Allow auto-merge
+#   2. A ruleset or branch protection on `main` requiring the `build` check
+# Without (2) a pull request is immediately mergeable, GitHub refuses to arm
+# auto-merge ("clean status"), and this job logs that and exits successfully
+# rather than failing every PR.
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  arm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only trusted authors. A fork PR gets a read-only token and could not arm
+    # auto-merge anyway, but stating the rule keeps the intent explicit: an
+    # outside pull request must not merge itself into a branch that deploys to
+    # production.
+    if: >-
+      !github.event.pull_request.draft &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+    steps:
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if gh pr merge --auto --merge "$PR_URL"; then
+            echo "Auto-merge armed; the pull request will merge when required checks pass."
+          else
+            echo "::notice::Could not arm auto-merge. Check that 'Allow auto-merge' is on and that main requires the 'build' check."
+          fi
