@@ -11,15 +11,22 @@ on:
     - cron: "15 3 * * *"
   workflow_dispatch:
 
-# Keep only the newest queued build/deploy for the Pages site.
+# One Pages run at a time; newer runs queued behind the current one.
+# `cancel-in-progress` must stay false: this group covers the deploy job too,
+# and cancelling mid-deployment can leave the published site on a partial
+# artifact. Queued-but-not-started runs are superseded by GitHub anyway.
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Two step budgets alone (browser tooling 10 + repeat:release 20) already
+    # reach 30, before install, typecheck, lint, tests, build, validation and
+    # four browser regressions. A 30-minute job cap could only ever kill a
+    # healthy slow run, never bound a hung one.
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
