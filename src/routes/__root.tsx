@@ -1,9 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
-  Link,
-  createRootRouteWithContext,
-  useRouter,
+  createRootRoute,
   useRouterState,
   HeadContent,
   Scripts,
@@ -14,7 +11,10 @@ import appCss from "../styles.css?url";
 import interCyrillicWoff2 from "@fontsource-variable/inter/files/inter-cyrillic-wght-normal.woff2?url";
 import interLatinWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 import { registerWebMcpTools } from "../lib/webmcp";
-import { BLOG_INDEX_PATH } from "@/content/blog";
+import {
+  RouteErrorFallback,
+  RouteNotFoundFallback,
+} from "@/components/vuzora/ui/RouteFallbacks";
 import { SITE_URL, BRAND } from "@/content/vuzora";
 
 // Hoisted to module scope so JSON.stringify runs once at module init,
@@ -46,104 +46,7 @@ const ROOT_JSON_LD = JSON.stringify({
 
 const ROOT_SCRIPTS = [{ type: "application/ld+json", children: ROOT_JSON_LD }];
 
-function NotFoundComponent() {
-  return (
-    <div className="grain flex min-h-screen items-center justify-center bg-ink px-6 text-white">
-      <div className="max-w-md text-center">
-        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-amber/80">
-          404 · Тишина
-        </p>
-        <h1
-          className="mt-4 font-display text-white"
-          style={{
-            fontSize: "clamp(2.5rem, 7vw, 4rem)",
-            lineHeight: 1.05,
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-          }}
-        >
-          Такого расписания нет
-        </h1>
-        <p className="mt-5 text-base leading-relaxed text-white/65">
-          Страница не нашлась. Это не страшно – расписание подождёт. Вернись на главную, там всё на
-          месте.
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-amber/90"
-          >
-            На главную
-          </Link>
-          <a
-            href={BLOG_INDEX_PATH}
-            className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/5"
-          >
-            В блог
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  const router = useRouter();
-  useEffect(() => {
-    try {
-      console.error("[vuzora:root]", error);
-    } catch {
-      /* never let reporting crash the error screen */
-    }
-  }, [error]);
-
-  return (
-    <div className="grain flex min-h-screen items-center justify-center bg-ink px-6 text-white">
-      <div className="max-w-md text-center">
-        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-amber/80">
-          Сбой · но не в расписании
-        </p>
-        <h1
-          className="mt-4 font-display text-white"
-          style={{
-            fontSize: "clamp(2rem, 5vw, 2.75rem)",
-            lineHeight: 1.1,
-            fontWeight: 800,
-            letterSpacing: "-0.035em",
-          }}
-        >
-          Страница не загрузилась
-        </h1>
-        <p className="mt-5 text-base leading-relaxed text-white/65">
-          Что-то пошло не так на нашей стороне. Попробуй ещё раз или вернись на главную – расписание
-          подождёт.
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <button
-            onClick={() => {
-              try {
-                router.invalidate();
-              } finally {
-                reset();
-              }
-            }}
-            className="inline-flex items-center justify-center rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-amber/90"
-          >
-            Попробовать снова
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/5"
-          >
-            На главную
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -173,8 +76,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: interLatinWoff2,
         crossOrigin: "anonymous",
       } as unknown as Record<string, string>,
+      // No apple-touch-icon: iOS does not accept SVG there, and the only
+      // icon asset is /favicon.svg — advertising it would just be a lie.
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "apple-touch-icon", href: "/favicon.svg" },
       { rel: "manifest", href: "/site.webmanifest" },
     ],
     scripts: ROOT_SCRIPTS,
@@ -182,8 +86,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
   shellComponent: RootShell,
   component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
+  notFoundComponent: () => (
+    <RouteNotFoundFallback
+      title="Такого расписания нет"
+      description="Страница не нашлась. Это не страшно – расписание подождёт. Вернись на главную, там всё на месте."
+    />
+  ),
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorFallback error={error} reset={reset} label="root" />
+  ),
 });
 
 function RootShell({ children }: { children: ReactNode }) {
@@ -197,7 +108,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "document.documentElement.classList.add('js');try{if(navigator.connection&&navigator.connection.saveData){document.documentElement.classList.add('save-data');}}catch(e){}/* Fail-safe: if the client bundle never mounts useReveal, force-show server content so crawlers with partial JS and broken bundles never keep sections at opacity 0. */(function(){function revealAll(){try{document.querySelectorAll('.reveal:not([data-revealed=\"true\"]),.reveal-stagger:not([data-revealed=\"true\"])').forEach(function(el){el.dataset.revealed='true';});}catch(e){}}if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){revealAll();return;}window.setTimeout(revealAll,1800);})();",
+              "document.documentElement.classList.add('js');try{if(navigator.connection&&navigator.connection.saveData){document.documentElement.classList.add('save-data');}}catch(e){}/* Fail-safe: if the client bundle never mounts (RevealBundleMarker stamps data-reveal-js), force-show server content so crawlers with partial JS and broken bundles never keep sections at opacity 0. Healthy sessions keep the IntersectionObserver-driven reveal. */(function(){function revealAll(){try{document.querySelectorAll('.reveal:not([data-revealed=\"true\"]),.reveal-stagger:not([data-revealed=\"true\"])').forEach(function(el){el.dataset.revealed='true';});}catch(e){}}if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){revealAll();return;}window.setTimeout(function(){if(document.documentElement.dataset.revealJs){return;}revealAll();},1800);})();",
           }}
         />
         <HeadContent />
@@ -320,15 +231,27 @@ function WebMcpEnhancement() {
   return null;
 }
 
-function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+/**
+ * Stamp `data-reveal-js` once the client bundle mounts so the inline
+ * fail-safe in RootShell's head script only force-reveals sections when the
+ * bundle really failed — not on every healthy load 1.8s in.
+ */
+function RevealBundleMarker() {
+  useEffect(() => {
+    document.documentElement.dataset.revealJs = "true";
+  }, []);
 
+  return null;
+}
+
+function RootComponent() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <WebMcpEnhancement />
       <RouteFocusManager />
+      <RevealBundleMarker />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-    </QueryClientProvider>
+    </>
   );
 }

@@ -1,11 +1,10 @@
 /**
- * Live time-display components for the Vuzora landing page.
+ * Live Moscow clock for the Vuzora landing page.
  *
- * Both components subscribe to the shared {@link useTick} hook (single global
- * 1 Hz interval) and project the current instant into Moscow wall-clock time
- * via the IANA `Europe/Moscow` zone. On the server and during the first
- * client paint the value is `null`; we render stable fallbacks to keep
- * markup hydration-safe.
+ * Subscribes to the shared {@link useTick} hook (single global 1 Hz interval)
+ * and projects the current instant into Moscow wall-clock time via the IANA
+ * `Europe/Moscow` zone. On the server and during the first client paint the
+ * value is `null`; we render a stable fallback to keep markup hydration-safe.
  *
  * @module components/vuzora/LiveClock
  */
@@ -15,8 +14,6 @@ import { useTick } from "@/hooks/use-tick";
 
 /** Placeholder shown before the first tick / on invalid input. */
 const CLOCK_FALLBACK = "--:--:--";
-/** Placeholder for the countdown component before the first tick. */
-const COUNTDOWN_FALLBACK = "-- ч  -- мин  -- сек";
 
 /** Zero-pad a number to two digits (`7` → `"07"`). */
 function pad(n: number) {
@@ -115,49 +112,5 @@ function LiveClockImpl({ className = "" }: { className?: string }) {
   );
 }
 
-/**
- * Renders the time remaining until the next 07:00 МСК delivery window in
- * `HH ч  MM мин  SS сек` format. The countdown is computed entirely in
- * Moscow wall-clock arithmetic, so it stays correct for users in any zone.
- *
- * @param props.className Optional extra Tailwind classes appended to the span.
- */
-function UntilNextDeliveryImpl({ className = "" }: { className?: string }) {
-  const now = useTick();
-  const text = useMemo(() => {
-    if (!now) return COUNTDOWN_FALLBACK;
-    const p = getMoscowParts(now);
-    if (!p) return COUNTDOWN_FALLBACK;
-    try {
-      // Convert Moscow-local seconds-of-day to ms-since-start-of-MSK-day.
-      const msIntoDay = (p.hour * 3600 + p.minute * 60 + p.second) * 1000;
-      const target = 7 * 3600 * 1000; // 07:00:00 МСК in ms
-      let diff = target - msIntoDay;
-      // After 07:00 МСК roll forward to tomorrow's window.
-      if (diff <= 0) diff += 24 * 3600 * 1000;
-      if (!Number.isFinite(diff)) return COUNTDOWN_FALLBACK;
-
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      return `${pad(h)} ч  ${pad(m)} мин  ${pad(s)} сек`;
-    } catch {
-      return COUNTDOWN_FALLBACK;
-    }
-  }, [now]);
-
-  return (
-    <span
-      className={`tabular font-mono ${className}`}
-      role="timer"
-      aria-live="off"
-      aria-label="До следующей доставки расписания"
-    >
-      {text}
-    </span>
-  );
-}
-
 // Memoize: props are stable strings; only the internal tick should trigger work.
 export const LiveClock = memo(LiveClockImpl);
-export const UntilNextDelivery = memo(UntilNextDeliveryImpl);

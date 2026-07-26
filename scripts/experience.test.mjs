@@ -149,8 +149,10 @@ test("resize-to-desktop force-closes mobile menu and clears body overflow", () =
 test("NavBar wires matchMedia lg+ to force-close mobile menu", async () => {
   const nav = await read("src/components/vuzora/NavBar.tsx");
   const menu = await read("src/components/vuzora/nav/MobileMenu.tsx");
-  // Desktop breakpoint matches Tailwind lg (hamburger is lg:hidden).
-  assert.match(nav, /DESKTOP_NAV_MQ\s*=\s*"\(min-width:\s*1024px\)"/);
+  // Desktop breakpoint matches Tailwind lg (hamburger is lg:hidden). Tailwind
+  // v4 breakpoints are rem-based, so the constant must stay rem too — a px
+  // value diverges under user font scaling.
+  assert.match(nav, /DESKTOP_NAV_MQ\s*=\s*"\(min-width:\s*64rem\)"/);
   assert.match(nav, /matchMedia\(DESKTOP_NAV_MQ\)/);
   assert.match(nav, /addEventListener\("change"/);
   // Dual path: matchMedia change + window resize (automation/CDP may only surface one).

@@ -26,8 +26,8 @@ export type TimelineEntry = { date: string; label: string; body: string };
 export const TIMELINE: readonly TimelineEntry[] = [
   {
     date: "01.09.2026",
-    label: "Запуск",
-    body: "Vuzora открывается для всех вузов из списка поддержки.",
+    label: "Старт семестра",
+    body: "Vuzora уже работает для всех вузов из списка поддержки — к началу учебного года всё готово.",
   },
   {
     date: "до 31.10.2026",

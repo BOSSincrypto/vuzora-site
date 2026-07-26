@@ -10,9 +10,12 @@ import { Logo, Wordmark } from "./Logo";
 import { BLOG_INDEX_PATH } from "@/content/blog";
 import { BRAND, LINKS } from "@/content/vuzora";
 
-/** Cached at module load — the year is read-only display data. */
-/** Hardcoded to avoid SSR/CSR hydration drift between Worker and browser clocks. */
-const CURRENT_YEAR = 2026;
+/**
+ * Baked in at build time (vite.config.ts `define`) so SSR HTML and the client
+ * bundle always agree — no hydration drift — and the daily cron rebuild keeps
+ * the year from going stale.
+ */
+const CURRENT_YEAR = __BUILD_YEAR__;
 
 /** Render the global page footer. */
 export function Footer() {

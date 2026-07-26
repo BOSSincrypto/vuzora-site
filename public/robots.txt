@@ -31,8 +31,4 @@ User-agent: Meta-ExternalAgent
 Allow: /
 Disallow: /api/
 
-User-agent: Gemini
-Allow: /
-Disallow: /api/
-
 Sitemap: https://vuzora.ru/sitemap.xml

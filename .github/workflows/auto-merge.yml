@@ -11,12 +11,23 @@ name: Arm auto-merge
 # Without (2) a pull request is immediately mergeable, GitHub refuses to arm
 # auto-merge ("clean status"), and this job logs that and exits successfully
 # rather than failing every PR.
+#
+# Known limitation: arming with GITHUB_TOKEN means the eventual merge is
+# attributed to github-actions[bot], and GitHub does not create workflow runs
+# for events caused by GITHUB_TOKEN — so the merge push does NOT trigger
+# deploy.yml's `push` job. An auto-merged PR publishes at the next daily cron
+# (03:15 UTC) or via manual workflow_dispatch. To deploy immediately on
+# auto-merge, arm with a fine-grained PAT or GitHub App token stored as a
+# repository secret instead.
 on:
   pull_request:
     types: [opened, reopened, ready_for_review]
 
 permissions:
-  contents: read
+  # enablePullRequestAutoMerge requires merge-level authorization: contents:
+  # write in addition to pull-requests: write. With contents: read the arm
+  # step fails with "Resource not accessible by integration" on every PR.
+  contents: write
   pull-requests: write
 
 jobs:
@@ -36,8 +47,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          if gh pr merge --auto --merge "$PR_URL"; then
+          if output=$(gh pr merge --auto --merge "$PR_URL" 2>&1); then
             echo "Auto-merge armed; the pull request will merge when required checks pass."
           else
-            echo "::notice::Could not arm auto-merge. Check that 'Allow auto-merge' is on and that main requires the 'build' check."
+            # Annotation commands truncate at the first newline, so the real
+            # gh error goes to the plain log where it survives multi-line.
+            echo "$output"
+            echo "::notice::Could not arm auto-merge (see gh output above). Check that 'Allow auto-merge' is on and that main requires the 'build' check."
           fi

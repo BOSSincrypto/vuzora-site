@@ -41,10 +41,26 @@ async function htmlFiles(directory) {
   return files;
 }
 
-function buildAuthoritativeSitemap(routes, lastmod) {
+function buildAuthoritativeSitemap(routes, { buildDay, postRecords }) {
+  // Blog surfaces carry verifiable dates from the post records — a uniform
+  // build-day lastmod on daily cron rebuilds would claim every page changes
+  // daily, which crawlers discount. Registry-coupled routes keep the build day.
+  const postDateByRoute = new Map(
+    postRecords.map((post) => [`/blog/${post.slug}/`, post.date]),
+  );
+  const latestPostDate = postRecords.reduce(
+    (acc, post) => (post.date > acc ? post.date : acc),
+    "1970-01-01",
+  );
+  const lastmodFor = (route) => {
+    if (postDateByRoute.has(route)) return postDateByRoute.get(route);
+    if (route === "/blog/" || route === RSS_PATH) return latestPostDate;
+    return buildDay;
+  };
   const body = [...routes, RSS_PATH]
     .map(
-      (route) => `  <url><loc>${CANONICAL_ORIGIN}${route}</loc><lastmod>${lastmod}</lastmod></url>`,
+      (route) =>
+        `  <url><loc>${CANONICAL_ORIGIN}${route}</loc><lastmod>${lastmodFor(route)}</lastmod></url>`,
     )
     .join("\n");
   return (
@@ -80,9 +96,10 @@ await mkdir(dirname(join(dist, apiCatalogPath)), { recursive: true });
 await copyFile(join(root, "public", apiCatalogPath), join(dist, apiCatalogPath));
 const authBoundaryPath = AUTH_BOUNDARY_PATH.replace(/^\/+/, "");
 await copyFile(join(root, "public", authBoundaryPath), join(dist, authBoundaryPath));
-// Freeze lastmod to the UTC calendar day of the build. Repeat-build comparison
+// Non-blog routes stamp the UTC calendar day of the build; blog surfaces use
+// the post dates (see buildAuthoritativeSitemap). Repeat-build comparison
 // normalizes lastmod further, so only the route set and non-date bytes must match.
-const lastmod = new Date().toISOString().slice(0, 10);
+const buildDay = new Date().toISOString().slice(0, 10);
 
 const agentSkillsIndexSource = join(
   root,
@@ -142,7 +159,11 @@ await writeFile(
 
 // Overwrite any prerender-generated sitemap with the registry/policy set so
 // seeds and release validation share one explicit indexable route list.
-await writeFile(join(dist, "sitemap.xml"), buildAuthoritativeSitemap(routes, lastmod), "utf8");
+await writeFile(
+  join(dist, "sitemap.xml"),
+  buildAuthoritativeSitemap(routes, { buildDay, postRecords }),
+  "utf8",
+);
 
 await Promise.all([
   rm(join(dist, "pages.json"), { force: true }),

@@ -92,7 +92,7 @@ function bundledUniversity(university: University): BundledUniversity {
  * continue ordinary site navigation, but this integration does not claim a
  * live schedule or a server protocol.
  */
-export function createWebMcpTools(): readonly WebMcpTool[] {
+function createWebMcpTools(): readonly WebMcpTool[] {
   return [
     {
       name: "vuzora.search_universities",

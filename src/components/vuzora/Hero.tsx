@@ -14,6 +14,21 @@ import { LINKS, UNIVERSITIES } from "@/content/vuzora";
 
 /** Static decorative hour labels rendered on the right edge at `xl+` widths. */
 const HOURS = ["05:00", "07:00", "09:00", "11:00", "13:00", "15:00", "17:00"];
+/** Only universities actually online today — «Скоро» entries must not inflate the badge. */
+const ONLINE_COUNT = UNIVERSITIES.filter((u) => u.status === "online").length;
+
+/**
+ * Russian plural form of «вуз»: 1 → «вуз», 2–4 → «вуза», 5+ → «вузов».
+ * Mirrors `checksNoun` in the calculator so the badge stays grammatical
+ * whatever the registry's online count becomes.
+ */
+function uniNoun(n: number): string {
+  return n % 10 === 1 && n % 100 !== 11
+    ? "вуз"
+    : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
+      ? "вуза"
+      : "вузов";
+}
 /** Slots in which Vuzora can deliver schedule – highlighted on the hour grid. */
 const DELIVERY_SLOTS = new Set(["05:00", "07:00", "09:00"]);
 
@@ -76,7 +91,7 @@ export function Hero() {
             </CtaButton>
           </div>
           <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/45">
-            {UNIVERSITIES.length}+ вузов онлайн · 2 недели бесплатно
+            {ONLINE_COUNT} {uniNoun(ONLINE_COUNT)} онлайн · бесплатно до 31.10.2026
           </p>
         </div>
       </div>

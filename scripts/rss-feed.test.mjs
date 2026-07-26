@@ -22,14 +22,12 @@ const fixturePosts = [
     title: "Первый пост",
     date: "2026-07-01",
     summary: "Короткое описание",
-    body: ["Текст публикации."],
   },
   {
     slug: "second-post",
     title: "Второй пост & заметка",
     date: "2026-06-01",
     summary: "Еще одно описание",
-    body: ["Продолжение."],
   },
 ];
 
@@ -74,7 +72,6 @@ test("RSS join fails closed on underlist and overlist", () => {
       title: "Неизвестный пост",
       date: "2026-05-01",
       summary: "Фантом",
-      body: ["Не должен пройти."],
     },
   ]);
   assert.throws(() => assertRssJoin(phantom, fixturePosts), /overlist|phantom|count mismatch/i);

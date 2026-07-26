@@ -27,6 +27,8 @@ export const Route = createFileRoute("/legal/terms")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: abs("/legal/terms/") },
       { property: "og:image", content: abs(ogCover) },
+      { property: "og:image:width", content: "1216" },
+      { property: "og:image:height", content: "640" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Публичная оферта – Vuzora" },
       {

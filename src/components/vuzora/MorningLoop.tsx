@@ -101,7 +101,7 @@ export function MorningLoop() {
               >
                 06<span className="ml-colon">:</span>59
               </div>
-              <div className="mt-3 text-xs text-white/45">МСК · 27 ноября</div>
+              <div className="mt-3 text-xs text-white/45">МСК · 23 ноября</div>
             </div>
 
             {/* Layer 2 — push notification */}
@@ -137,7 +137,7 @@ export function MorningLoop() {
               <div className="mt-3 max-w-[94%] rounded-2xl rounded-tl-md bg-white/[0.04] p-3">
                 <div className="mb-2 flex items-baseline justify-between gap-3">
                   <span className="font-display text-[11px] font-bold tracking-tight text-white">
-                    Сегодня · пн, 27 ноября
+                    Сегодня · пн, 23 ноября
                   </span>
                   <span className="shrink-0 font-mono text-[9px] text-white/55">4 пары</span>
                 </div>

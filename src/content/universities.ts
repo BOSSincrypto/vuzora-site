@@ -368,7 +368,7 @@ export function universityDetailCopy(university: University): string {
   return (
     `${availability}: ${university.name} (${university.code}, ${university.city}). ` +
     `Vuzora присылает расписание пар в Telegram по утрам в выбранный слот с 05:00 до 10:00 МСК — ` +
-    `без поиска по сайтам и без рекламного шума. ${AFFILIATION_BOUNDARY} ` +
+    `без поиска по сайтам и без рекламного шума. ${AFFILIATION_BOUNDARY}. ` +
     `${DETAIL_FOCUS_BY_SLUG[university.slug] ?? `Для ${university.code} здесь собраны статус, город и путь к подключению.`} ` +
     `Vuzora опирается на открытые источники расписания. Открой бота по кнопке ниже, чтобы подключить ` +
     `этот вуз: ссылка передаёт параметр start=from-site_${university.slug}.`

@@ -14,6 +14,12 @@ async function getServerEntry(): Promise<ServerEntry> {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
       (m) => (m.default ?? m) as ServerEntry,
     );
+    // Never cache a rejection: a transient import failure would otherwise
+    // poison every subsequent request until the process restarts. The caller
+    // still sees the original error from the returned promise.
+    serverEntryPromise.catch(() => {
+      serverEntryPromise = undefined;
+    });
   }
   return serverEntryPromise;
 }
