@@ -13,7 +13,6 @@ import { useEffect, useRef, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import interCyrillicWoff2 from "@fontsource-variable/inter/files/inter-cyrillic-wght-normal.woff2?url";
 import interLatinWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { registerWebMcpTools } from "../lib/webmcp";
 import { BLOG_INDEX_PATH } from "@/content/blog";
 import { SITE_URL, BRAND } from "@/content/vuzora";
@@ -93,7 +92,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
     try {
       console.error("[vuzora:root]", error);
-      reportLovableError(error, { boundary: "tanstack_root_error_component" });
     } catch {
       /* never let reporting crash the error screen */
     }
