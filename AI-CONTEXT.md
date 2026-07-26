@@ -50,7 +50,6 @@ repository.
 | `src/content/seo.ts`            | Shared indexability and RSS/LLMS discovery links                       |
 | `src/routes/`                   | TanStack Start route components, metadata, JSON-LD, sitemap            |
 | `src/components/vuzora/`        | Vuzora page sections and shared navigation/footer/CTA UI               |
-| `src/components/ui/`            | Reusable UI primitives                                                 |
 | `src/lib/webmcp.ts`             | Feature-detected, browser-local read-only WebMCP tools                 |
 | `src/server.ts`, `src/start.ts` | Toolchain server entry and middleware boundaries                       |
 | `scripts/`                      | Release preparation, validation, feed generation, and regression tests |
@@ -194,3 +193,11 @@ fail-closed.
 - Do not simulate Cloudflare or edge capabilities in static files.
 - Do not commit secrets, tokens, credentials, private endpoints, or telemetry
   that is not part of the implemented product.
+- There is no component library. Every UI element is hand-written under
+  `src/components/vuzora/`. A scaffolded `src/components/ui/` tree of 46 unused
+  primitives was removed along with 45 runtime dependencies; Tailwind's
+  `@source "../src"` scan had been emitting their classes into the shipped
+  stylesheet. Add a dependency only when something rendered actually imports it.
+- The build depends on no vendor toolchain and no package registry other than
+  `registry.npmjs.org`; `scripts/release.test.mjs` fails the release if either
+  changes.
