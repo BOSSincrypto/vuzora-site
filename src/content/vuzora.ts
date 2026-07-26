@@ -32,6 +32,7 @@ export {
   universityDetailCopy,
   universityFaq,
   universityGenitiveName,
+  scheduleSourceHost,
   universityDetailPaths,
   universityDetailTitle,
   universityDetailDescription,

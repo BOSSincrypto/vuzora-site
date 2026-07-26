@@ -82,7 +82,14 @@ canonical form; note that `to` props still use the route id, which the
 generated union spells with the slash.
 
 The registry currently contains 25 universities. Each record has a stable
-lowercase slug, code, display name, city, status, and an optional official URL.
+lowercase slug, code, display name, city, status, an optional official URL, and
+an optional `scheduleUrl` — the university's own timetable page. `scheduleUrl`
+follows the same verify-or-omit rule as `officialUrl`: every address is opened
+and confirmed to be a schedule page before it lands in the registry, and a
+login-only student portal does not qualify. It is currently set for 12 of 25;
+the omissions carry a comment naming the reason. The release validator fails if
+a registry-verified external URL is not rendered exactly once on its detail
+page, or if any other external destination appears there.
 The detail route, sitemap, release manifest, `unis.md`, and WebMCP all derive
 from this registry. Slugs are public identifiers and must not be renamed
 casually.
@@ -138,6 +145,13 @@ part of the current CTA model.
 - Keep canonical URLs on `https://vuzora.ru` with the trailing slash on page
   paths, and author route metadata in the route or shared SEO content modules.
   A canonical that omits the slash advertises a URL that 301-redirects.
+- University detail titles lead with «Расписание» and use the declined
+  (genitive) name, because «Расписание <именительный падеж>» is ungrammatical
+  Russian. When no name-bearing template fits the 70-character budget the title
+  falls back to «Расписание <код>» rather than dropping the keyword. The
+  preference order is enforced in `scripts/universities.test.mjs`, which
+  re-derives the candidates; the rendered-HTML gate only checks that the title
+  identifies the university and keeps the keyword.
 - Keep primary CTA links and meaningful answers in server-rendered initial HTML,
   not only behind client JavaScript.
 - The landing and university detail FAQ data powers both native

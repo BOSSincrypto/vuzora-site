@@ -25,6 +25,14 @@ export type University = {
   status: UniversityStatus;
   /** Optional verified official homepage. Omitted when not verified. */
   officialUrl?: string;
+  /**
+   * Optional verified official schedule page — the university's own timetable,
+   * not this site's. Vuzora publishes no class tables, so the honest answer to
+   * "где расписание" is a link to the source. Same rule as `officialUrl`: each
+   * address is opened and confirmed to be a schedule page before it lands here,
+   * and omitted otherwise. A login-only student portal is not a schedule page.
+   */
+  scheduleUrl?: string;
 };
 
 export type UniversityFaq = {
@@ -48,6 +56,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.rea.ru/",
+    scheduleUrl: "https://rasp.rea.ru/",
   },
   {
     slug: "financial-university",
@@ -56,6 +65,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.fa.ru/",
+    scheduleUrl: "https://ruz.fa.ru/",
   },
   {
     slug: "spbu",
@@ -64,6 +74,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Санкт-Петербург",
     status: "online",
     officialUrl: "https://spbu.ru/",
+    scheduleUrl: "https://timetable.spbu.ru/",
   },
   {
     slug: "sinergiya",
@@ -80,6 +91,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Санкт-Петербург",
     status: "online",
     officialUrl: "https://www.spbstu.ru/",
+    scheduleUrl: "https://ruz.spbstu.ru/",
   },
   {
     slug: "urfu",
@@ -89,6 +101,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Екатеринбург",
     status: "online",
     officialUrl: "https://urfu.ru/",
+    scheduleUrl: "https://urfu.ru/ru/students/study/schedule/",
   },
   {
     slug: "rudn",
@@ -113,6 +126,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Ростов-на-Дону",
     status: "online",
     officialUrl: "https://donstu.ru/",
+    // scheduleUrl omitted: edu.donstu.ru schedule sits behind a student login.
   },
   {
     slug: "kfu",
@@ -121,6 +135,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Казань",
     status: "online",
     officialUrl: "https://kpfu.ru/",
+    scheduleUrl: "https://kpfu.ru/studentu/ucheba/raspisanie",
   },
   {
     slug: "mirea",
@@ -129,6 +144,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.mirea.ru/",
+    // scheduleUrl omitted: mirea.ru is behind DDoS-Guard and could not be verified.
   },
   {
     slug: "ranepa",
@@ -153,6 +169,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва · СПб · Нижний · Пермь",
     status: "online",
     officialUrl: "https://www.hse.ru/",
+    scheduleUrl: "https://www.hse.ru/eduland/schedule/",
   },
   {
     slug: "mephi",
@@ -161,6 +178,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://mephi.ru/",
+    // scheduleUrl omitted: home.mephi.ru did not respond during verification.
   },
   {
     slug: "mipt",
@@ -177,6 +195,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://mpei.ru/",
+    scheduleUrl: "https://mpei.ru/Education/timetable/Pages/default.aspx",
   },
   {
     slug: "tgu-tolyatti",
@@ -185,6 +204,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Тольятти",
     status: "online",
     officialUrl: "https://www.tltsu.ru/",
+    scheduleUrl: "https://www.tltsu.ru/sveden/struct/uchebno_metodicheskoe_upravlenie/rasp",
   },
   {
     slug: "unecon",
@@ -193,6 +213,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Санкт-Петербург",
     status: "online",
     officialUrl: "https://unecon.ru/",
+    scheduleUrl: "https://rasp.unecon.ru/raspisanie.php",
   },
   {
     slug: "rggu",
@@ -201,6 +222,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Москва",
     status: "online",
     officialUrl: "https://www.rsuh.ru/",
+    scheduleUrl: "https://raspis.rggu.ru/",
   },
   {
     slug: "msu",
@@ -241,6 +263,7 @@ export const UNIVERSITIES: readonly University[] = [
     city: "Челябинск",
     status: "online",
     // officialUrl omitted: root redirects to language-specific /en; Russian homepage not stable enough.
+    scheduleUrl: "https://www.susu.ru/ru/lessons",
   },
 ] as const;
 
@@ -359,6 +382,34 @@ const DETAIL_FOCUS_BY_SLUG: Readonly<Record<string, string>> = {
   susu: "Карточка ЮУрГУ собрана как самостоятельная точка входа: статус, город, подключение и ответы находятся рядом.",
 };
 
+/**
+ * Host of the verified official schedule page (`timetable.spbu.ru`), or `null`
+ * when the registry has no verified address for this university.
+ */
+export function scheduleSourceHost(university: University): string | null {
+  if (!university.scheduleUrl) return null;
+  try {
+    return new URL(university.scheduleUrl).host.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Names the university's own timetable source when the registry has a verified
+ * address. Vuzora publishes no class tables, so pointing at the official source
+ * is the honest answer — and it is the one fact that genuinely differs between
+ * detail pages.
+ */
+function officialScheduleSentence(university: University): string {
+  const host = scheduleSourceHost(university);
+  if (!host) return "";
+  return (
+    `Официальное расписание занятий ${universityGenitiveName(university)} публикуется на ${host} — ` +
+    `Vuzora не дублирует и не заменяет этот источник. `
+  );
+}
+
 /** Entity-specific body copy for the detail page (server-visible). */
 export function universityDetailCopy(university: University): string {
   const availability =
@@ -369,6 +420,7 @@ export function universityDetailCopy(university: University): string {
     `${availability}: ${university.name} (${university.code}, ${university.city}). ` +
     `Vuzora присылает расписание пар в Telegram по утрам в выбранный слот с 05:00 до 10:00 МСК — ` +
     `без поиска по сайтам и без рекламного шума. ${AFFILIATION_BOUNDARY}. ` +
+    officialScheduleSentence(university) +
     `${DETAIL_FOCUS_BY_SLUG[university.slug] ?? `Для ${university.code} здесь собраны статус, город и путь к подключению.`} ` +
     `Vuzora опирается на открытые источники расписания. Открой бота по кнопке ниже, чтобы подключить ` +
     `этот вуз: ссылка передаёт параметр start=from-site_${university.slug}.`
@@ -437,25 +489,40 @@ function withinBounds(value: string, min: number, max: number): boolean {
 }
 
 /**
- * Unique Russian detail title (10–70 chars). Always includes the full registry
- * name. Prefer shorter name-bearing templates before any truncation; never emit
- * a code-only title that omits `university.name`.
+ * Unique Russian detail title (10–70 chars). Always leads with «Расписание» —
+ * the term the page is about — and carries the full registry name whenever a
+ * name-bearing template fits the length budget. Only when no such template fits
+ * does it fall back to the registry code, which never happens silently: the
+ * unit gate re-derives the same candidates and fails if a fitting name-bearing
+ * form was skipped.
  */
 export function universityDetailTitle(university: University): string {
   const brand = ` – ${BRAND.name}`;
   const name = university.name;
+  // «Расписание <Именительный падеж>» is ungrammatical in Russian; the query
+  // form people type is declined too. Both engines handle morphology, so the
+  // grammatical form costs nothing in matching and reads as written by a human.
+  const genitive = universityGenitiveName(university);
   const candidates = [
-    `Расписание ${name}${brand}`,
+    `Расписание ${genitive}${brand}`,
+    `Расписание ${genitive}`,
     `${name}: расписание в Telegram`,
-    `${name}${brand}`,
-    `${name} · Telegram`,
-    `Расписание ${name}`,
-    name,
   ];
   for (const candidate of candidates) {
-    if (withinBounds(candidate, TITLE_MIN, TITLE_MAX) && candidate.includes(name)) {
+    if (
+      withinBounds(candidate, TITLE_MIN, TITLE_MAX) &&
+      (candidate.includes(name) || candidate.includes(genitive))
+    ) {
       return candidate;
     }
+  }
+  // Names like «Национальный исследовательский университет «Высшая школа
+  // экономики»» leave no room for the keyword inside 70 chars. A title that
+  // drops «Расписание» loses the term the page is actually about, so fall back
+  // to the code — which is also how people spell these universities in search.
+  // The full name still leads the H1 and the description.
+  for (const candidate of [`Расписание ${university.code}${brand}`, `Расписание ${university.code}`]) {
+    if (withinBounds(candidate, TITLE_MIN, TITLE_MAX)) return candidate;
   }
   // Pathological registry name longer than TITLE_MAX: still surface the full
   // name (bounds are enforced by release/unit gates so registry stays honest).

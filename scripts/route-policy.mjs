@@ -22,6 +22,25 @@ export function assertBlogSlugs(posts) {
   return posts;
 }
 
+/**
+ * Extract the slug → declined-name map. Detail titles use the genitive form
+ * («Расписание Санкт-Петербургского государственного университета»), so a
+ * validator comparing titles against the nominative registry name alone would
+ * reject every grammatical title.
+ */
+export function readGenitiveNames(universitiesSource) {
+  const block = universitiesSource.match(
+    /const UNIVERSITY_GENITIVE_NAMES[^=]*=\s*\{([\s\S]*?)\n\};/,
+  )?.[1];
+  if (!block) throw new Error("Could not locate UNIVERSITY_GENITIVE_NAMES map");
+  const names = Object.create(null);
+  for (const match of block.matchAll(/^\s*"?([a-z0-9-]+)"?:\s*"([^"]+)"/gm)) {
+    names[match[1]] = match[2];
+  }
+  if (!Object.keys(names).length) throw new Error("UNIVERSITY_GENITIVE_NAMES parsed empty");
+  return names;
+}
+
 /** Extract the required affiliation-boundary wording from universities helpers. */
 export function readAffiliationBoundary(universitiesSource) {
   const match = universitiesSource.match(
@@ -41,15 +60,19 @@ export async function readRegistry(root = process.cwd()) {
   )?.[0];
   if (!registryBlock) throw new Error("Could not locate UNIVERSITIES registry");
 
+  const genitiveNames = readGenitiveNames(universitiesSource);
   const universities = [...registryBlock.matchAll(/\{([^{}]*)\}/g)].map((match) => {
     const record = match[1];
+    const slug = field(record, "slug") ?? null;
     return {
+      genitiveName: (slug && genitiveNames[slug]) || field(record, "name") || null,
       slug: field(record, "slug") ?? null,
       code: field(record, "code") ?? null,
       name: field(record, "name") ?? null,
       city: field(record, "city") ?? null,
       status: field(record, "status") ?? null,
       officialUrl: field(record, "officialUrl") ?? null,
+      scheduleUrl: field(record, "scheduleUrl") ?? null,
     };
   });
   const postRecords = [...blogSource.matchAll(/\{([\s\S]*?)\n\s*\},?/g)]
