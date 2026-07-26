@@ -22,6 +22,7 @@ import {
   universityDetailCopy,
   universityFaq,
   universityGenitiveName,
+  scheduleSourceHost,
   universityDetailDescription,
   universityDetailTitle,
   universityPagePath,
@@ -173,6 +174,7 @@ function UniversityDetailPage() {
   const copy = universityDetailCopy(university);
   const faq = universityFaq(university);
   const genitiveName = universityGenitiveName(university);
+  const scheduleHost = scheduleSourceHost(university);
   const ctaHref = universityBotUrl(university.slug);
   const label = statusLabel(university.status);
   const returnHref = "/unis/";
@@ -234,6 +236,31 @@ function UniversityDetailPage() {
             className="mt-8 space-y-4 text-base leading-relaxed text-white/75"
           >
             <p>{copy}</p>
+            {university.scheduleUrl ? (
+              /* Someone arriving from «расписание <вуз>» wants the timetable
+                 itself, which Vuzora deliberately does not publish. Sending
+                 them to the university's own source is the honest answer. */
+              <section
+                data-section="official-schedule"
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
+              >
+                <h3 className="font-display text-lg font-semibold text-white">
+                  Официальное расписание {genitiveName}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/65">
+                  Сама таблица занятий публикуется университетом на {scheduleHost}. Vuzora её не
+                  дублирует и не заменяет — бот только присылает напоминание утром.
+                </p>
+                <a
+                  href={university.scheduleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-amber underline decoration-amber/40 decoration-1 underline-offset-4 transition-colors hover:decoration-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber rounded-sm"
+                >
+                  Открыть расписание на {scheduleHost} →
+                </a>
+              </section>
+            ) : null}
             <section data-section="connect" className="border-t border-white/10 pt-7">
               <h3 className="font-display text-xl font-semibold text-white">Как подключиться</h3>
               <p className="mt-3">

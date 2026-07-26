@@ -106,20 +106,23 @@ test("detail metadata helpers emit bounded unique Russian titles and description
   assert.match(source, /AFFILIATION_BOUNDARY/);
   assert.match(source, /Сервис не является официальным сервисом вуза/);
   assert.equal(affiliationBoundary, "Сервис не является официальным сервисом вуза");
-  // Title candidates always keep the full registry name; no code-only fallback.
-  assert.match(source, /Расписание \$\{name\}/);
+  // Title candidates lead with «Расписание» and prefer the declined full name.
+  // The bare-code form is a last resort for names that cannot fit TITLE_MAX,
+  // and the behavioural gate below re-derives the candidates to prove it is
+  // never taken while a name-bearing template still fits.
+  assert.match(source, /Расписание \$\{genitive\}\$\{brand\}/);
+  assert.match(source, /Расписание \$\{genitive\}/);
   assert.match(source, /\$\{name\}: расписание в Telegram/);
-  assert.match(source, /\$\{name\}\$\{brand\}/);
-  assert.match(source, /candidate\.includes\(name\)/);
+  assert.match(source, /candidate\.includes\(name\) \|\| candidate\.includes\(genitive\)/);
   assert.doesNotMatch(
     source,
     /Расписание \$\{university\.code\} · \$\{university\.city\}/,
-    "code+city title fallback omits the full registry name",
+    "code+city title fallback drops the keyword-first shape",
   );
   assert.doesNotMatch(
     source,
     /Расписание \$\{university\.code\} в Telegram/,
-    "code-only Telegram title fallback omits the full registry name",
+    "code-only Telegram title fallback drops the keyword-first shape",
   );
   assert.match(source, /Расписание пар \$\{university\.name\}/);
   // Registry names themselves must fit the title bound so name-only titles work.
@@ -141,28 +144,43 @@ test("detail metadata helpers emit bounded unique Russian titles and description
 test("every detail title includes the full registry name within 10–70 chars", async () => {
   const { spawnSync } = await import("node:child_process");
   const script = `
-import { UNIVERSITIES, universityDetailTitle, universityDetailDescription } from "./src/content/universities.ts";
+import { UNIVERSITIES, universityDetailTitle, universityDetailDescription, universityGenitiveName } from "./src/content/universities.ts";
 const TITLE_MIN = 10, TITLE_MAX = 70, DESC_MIN = 50, DESC_MAX = 170;
 const titles = new Set();
 const descriptions = new Set();
 for (const u of UNIVERSITIES) {
   const title = universityDetailTitle(u);
   const description = universityDetailDescription(u);
-  if (!title.includes(u.name)) {
-    console.error("TITLE_OMITS_NAME", u.slug, title);
+  // Every title must carry the term the page is about.
+  if (!/расписание/i.test(title)) {
+    console.error("TITLE_OMITS_KEYWORD", u.slug, title);
+    process.exit(8);
+  }
+  // The full registry name must be present — nominative or declined, since
+  // «Расписание <родительный падеж>» is the grammatical Russian phrasing.
+  // Dropping to the bare code is allowed only when no name-bearing template
+  // fits TITLE_MAX; re-derive them here so a silent regression cannot pass.
+  const genitive = universityGenitiveName(u);
+  const nameBearing = [
+    \`Расписание \${genitive} – Vuzora\`,
+    \`Расписание \${genitive}\`,
+    \`\${u.name}: расписание в Telegram\`,
+  ].filter((candidate) => candidate.length >= TITLE_MIN && candidate.length <= TITLE_MAX);
+  const carriesName = title.includes(u.name) || title.includes(genitive);
+  if (!carriesName && nameBearing.length > 0) {
+    console.error("TITLE_OMITS_NAME", u.slug, title, "fits:", nameBearing[0]);
     process.exit(2);
+  }
+  if (!carriesName && !title.includes(u.code)) {
+    console.error("TITLE_NO_IDENTITY", u.slug, title);
+    process.exit(9);
   }
   if (title.length < TITLE_MIN || title.length > TITLE_MAX) {
     console.error("TITLE_BOUNDS", u.slug, title.length, title);
     process.exit(3);
   }
-  // Reject code-only titles that mention the code but not the full name (already covered),
-  // and reject titles that are only the bare code with brand/city.
-  const codeOnly = new RegExp(\`^Расписание \${u.code.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&")}(?: · | в | – )\`);
-  if (codeOnly.test(title) && !title.includes(u.name)) {
-    console.error("TITLE_CODE_ONLY", u.slug, title);
-    process.exit(4);
-  }
+  // Code-only titles are governed by the name-bearing-fit rule above, which is
+  // stricter: it recomputes whether a full-name template would have fit.
   if (!description.includes(u.name) || description.length < DESC_MIN || description.length > DESC_MAX) {
     console.error("DESCRIPTION", u.slug, description.length, description);
     process.exit(5);

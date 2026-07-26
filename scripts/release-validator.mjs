@@ -570,8 +570,19 @@ export function validateRouteDocument(
         failures.push(`${route}: city identity is missing`);
       if (!document.text.includes(university.status === "online" ? "Онлайн" : "Скоро"))
         failures.push(`${route}: status identity is missing`);
-      if (!document.title.includes(university.name))
-        failures.push(`${route}: title must include the full registry name`);
+      // Rendered-HTML invariant: the title names the subject (full registry
+      // name, or the code when the name cannot fit 70 chars) and keeps the term
+      // the page is about. Which of the two forms is allowed for a given
+      // university is decided by the source-level gate in universities.test.mjs,
+      // which re-derives the candidate list — that logic is not duplicated here.
+      if (
+        !document.title.includes(university.name) &&
+        !(university.genitiveName && document.title.includes(university.genitiveName)) &&
+        !document.title.includes(university.code)
+      )
+        failures.push(`${route}: title must identify the registry university`);
+      if (!/расписание/i.test(document.title))
+        failures.push(`${route}: title must contain the schedule keyword`);
       if (!(document.descriptions[0] ?? "").includes(university.name))
         failures.push(`${route}: description must include the registry name`);
       // Social titles must stay in parity with the document title (and thus the full name).
@@ -605,24 +616,25 @@ export function validateRouteDocument(
           !hasExactOrigin(anchor.href, TELEGRAM_ORIGIN) &&
           !hasExactOrigin(anchor.href, CANONICAL_ORIGIN),
       );
-      if (university.officialUrl) {
-        const officialAnchors = document.anchors.filter(
-          (anchor) => anchor.href === university.officialUrl,
-        );
-        if (officialAnchors.length !== 1)
-          failures.push(`${route}: official link does not match registry`);
+      // Registry omission stays authoritative: the only external destinations a
+      // detail page may render are the verified official homepage and the
+      // verified official schedule page. Anything else is an unverified
+      // third-party link and fails the release.
+      const registryExternalUrls = [university.officialUrl, university.scheduleUrl].filter(Boolean);
+      const registryExternalSet = new Set(registryExternalUrls);
+      for (const registryUrl of registryExternalUrls) {
+        const anchors = document.anchors.filter((anchor) => anchor.href === registryUrl);
+        if (anchors.length !== 1)
+          failures.push(`${route}: registry link ${registryUrl} must be rendered exactly once`);
         if (
-          officialAnchors.some(
+          anchors.some(
             (anchor) => anchor.target !== "_blank" || anchor.rel !== "noopener noreferrer",
           )
         )
-          failures.push(`${route}: official link has unsafe external attributes`);
-        if (externalUniversityAnchors.some((anchor) => anchor.href !== university.officialUrl))
-          failures.push(`${route}: external university link is not the registry official URL`);
-      } else if (externalUniversityAnchors.length) {
-        // Registry omission is authoritative: no third-party university homepage link.
-        failures.push(`${route}: unverified official link rendered without registry URL`);
+          failures.push(`${route}: registry link ${registryUrl} has unsafe external attributes`);
       }
+      if (externalUniversityAnchors.some((anchor) => !registryExternalSet.has(anchor.href)))
+        failures.push(`${route}: unverified external link rendered without a registry URL`);
       const nodes = document.jsonLd.flatMap(flattenJsonLd);
       const typeOf = (node) =>
         Array.isArray(node?.["@type"]) ? node["@type"] : node?.["@type"] ? [node["@type"]] : [];
