@@ -578,6 +578,7 @@ export function validateRouteDocument(
       if (
         !document.title.includes(university.name) &&
         !(university.genitiveName && document.title.includes(university.genitiveName)) &&
+        !(university.shortName && document.title.includes(university.shortName)) &&
         !document.title.includes(university.code)
       )
         failures.push(`${route}: title must identify the registry university`);

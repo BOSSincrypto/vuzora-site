@@ -23,6 +23,17 @@ export type University = {
   city: string;
   /** Availability enum; labels come from {@link UNIVERSITY_STATUS_LABELS}. */
   status: UniversityStatus;
+  /**
+   * Optional recognizable short name, e.g. «МГТУ им. Н. Э. Баумана».
+   *
+   * Some official names are too long to fit a title alongside «Расписание»,
+   * and the bare code is often ambiguous — «МГТУ» is Bauman, but also ГА and
+   * Станкин. This is the form people actually use, and it sits between the
+   * full declined name and the code in the title candidate order. Keep it
+   * built on an indeclinable abbreviation so it reads correctly straight after
+   * «Расписание». Set it only when it says more than `code` already does.
+   */
+  shortName?: string;
   /** Optional verified official homepage. Omitted when not verified. */
   officialUrl?: string;
   /**
@@ -90,6 +101,7 @@ export const UNIVERSITIES: readonly University[] = [
   {
     slug: "spbstu",
     code: "СПбПУ",
+    shortName: "СПбПУ Петра Великого",
     name: "Санкт-Петербургский политехнический университет Петра Великого",
     city: "Санкт-Петербург",
     status: "online",
@@ -172,6 +184,7 @@ export const UNIVERSITIES: readonly University[] = [
   {
     slug: "hse",
     code: "ВШЭ",
+    shortName: "НИУ ВШЭ",
     name: "Национальный исследовательский университет «Высшая школа экономики»",
     city: "Москва · СПб · Нижний · Пермь",
     status: "online",
@@ -181,6 +194,7 @@ export const UNIVERSITIES: readonly University[] = [
   {
     slug: "mephi",
     code: "МИФИ",
+    shortName: "НИЯУ МИФИ",
     name: "Национальный исследовательский ядерный университет «МИФИ»",
     city: "Москва",
     status: "online",
@@ -235,6 +249,7 @@ export const UNIVERSITIES: readonly University[] = [
   {
     slug: "msu",
     code: "МГУ",
+    shortName: "МГУ им. М. В. Ломоносова",
     name: "Московский государственный университет им. М. В. Ломоносова",
     city: "Москва",
     status: "online",
@@ -253,6 +268,7 @@ export const UNIVERSITIES: readonly University[] = [
   {
     slug: "nngu",
     code: "ННГУ",
+    shortName: "ННГУ им. Лобачевского",
     name: "Нижегородский государственный университет им. Н. И. Лобачевского",
     city: "Нижний Новгород",
     status: "online",
@@ -262,6 +278,7 @@ export const UNIVERSITIES: readonly University[] = [
   {
     slug: "bmstu",
     code: "МГТУ",
+    shortName: "МГТУ им. Н. Э. Баумана",
     name: "Московский государственный технический университет им. Н. Э. Баумана",
     city: "Москва",
     status: "online",
@@ -530,10 +547,18 @@ export function universityDetailTitle(university: University): string {
   }
   // Names like «Национальный исследовательский университет «Высшая школа
   // экономики»» leave no room for the keyword inside 70 chars. A title that
-  // drops «Расписание» loses the term the page is actually about, so fall back
-  // to the code — which is also how people spell these universities in search.
-  // The full name still leads the H1 and the description.
-  for (const candidate of [`Расписание ${university.code}${brand}`, `Расписание ${university.code}`]) {
+  // drops «Расписание» loses the term the page is actually about, so step down
+  // to the recognizable short name and only then to the code. The bare code is
+  // last because it is often ambiguous — «МГТУ» is Bauman, ГА and Станкин
+  // alike. The full name still leads the H1 and the description.
+  const fallbacks = [
+    ...(university.shortName
+      ? [`Расписание ${university.shortName}${brand}`, `Расписание ${university.shortName}`]
+      : []),
+    `Расписание ${university.code}${brand}`,
+    `Расписание ${university.code}`,
+  ];
+  for (const candidate of fallbacks) {
     if (withinBounds(candidate, TITLE_MIN, TITLE_MAX)) return candidate;
   }
   // Pathological registry name longer than TITLE_MAX: still surface the full

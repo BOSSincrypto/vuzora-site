@@ -148,10 +148,15 @@ part of the current CTA model.
 - University detail titles lead with «Расписание» and use the declined
   (genitive) name, because «Расписание <именительный падеж>» is ungrammatical
   Russian. When no name-bearing template fits the 70-character budget the title
-  falls back to «Расписание <код>» rather than dropping the keyword. The
-  preference order is enforced in `scripts/universities.test.mjs`, which
-  re-derives the candidates; the rendered-HTML gate only checks that the title
-  identifies the university and keeps the keyword.
+  steps down to the optional `shortName` («МГТУ им. Н. Э. Баумана») and only
+  then to `code`, rather than dropping the keyword. `code` is last because it
+  is often ambiguous — «МГТУ» is Bauman, ГА and Станкин alike. Set `shortName`
+  only when it says more than `code` does, and build it on an indeclinable
+  abbreviation so it reads correctly straight after «Расписание». The full
+  official name always stays in the H1 and the description. The preference
+  order is enforced in `scripts/universities.test.mjs`, which re-derives the
+  candidates; the rendered-HTML gate only checks that the title identifies the
+  university and keeps the keyword.
 - Keep primary CTA links and meaningful answers in server-rendered initial HTML,
   not only behind client JavaScript.
 - The landing and university detail FAQ data powers both native
