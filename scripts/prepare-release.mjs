@@ -9,7 +9,6 @@ import { buildRoutes, manifestFor, readRegistry } from "./route-policy.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 import {
   AGENT_SKILLS_INDEX_PATH,
-  SKILL_ARTIFACT_PATH,
   assertAgentSkillsIndex,
   assertAgentSkillsRelease,
 } from "./agent-skills.mjs";
@@ -24,6 +23,7 @@ import {
 import {
   MARKDOWN_ARTIFACTS,
   assertMarkdownRelease,
+  assertUnisMarkdownRegistryJoin,
 } from "./markdown-artifacts.mjs";
 
 const root = process.cwd();
@@ -118,6 +118,13 @@ for (const entry of MARKDOWN_ARTIFACTS) {
   await mkdir(dirname(destination), { recursive: true });
   await copyFile(join(root, "public", entry.path), destination);
 }
+// unis.md is hand-maintained, unlike llms.txt and the RSS feed. Join it to the
+// registry here so a stale catalogue fails the build, not just review.
+assertUnisMarkdownRegistryJoin(
+  await readFile(join(dist, "unis.md"), "utf8"),
+  universities,
+  "dist/unis.md",
+);
 await assertAgentSkillsRelease({ root, dist });
 await assertApiCatalogRelease({ root, dist });
 await assertDiscoveryBoundaryRelease({ root, dist });

@@ -7,15 +7,26 @@ is `src/routes/__root.tsx`.
 
 ## Conventions
 
+This directory uses **flat dot-separated filenames**, not nested folders.
+`legal.terms.tsx` serves `/legal/terms`; there is no `legal/` directory.
+
 | File                     | URL                                                     |
 | ------------------------ | ------------------------------------------------------- |
 | `index.tsx`              | `/`                                                     |
-| `about.tsx`              | `/about`                                                |
-| `users/index.tsx`        | `/users`                                                |
-| `users/$id.tsx`          | `/users/:id` (dynamic – bare `$`, no curly braces)      |
+| `changelog.tsx`          | `/changelog`                                            |
+| `legal.terms.tsx`        | `/legal/terms` (flat dot segment)                       |
+| `blog.index.tsx`         | `/blog/` (index of the `blog` segment)                  |
+| `blog.$slug.tsx`         | `/blog/:slug` (dynamic – bare `$`, no curly braces)     |
+| `unis_.$slug.tsx`        | `/unis/:slug` **without** nesting under `unis.tsx`      |
+| `sitemap[.]xml.tsx`      | `/sitemap.xml` (`[.]` escapes a literal dot)            |
 | `posts/{-$category}.tsx` | `/posts/:category?` (optional segment)                  |
 | `files/$.tsx`            | `/files/*` (splat – read via `_splat` param, never `*`) |
 | `_layout.tsx`            | layout route (renders children via `<Outlet />`)        |
 | `__root.tsx`             | app shell – wraps every page; preserve `<Outlet />`     |
+
+The trailing underscore matters: `unis.tsx` renders the directory at `/unis`,
+and detail pages opt **out** of nesting under it via `unis_.$slug.tsx`. Naming
+the file `unis.$slug.tsx` (or `unis/$slug.tsx`) would nest the detail page
+inside the directory route and render both layouts.
 
 `routeTree.gen.ts` is auto-generated. Don't edit it by hand.

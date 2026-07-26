@@ -35,4 +35,25 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  // Release generators, validators, and tests are plain Node ESM. Without this
+  // block `eslint .` matched no rules for them, so ~9k lines of deploy-critical
+  // script were reported clean without ever being checked.
+  {
+    ...js.configs.recommended,
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: globals.node,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      // `_`-prefixed bindings are the established omit/placeholder convention
+      // in the sitemap and route parsers.
+      "no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", ignoreRestSiblings: true },
+      ],
+    },
+  },
 );

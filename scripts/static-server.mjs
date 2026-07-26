@@ -23,11 +23,15 @@ const pathMime = {
   "/.well-known/api-catalog": "application/linkset+json; charset=utf-8",
 };
 
+// `new URL()` only collapses `..` segments it can see, so an encoded separator
+// (`/..%2fpackage.json`) survives normalization and turns into `../` after
+// decodeURIComponent. Containment is therefore checked on the resolved path,
+// never on the requested one.
 function fileIfExists(candidate) {
   try {
-    return fs.existsSync(candidate) && fs.statSync(candidate).isFile()
-      ? candidate
-      : null;
+    const resolved = path.resolve(candidate);
+    if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) return null;
+    return fs.existsSync(resolved) && fs.statSync(resolved).isFile() ? resolved : null;
   } catch {
     return null;
   }

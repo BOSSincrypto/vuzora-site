@@ -102,8 +102,10 @@ export function Pricing() {
               <CtaButton href={LINKS.genericBotUrl} variant="primary" data-cta="generic-conversion">
                 Открыть бесплатно · 2 недели
               </CtaButton>
+              {/* Root-relative: this section is also mounted on `/pricing`,
+                  where no `#faq` block exists. Same-document on `/`. */}
               <a
-                href="#faq"
+                href="/#faq"
                 className="text-sm text-white/55 underline decoration-white/20 underline-offset-4 hover:text-white"
               >
                 Вопросы о подписке

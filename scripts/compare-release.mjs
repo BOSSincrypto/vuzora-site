@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { pathToFileURL } from "node:url";
 
 async function files(directory, root = directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -71,7 +72,11 @@ export async function compareReleaseDirectories(leftRoot, rightRoot) {
   return leftFiles.length;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// `file://${argv[1]}` is not a URL: any space or non-ASCII byte in the checkout
+// path percent-encodes in `import.meta.url` but not in the template, the guard
+// silently goes false, and `repeat:release` then "passes" without comparing
+// anything. Compare two real file URLs instead.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [leftRoot, rightRoot] = process.argv.slice(2);
   if (!leftRoot || !rightRoot) {
     console.error("Usage: node scripts/compare-release.mjs <first-dist> <second-dist>");

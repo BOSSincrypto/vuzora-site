@@ -69,7 +69,10 @@ Custom domain: **vuzora.ru**.
 | `/pricing`, `/changelog` | Product pages |
 | `/legal/terms`, `/legal/privacy` | Legal |
 
-Also prerendered: `sitemap.xml`, `404.html`.
+Neither `sitemap.xml` nor `404.html` is prerendered from a route:
+`scripts/prepare-release.mjs` writes the authoritative `dist/sitemap.xml` from
+the registry/route policy, and `dist/404.html` is copied verbatim from
+`public/404.html`.
 
 ## Editorial and answer surfaces
 

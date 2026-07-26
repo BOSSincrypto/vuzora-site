@@ -17,6 +17,19 @@ const CHECKS_DEFAULT = 2;
 
 export type ShareState = "idle" | "copied" | "shared" | "error";
 
+/**
+ * Russian plural form of «раз» for the slider's 1–10 range: 1 → «раз»,
+ * 2–4 → «раза», 5+ → «раз». Shared with the share text so a copied sentence
+ * cannot read «2 раз в день» while the UI beside it reads «2 раза в день».
+ */
+export function checksNoun(checks: number): string {
+  return checks % 10 === 1 && checks % 100 !== 11
+    ? "раз"
+    : checks % 10 >= 2 && checks % 10 <= 4 && (checks % 100 < 12 || checks % 100 > 14)
+      ? "раза"
+      : "раз";
+}
+
 /** Clamp arbitrary input to the slider's valid integer range. */
 export function clampChecks(n: number): number {
   if (!Number.isFinite(n)) return CHECKS_DEFAULT;
@@ -91,7 +104,7 @@ export function useCalculator() {
       return;
     }
 
-    const text = `Я теряю ${perYearH} часов в год, открывая расписание ${checks} раз в день. Vuzora забирает это утро на себя.`;
+    const text = `Я теряю ${perYearH} часов в год, открывая расписание ${checks} ${checksNoun(checks)} в день. Vuzora забирает это утро на себя.`;
 
     try {
       if (typeof navigator !== "undefined" && navigator.share) {

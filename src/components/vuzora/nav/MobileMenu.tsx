@@ -40,7 +40,10 @@ export const MobileMenu = forwardRef<HTMLDivElement, Props>(function MobileMenu(
         open ? "block pointer-events-auto" : "hidden pointer-events-none"
       }`}
       aria-hidden={!open}
-      {...(!open ? { inert: "" as unknown as boolean } : {})}
+      // React 19 treats `inert` as a real boolean attribute: the previous
+      // `inert=""` was falsy, so React dropped it and no `inert` ever reached
+      // the DOM. Pass the boolean so the closed panel is genuinely inert.
+      inert={!open}
     >
       <div className="rounded-3xl border border-white/10 bg-ink/95 p-2 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.65)] backdrop-blur-xl">
         <ul className="flex flex-col">

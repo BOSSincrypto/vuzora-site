@@ -44,10 +44,14 @@ function emit() {
 
 /**
  * Start the 1 Hz interval if it isn't already running.
- * No-op when the tab is hidden (we let `bindVisibility` resume it later).
+ * No-op when the tab is hidden (we let `bindVisibility` resume it later) or
+ * when nothing is subscribed — the `visibilitychange` listener below outlives
+ * every subscriber, so without this guard a hidden→visible transition after
+ * the last unmount would leave an interval ticking for nobody, forever.
  */
 function start() {
   if (intervalId !== null) return;
+  if (subscribers.size === 0) return;
   if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
   intervalId = setInterval(emit, 1000);
 }

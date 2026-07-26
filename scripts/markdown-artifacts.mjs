@@ -127,6 +127,65 @@ function assertNegativeUnsupportedClaim(value, label) {
   }
 }
 
+const UNIS_DETAIL_LINK_RE = /\(\/unis\/([a-z0-9-]+)\)/g;
+
+/**
+ * Bijective join between `public/unis.md` and the university registry.
+ *
+ * `llms.txt` and `blog/rss.xml` are generated and join-checked, but `unis.md`
+ * is hand-maintained: without this gate a registry addition, rename, or
+ * removal leaves the published catalogue silently stale while every other
+ * release check still passes. Universities are supplied by the caller so this
+ * module stays free of a `route-policy.mjs` import cycle.
+ *
+ * @param {string} body Markdown source of `unis.md`.
+ * @param {Array<{ slug: string, code: string, name: string, city: string }>} universities
+ * @param {string} [label] Prefix used in thrown messages.
+ */
+export function assertUnisMarkdownRegistryJoin(body, universities, label = "unis.md") {
+  if (typeof body !== "string" || !body.trim()) throw new Error(`${label} is empty or missing`);
+
+  const registry = (universities ?? []).filter((university) => university?.slug);
+  const expected = registry.map((university) => university.slug);
+  const expectedSet = new Set(expected);
+  const found = [...body.matchAll(UNIS_DETAIL_LINK_RE)].map((match) => match[1]);
+  const foundSet = new Set(found);
+
+  const missing = expected.filter((slug) => !foundSet.has(slug));
+  if (missing.length)
+    throw new Error(`${label} underlist: missing registry detail link(s): ${missing.join(", ")}`);
+
+  const phantom = [...new Set(found.filter((slug) => !expectedSet.has(slug)))];
+  if (phantom.length)
+    throw new Error(`${label} overlist: phantom slug(s) not in registry: ${phantom.join(", ")}`);
+
+  if (found.length !== expected.length) {
+    const counts = new Map();
+    for (const slug of found) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([slug]) => slug);
+    throw new Error(
+      duplicates.length
+        ? `${label} join failed: duplicate detail link(s): ${duplicates.join(", ")}`
+        : `${label} join count mismatch: expected ${expected.length} detail links, found ${found.length}`,
+    );
+  }
+
+  // Identity fields must travel with the link, so a rename in the registry
+  // cannot leave a stale display name or city behind in the catalogue.
+  const lines = body.split("\n");
+  for (const university of registry) {
+    const line = lines.find((candidate) => candidate.includes(`(/unis/${university.slug})`));
+    for (const [field, value] of [
+      ["code", university.code],
+      ["name", university.name],
+      ["city", university.city],
+    ]) {
+      if (value && !line.includes(value))
+        throw new Error(`${label}: ${university.slug} row does not carry the registry ${field}`);
+    }
+  }
+}
+
 export function assertMarkdownArtifact(value, entry, label = entry.path) {
   if (entry.mediaType !== MARKDOWN_MEDIA_TYPE)
     throw new Error(`${label} must declare media type ${MARKDOWN_MEDIA_TYPE}`);

@@ -20,7 +20,7 @@ import { BLOG_INDEX_ROUTE, assertBlogMetadataConsistency } from "./blog-metadata
 import { assertAgentSkillsRelease } from "./agent-skills.mjs";
 import { assertApiCatalogRelease } from "./api-catalog.mjs";
 import { assertDiscoveryBoundaryRelease } from "./discovery-boundaries.mjs";
-import { assertMarkdownRelease } from "./markdown-artifacts.mjs";
+import { assertMarkdownRelease, assertUnisMarkdownRegistryJoin } from "./markdown-artifacts.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -28,8 +28,14 @@ export const SUPPORT_CTA = "https://t.me/vuzora_support_bot";
 const TELEGRAM_ORIGIN = "https://t.me";
 
 const PLACEHOLDER_RE = /\b(?:undefined|null|todo|lorem ipsum|placeholder)\b/i;
+// Tokens whose next character is not a word character keep the trailing `\b`.
+// `gtag\s*\(` and `GA_MEASUREMENT` cannot: `\b` after a literal `(` demands a
+// word character next, and `GA_MEASUREMENT` is always followed by `_ID`. Both
+// were unmatchable, so the canonical GA4 snippet `gtag('config', …)` and
+// `GA_MEASUREMENT_ID` slipped through the gate entirely.
+// `plausible\.io/js` was likewise unreachable — `plausible\.io` matches first.
 const ANALYTICS_RE =
-  /\b(?:plausible\.io|plausible\.io\/js|data-domain|google-analytics|googletagmanager|gtag\s*\(|GA_MEASUREMENT|yandex(?:\.ru)?\/metrika|mc\.yandex|metrika\.yandex|hotjar|segment\.com|fullstory|mixpanel|amplitude\.com)\b/i;
+  /\b(?:plausible\.io|data-domain|google-analytics|googletagmanager|yandex(?:\.ru)?\/metrika|mc\.yandex|metrika\.yandex|hotjar|segment\.com|fullstory|mixpanel|amplitude\.com)\b|\b(?:gtag\s*\(|GA_MEASUREMENT)/i;
 const HTML_ENTITY_RE = /&(?:amp|lt|gt|quot|apos|#x[\da-f]+|#\d+);/gi;
 const HTML_ENTITIES = {
   amp: "&",
@@ -927,6 +933,19 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       });
     } catch (error) {
       fail(`Markdown artifacts: ${error.message}`);
+    }
+    for (const scope of ["public", "dist"]) {
+      const unisMarkdownPath = scope === "public" ? join(root, "public/unis.md") : join(dist, "unis.md");
+      if (!(await exists(unisMarkdownPath))) continue;
+      try {
+        assertUnisMarkdownRegistryJoin(
+          await read(unisMarkdownPath),
+          universities,
+          `${scope}/unis.md`,
+        );
+      } catch (error) {
+        fail(error.message);
+      }
     }
     if (await exists(join(dist, RSS_PATH.replace(/^\//, "")))) {
       try {
