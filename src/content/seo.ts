@@ -26,4 +26,15 @@ export const DISCOVERY_LINKS = [
     title: "Пакет для AI-краулеров",
     href: abs("/llms.txt"),
   },
+  // RFC 9727 registers the `api-catalog` relation; web linking is
+  // format-agnostic, so the HTML serialization carries the same meaning as a
+  // Link response header — which GitHub Pages cannot emit. The catalog itself
+  // states that Vuzora implements no HTTP API, so this advertises the
+  // documented boundary, not an endpoint.
+  {
+    rel: "api-catalog",
+    type: "application/linkset+json",
+    title: "Каталог API-границы",
+    href: abs("/.well-known/api-catalog"),
+  },
 ] as const;

@@ -47,7 +47,7 @@ repository.
 | `src/content/blog.ts`           | Hand-authored posts, dates, summaries, body paragraphs, slugs          |
 | `src/content/faq.ts`            | Landing FAQ source for native controls and JSON-LD                     |
 | `src/content/public-routes.ts`  | Core, blog, and university prerender route list                        |
-| `src/content/seo.ts`            | Shared indexability and RSS/LLMS discovery links                       |
+| `src/content/seo.ts`            | Shared indexability, RSS/LLMS discovery, and api-catalog links         |
 | `src/routes/`                   | TanStack Start route components, metadata, JSON-LD, sitemap            |
 | `src/components/vuzora/`        | Vuzora page sections and shared navigation/footer/CTA UI               |
 | `src/lib/webmcp.ts`             | Feature-detected, browser-local read-only WebMCP tools                 |
@@ -170,6 +170,16 @@ MCP Server Card, HTTP API, authentication surface, or agent endpoint. The
 static Markdown files are explicit resources, not content negotiation. Do not
 invent protocol endpoints, OAuth discovery, response `Link` headers, DNS-AID
 records, or `Accept: text/markdown` behavior.
+
+One relation is carried in HTML rather than in a header: every route emits
+`<link rel="api-catalog" type="application/linkset+json">` pointing at
+`/.well-known/api-catalog` (relation registered by RFC 9727; web linking is
+format-agnostic, and GitHub Pages cannot emit response headers). The catalog
+itself states that Vuzora implements no HTTP API, so the link advertises the
+documented boundary, not an endpoint. `routeMetadataFailures` fails the release
+if that link is missing, duplicated, retyped, or points anywhere else. This is
+not permission to add a real `Link` response header, an API, or any other
+relation from an external readiness checklist.
 
 ## Production and Cloudflare boundary
 
