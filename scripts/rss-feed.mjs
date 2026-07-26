@@ -9,7 +9,7 @@ export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const RSS_PATH = "/blog/rss.xml";
 export const RSS_URL = `${CANONICAL_ORIGIN}${RSS_PATH}`;
 
-const XML_ESCAPE_RE = /[<>&'\"]/g;
+const XML_ESCAPE_RE = /[<>&'"]/g;
 const XML_ESCAPE = {
   "&": "&amp;",
   "<": "&lt;",
@@ -17,6 +17,11 @@ const XML_ESCAPE = {
   "'": "&apos;",
   '"': "&quot;",
 };
+// GitHub Pages serves every prerendered route from `<route>/index.html`, so
+// the slashless form 301-redirects to the trailing-slash one in production
+// (verified against https://vuzora.ru). A feed permalink must be the URL that
+// answers 200, not the one that redirects — do not "normalise" this to match
+// the slashless `rel="canonical"`; fix the canonical instead.
 const POST_URL_RE = /<link>https:\/\/vuzora\.ru\/blog\/([a-z0-9-]+)\/<\/link>/g;
 const SECRET_PATTERN_RE =
   /\b(?:api[_-]?key|cloudflare|cf[-_]?api(?:[_-]?token)?|sk_live|sk_test|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-|Bearer\s+[A-Za-z0-9\-._~+/]+=*|DATABASE_URL|postgres(?:ql)?:\/\/\S+:\S+@|mongodb(?:\+srv)?:\/\/\S+:\S+@|AKIA[0-9A-Z]{16})\b/i;

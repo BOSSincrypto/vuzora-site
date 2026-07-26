@@ -23,6 +23,14 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 
 /**
  * Adds baseline security response headers to every server response.
+ *
+ * BOUNDARY: the production release is a static GitHub Pages artifact, and
+ * Pages does not run this middleware — these headers reach `vite dev`,
+ * `vite preview`, and any future server runtime only. Treat the deployed
+ * origin as having no CSP and no `X-Frame-Options` until an edge layer sets
+ * them (see AGENT-DISCOVERY-EDGE-RUNBOOK.md); do not cite this file as
+ * evidence that production is protected.
+ *
  * - `X-Frame-Options: DENY` запрещает встраивание сайта в iframe (clickjacking).
  * - `X-Content-Type-Options: nosniff` отключает MIME-sniffing.
  * - `Referrer-Policy: strict-origin-when-cross-origin` не утекает путь на сторонние домены.

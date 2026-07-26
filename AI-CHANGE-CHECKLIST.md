@@ -154,6 +154,14 @@ test -s dist/sitemap.xml
 ```
 
 Use the pinned `npx --yes bun@1.3.14` fallback for the Bun commands if needed.
+`repeat:release` is the exception: it spawns Bun itself for two clean
+workspaces, so prefixing the outer command is not enough. Point it at the
+fallback explicitly:
+
+```sh
+BUN_BIN=npx BUN_BIN_ARGS="--yes bun@1.3.14" npx --yes bun@1.3.14 run repeat:release
+```
+
 Run browser regressions against `http://127.0.0.1:3100` before finalizing when
 the deployment workflow would run them.
 

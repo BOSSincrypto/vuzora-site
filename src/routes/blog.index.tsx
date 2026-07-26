@@ -79,7 +79,11 @@ export const Route = createFileRoute("/blog/")({
   component: BlogIndex,
 });
 
-const SORTED = [...POSTS].sort((a, b) => (a.date < b.date ? 1 : -1));
+// `POSTS` is already authored newest-first; this only guards against an
+// out-of-order append. Ties must return 0 — a comparator that never does is
+// not a valid ordering and lets the engine emit a different order per run,
+// which would break the byte-identical repeat-release comparison.
+const SORTED = [...POSTS].sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
 
 function BlogIndex() {
   return (

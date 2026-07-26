@@ -81,8 +81,11 @@ export function NavBar() {
           e.preventDefault();
           target.scrollIntoView({ behavior: "smooth", block: "start" });
           // Keep the URL hash in sync without adding a history entry storm.
+          // Carry `history.state` over: TanStack Router keeps its own index
+          // and key there, and overwriting it with `null` desynchronises
+          // back/forward for the rest of the session.
           if (typeof history !== "undefined") {
-            history.replaceState(null, "", `#${id}`);
+            history.replaceState(history.state, "", `#${id}`);
           }
           target.classList.remove("section-flash");
           void target.offsetWidth;
