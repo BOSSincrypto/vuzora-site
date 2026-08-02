@@ -106,14 +106,15 @@ test("detail metadata helpers emit bounded unique Russian titles and description
   assert.match(source, /AFFILIATION_BOUNDARY/);
   assert.match(source, /Сервис не является официальным сервисом вуза/);
   assert.equal(affiliationBoundary, "Сервис не является официальным сервисом вуза");
-  // Title candidates lead with «Расписание» and prefer the declined full name.
-  // The bare-code form is a last resort for names that cannot fit TITLE_MAX,
-  // and the behavioural gate below re-derives the candidates to prove it is
-  // never taken while a name-bearing template still fits.
-  assert.match(source, /Расписание \$\{genitive\}\$\{brand\}/);
-  assert.match(source, /Расписание \$\{genitive\}/);
-  assert.match(source, /\$\{name\}: расписание в Telegram/);
-  assert.match(source, /candidate\.includes\(name\) \|\| candidate\.includes\(genitive\)/);
+  // Every title candidate keeps the same shape — «Расписание <вуз> в Телеграм»
+  // — and prefers the declined full name. Only the university part steps down,
+  // to the short name and then the bare code, for names that cannot fit
+  // TITLE_MAX; the behavioural gate below re-derives the ladder to prove a step
+  // is never taken while a stronger form still fits.
+  assert.match(source, /const TITLE_MESSENGER = "Телеграм"/);
+  assert.match(source, /Расписание \$\{genitive\} в \$\{TITLE_MESSENGER\}/);
+  assert.match(source, /Расписание \$\{university\.shortName\} в \$\{TITLE_MESSENGER\}/);
+  assert.match(source, /Расписание \$\{university\.code\} в \$\{TITLE_MESSENGER\}/);
   assert.doesNotMatch(
     source,
     /Расписание \$\{university\.code\} · \$\{university\.city\}/,
@@ -121,11 +122,12 @@ test("detail metadata helpers emit bounded unique Russian titles and description
   );
   assert.doesNotMatch(
     source,
-    /Расписание \$\{university\.code\} в Telegram/,
-    "code-only Telegram title fallback drops the keyword-first shape",
+    /\$\{brand\}/,
+    "detail titles must not spend the 70-char budget on a brand suffix",
   );
   assert.match(source, /Расписание пар \$\{university\.name\}/);
-  // Registry names themselves must fit the title bound so name-only titles work.
+  // Registry names must still fit the title bound: the full declined name is
+  // the first rung of the ladder, and a name over the bound could never be it.
   for (const university of universities) {
     assert.ok(
       university.name && university.name.length >= 10 && university.name.length <= 70,
@@ -156,35 +158,24 @@ for (const u of UNIVERSITIES) {
     console.error("TITLE_OMITS_KEYWORD", u.slug, title);
     process.exit(8);
   }
-  // Identity preference, strongest first: full registry name (nominative or
-  // declined, since «Расписание <родительный падеж>» is the grammatical
-  // phrasing), then the recognizable short name, then the bare code — which is
-  // often ambiguous. Each step down is allowed only when nothing above it fits
-  // TITLE_MAX, so re-derive the candidates here: a silent regression to a
-  // weaker identity than the budget allowed must not pass.
+  // Every page carries the same shape, «Расписание <вуз> в Телеграм», so a
+  // person reading a search result knows what the page is and where the
+  // schedule lands. Only the university part steps down when the full declined
+  // name cannot fit TITLE_MAX: recognizable short name, then the bare code —
+  // which is often ambiguous. Re-derive the whole ladder here and compare the
+  // exact string, so neither a silent step-down to a weaker identity nor a
+  // quiet drift away from the shape can pass.
   const genitive = universityGenitiveName(u);
   const fits = (candidate) => candidate.length >= TITLE_MIN && candidate.length <= TITLE_MAX;
-  const nameBearing = [
-    \`Расписание \${genitive} – Vuzora\`,
-    \`Расписание \${genitive}\`,
-    \`\${u.name}: расписание в Telegram\`,
-  ].filter(fits);
-  const shortBearing = u.shortName
-    ? [\`Расписание \${u.shortName} – Vuzora\`, \`Расписание \${u.shortName}\`].filter(fits)
-    : [];
-  const carriesName = title.includes(u.name) || title.includes(genitive);
-  const carriesShort = Boolean(u.shortName) && title.includes(u.shortName);
-  if (!carriesName && nameBearing.length > 0) {
-    console.error("TITLE_OMITS_NAME", u.slug, title, "fits:", nameBearing[0]);
+  const ladder = [
+    \`Расписание \${genitive} в Телеграм\`,
+    ...(u.shortName ? [\`Расписание \${u.shortName} в Телеграм\`] : []),
+    \`Расписание \${u.code} в Телеграм\`,
+  ];
+  const expected = ladder.find(fits) ?? ladder[ladder.length - 1];
+  if (title !== expected) {
+    console.error("TITLE_MISMATCH", u.slug, "got:", title, "expected:", expected);
     process.exit(2);
-  }
-  if (!carriesName && !carriesShort && shortBearing.length > 0) {
-    console.error("TITLE_OMITS_SHORT_NAME", u.slug, title, "fits:", shortBearing[0]);
-    process.exit(10);
-  }
-  if (!carriesName && !carriesShort && !title.includes(u.code)) {
-    console.error("TITLE_NO_IDENTITY", u.slug, title);
-    process.exit(9);
   }
   if (title.length < TITLE_MIN || title.length > TITLE_MAX) {
     console.error("TITLE_BOUNDS", u.slug, title.length, title);
