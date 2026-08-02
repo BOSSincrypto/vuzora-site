@@ -76,9 +76,16 @@ export const Route = createRootRoute({
         href: interLatinWoff2,
         crossOrigin: "anonymous",
       } as unknown as Record<string, string>,
-      // No apple-touch-icon: iOS does not accept SVG there, and the only
-      // icon asset is /favicon.svg — advertising it would just be a lie.
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      // A real /favicon.ico is what Google's favicon crawler picks up
+      // reliably; an SVG-only icon often leaves search results with no
+      // favicon at all. The manifest carries the 192/512 PNGs that Chrome
+      // wants before it offers to install the app. All three are built from
+      // public/favicon.svg by scripts/generate-icons.mjs.
+      //
+      // Still no apple-touch-icon: the artwork is a rounded plate on
+      // transparency, and iOS composites that over black and applies its own
+      // mask — it needs a square, opaque icon that does not exist here yet.
+      { rel: "icon", type: "image/x-icon", sizes: "16x16 32x32 48x48", href: "/favicon.ico" },
       { rel: "manifest", href: "/site.webmanifest" },
     ],
     scripts: ROOT_SCRIPTS,
