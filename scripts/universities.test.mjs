@@ -156,35 +156,24 @@ for (const u of UNIVERSITIES) {
     console.error("TITLE_OMITS_KEYWORD", u.slug, title);
     process.exit(8);
   }
-  // Identity preference, strongest first: full registry name (nominative or
-  // declined, since «Расписание <родительный падеж>» is the grammatical
-  // phrasing), then the recognizable short name, then the bare code — which is
-  // often ambiguous. Each step down is allowed only when nothing above it fits
-  // TITLE_MAX, so re-derive the candidates here: a silent regression to a
-  // weaker identity than the budget allowed must not pass.
+  // Every page carries the same shape, «Расписание <вуз> в Телеграм», so a
+  // person reading a search result knows what the page is and where the
+  // schedule lands. Only the university part steps down when the full declined
+  // name cannot fit TITLE_MAX: recognizable short name, then the bare code —
+  // which is often ambiguous. Re-derive the whole ladder here and compare the
+  // exact string, so neither a silent step-down to a weaker identity nor a
+  // quiet drift away from the shape can pass.
   const genitive = universityGenitiveName(u);
   const fits = (candidate) => candidate.length >= TITLE_MIN && candidate.length <= TITLE_MAX;
-  const nameBearing = [
-    \`Расписание \${genitive} – Vuzora\`,
-    \`Расписание \${genitive}\`,
-    \`\${u.name}: расписание в Telegram\`,
-  ].filter(fits);
-  const shortBearing = u.shortName
-    ? [\`Расписание \${u.shortName} – Vuzora\`, \`Расписание \${u.shortName}\`].filter(fits)
-    : [];
-  const carriesName = title.includes(u.name) || title.includes(genitive);
-  const carriesShort = Boolean(u.shortName) && title.includes(u.shortName);
-  if (!carriesName && nameBearing.length > 0) {
-    console.error("TITLE_OMITS_NAME", u.slug, title, "fits:", nameBearing[0]);
+  const ladder = [
+    \`Расписание \${genitive} в Телеграм\`,
+    ...(u.shortName ? [\`Расписание \${u.shortName} в Телеграм\`] : []),
+    \`Расписание \${u.code} в Телеграм\`,
+  ];
+  const expected = ladder.find(fits) ?? ladder[ladder.length - 1];
+  if (title !== expected) {
+    console.error("TITLE_MISMATCH", u.slug, "got:", title, "expected:", expected);
     process.exit(2);
-  }
-  if (!carriesName && !carriesShort && shortBearing.length > 0) {
-    console.error("TITLE_OMITS_SHORT_NAME", u.slug, title, "fits:", shortBearing[0]);
-    process.exit(10);
-  }
-  if (!carriesName && !carriesShort && !title.includes(u.code)) {
-    console.error("TITLE_NO_IDENTITY", u.slug, title);
-    process.exit(9);
   }
   if (title.length < TITLE_MIN || title.length > TITLE_MAX) {
     console.error("TITLE_BOUNDS", u.slug, title.length, title);

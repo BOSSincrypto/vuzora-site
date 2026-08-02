@@ -8,7 +8,7 @@
  * @module content/universities
  */
 
-import { BRAND, LINKS, SITE_URL } from "./site";
+import { LINKS, SITE_URL } from "./site";
 
 export type UniversityStatus = "online" | "soon";
 
@@ -518,52 +518,50 @@ function withinBounds(value: string, min: number, max: number): boolean {
 }
 
 /**
- * Unique Russian detail title (10–70 chars). Always leads with «Расписание» —
- * the term the page is about — and carries the full registry name whenever a
- * name-bearing template fits the length budget. Only when no such template fits
- * does it fall back to the registry code, which never happens silently: the
- * unit gate re-derives the same candidates and fails if a fitting name-bearing
- * form was skipped.
+ * Cyrillic «Телеграм», and only in detail titles. Everywhere else — body copy,
+ * descriptions, JSON-LD, the UI — the site writes «Telegram» in Latin, and that
+ * stays. The split is deliberate: the title is what a person reads in a search
+ * result before deciding to click, and «в Телеграм» is the form Russian users
+ * both type and recognize there. Do not "fix" this to match the rest of the
+ * site. The parity that does matter — og:title and twitter:title — copies the
+ * document title verbatim, so it follows along on its own.
+ */
+const TITLE_MESSENGER = "Телеграм";
+
+/**
+ * Unique Russian detail title (10–70 chars), always shaped
+ * «Расписание <вуз> в Телеграм» — one form on every university page, so the
+ * result says what the page is and where the schedule arrives before the click.
+ *
+ * Only the university part steps down, and only when the full name cannot fit
+ * the 70-char budget: full declined name, then the recognizable short name,
+ * then the registry code. Widening the budget instead is not an option —
+ * search results truncate around 60–65 characters, so a longer title would push
+ * «в Телеграм» out of view on exactly the universities with the longest names.
+ * The full name still leads the H1 and the description on the page itself.
+ *
+ * The step-down never happens silently: the unit gate re-derives this ladder
+ * and fails if a fitting form was skipped.
  */
 export function universityDetailTitle(university: University): string {
-  const brand = ` – ${BRAND.name}`;
-  const name = university.name;
   // «Расписание <Именительный падеж>» is ungrammatical in Russian; the query
   // form people type is declined too. Both engines handle morphology, so the
   // grammatical form costs nothing in matching and reads as written by a human.
   const genitive = universityGenitiveName(university);
   const candidates = [
-    `Расписание ${genitive}${brand}`,
-    `Расписание ${genitive}`,
-    `${name}: расписание в Telegram`,
+    `Расписание ${genitive} в ${TITLE_MESSENGER}`,
+    // The bare code is often ambiguous — «МГТУ» is Bauman, ГА and Станкин
+    // alike — so a registry short name wins whenever one exists.
+    ...(university.shortName ? [`Расписание ${university.shortName} в ${TITLE_MESSENGER}`] : []),
+    `Расписание ${university.code} в ${TITLE_MESSENGER}`,
   ];
   for (const candidate of candidates) {
-    if (
-      withinBounds(candidate, TITLE_MIN, TITLE_MAX) &&
-      (candidate.includes(name) || candidate.includes(genitive))
-    ) {
-      return candidate;
-    }
-  }
-  // Names like «Национальный исследовательский университет «Высшая школа
-  // экономики»» leave no room for the keyword inside 70 chars. A title that
-  // drops «Расписание» loses the term the page is actually about, so step down
-  // to the recognizable short name and only then to the code. The bare code is
-  // last because it is often ambiguous — «МГТУ» is Bauman, ГА and Станкин
-  // alike. The full name still leads the H1 and the description.
-  const fallbacks = [
-    ...(university.shortName
-      ? [`Расписание ${university.shortName}${brand}`, `Расписание ${university.shortName}`]
-      : []),
-    `Расписание ${university.code}${brand}`,
-    `Расписание ${university.code}`,
-  ];
-  for (const candidate of fallbacks) {
     if (withinBounds(candidate, TITLE_MIN, TITLE_MAX)) return candidate;
   }
-  // Pathological registry name longer than TITLE_MAX: still surface the full
-  // name (bounds are enforced by release/unit gates so registry stays honest).
-  return name;
+  // Pathological registry code longer than TITLE_MAX: keep the shape rather
+  // than the budget (bounds are enforced by release/unit gates, so the registry
+  // stays honest).
+  return candidates[candidates.length - 1];
 }
 
 /**
