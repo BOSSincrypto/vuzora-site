@@ -106,14 +106,15 @@ test("detail metadata helpers emit bounded unique Russian titles and description
   assert.match(source, /AFFILIATION_BOUNDARY/);
   assert.match(source, /Сервис не является официальным сервисом вуза/);
   assert.equal(affiliationBoundary, "Сервис не является официальным сервисом вуза");
-  // Title candidates lead with «Расписание» and prefer the declined full name.
-  // The bare-code form is a last resort for names that cannot fit TITLE_MAX,
-  // and the behavioural gate below re-derives the candidates to prove it is
-  // never taken while a name-bearing template still fits.
-  assert.match(source, /Расписание \$\{genitive\}\$\{brand\}/);
-  assert.match(source, /Расписание \$\{genitive\}/);
-  assert.match(source, /\$\{name\}: расписание в Telegram/);
-  assert.match(source, /candidate\.includes\(name\) \|\| candidate\.includes\(genitive\)/);
+  // Every title candidate keeps the same shape — «Расписание <вуз> в Телеграм»
+  // — and prefers the declined full name. Only the university part steps down,
+  // to the short name and then the bare code, for names that cannot fit
+  // TITLE_MAX; the behavioural gate below re-derives the ladder to prove a step
+  // is never taken while a stronger form still fits.
+  assert.match(source, /const TITLE_MESSENGER = "Телеграм"/);
+  assert.match(source, /Расписание \$\{genitive\} в \$\{TITLE_MESSENGER\}/);
+  assert.match(source, /Расписание \$\{university\.shortName\} в \$\{TITLE_MESSENGER\}/);
+  assert.match(source, /Расписание \$\{university\.code\} в \$\{TITLE_MESSENGER\}/);
   assert.doesNotMatch(
     source,
     /Расписание \$\{university\.code\} · \$\{university\.city\}/,
@@ -121,11 +122,12 @@ test("detail metadata helpers emit bounded unique Russian titles and description
   );
   assert.doesNotMatch(
     source,
-    /Расписание \$\{university\.code\} в Telegram/,
-    "code-only Telegram title fallback drops the keyword-first shape",
+    /\$\{brand\}/,
+    "detail titles must not spend the 70-char budget on a brand suffix",
   );
   assert.match(source, /Расписание пар \$\{university\.name\}/);
-  // Registry names themselves must fit the title bound so name-only titles work.
+  // Registry names must still fit the title bound: the full declined name is
+  // the first rung of the ladder, and a name over the bound could never be it.
   for (const university of universities) {
     assert.ok(
       university.name && university.name.length >= 10 && university.name.length <= 70,
