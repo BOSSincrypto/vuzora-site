@@ -15,37 +15,22 @@ import { CtaButton } from "@/components/vuzora/ui/CtaButton";
 import { ReadProgress } from "@/components/vuzora/ReadProgress";
 import { RouteErrorFallback, RouteNotFoundFallback } from "@/components/vuzora/ui/RouteFallbacks";
 import { useReadProgress } from "@/hooks/use-read-progress";
+import { renderRichText } from "@/lib/rich-text";
 import { BLOG_INDEX_PATH, blogPostPath, findPost, formatPostDate, POSTS } from "@/content/blog";
-import { BRAND, LINKS, SITE_URL, abs } from "@/content/vuzora";
-import { DISCOVERY_LINKS, INDEXABLE_META, NOINDEX_META } from "@/content/seo";
+import { BRAND, LINKS, SITE_URL, abs, findUniversity } from "@/content/vuzora";
+import {
+  DISCOVERY_LINKS,
+  INDEXABLE_META,
+  NOINDEX_META,
+  markdownAlternateLink,
+} from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
-const BLOG_LINK_RE = /\[\[([^\]|]+)\|([^\]]+)\]\]/g;
+const BLOG_LINK_CLASS =
+  "text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-white";
 
 function renderBlogParagraph(paragraph: string): ReactNode {
-  const nodes: ReactNode[] = [];
-  let cursor = 0;
-  let linkIndex = 0;
-
-  for (const match of paragraph.matchAll(BLOG_LINK_RE)) {
-    const [token, href, label] = match;
-    const start = match.index ?? 0;
-    if (start > cursor) nodes.push(paragraph.slice(cursor, start));
-    nodes.push(
-      <a
-        key={`${href}-${linkIndex}`}
-        href={href}
-        className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-white"
-      >
-        {label}
-      </a>,
-    );
-    cursor = start + token.length;
-    linkIndex += 1;
-  }
-
-  if (cursor < paragraph.length) nodes.push(paragraph.slice(cursor));
-  return nodes;
+  return renderRichText(paragraph, BLOG_LINK_CLASS);
 }
 
 export const Route = createFileRoute("/blog/$slug")({
@@ -104,7 +89,11 @@ export const Route = createFileRoute("/blog/$slug")({
         ...INDEXABLE_META,
       ],
 
-      links: [{ rel: "canonical", href: url }, ...DISCOVERY_LINKS],
+      links: [
+        { rel: "canonical", href: url },
+        ...DISCOVERY_LINKS,
+        markdownAlternateLink(blogPostPath(post.slug)),
+      ],
       scripts: [
         {
           type: "application/ld+json",
@@ -151,6 +140,7 @@ function BlogPost() {
     };
   }, [post.slug]);
   const { ref, progress } = useReadProgress<HTMLElement>();
+  const focusedUniversity = post.universitySlug ? findUniversity(post.universitySlug) : undefined;
 
   return (
     <div className="grain min-h-screen bg-ink text-white">
@@ -176,6 +166,18 @@ function BlogPost() {
             {post.title}
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-white/70">{post.summary}</p>
+
+          {/* Names the university page as the answer of record without spending
+              a link: the editorial join allows a focused post exactly one
+              anchor to its university detail page, and that one is authored
+              inside the body. Stated in text, an assistant weighing which of
+              the two pages to cite for this university has the ranking. */}
+          {focusedUniversity && (
+            <p className="mt-4 text-sm leading-relaxed text-white/50">
+              Основная страница по этому вузу — «{focusedUniversity.name}». Заметка её дополняет, а
+              не заменяет.
+            </p>
+          )}
 
           <div className="mt-10 space-y-5 text-[17px] leading-[1.7] text-white/80">
             {post.body.map((para: string, i: number) => (

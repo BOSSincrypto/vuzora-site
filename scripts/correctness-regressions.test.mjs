@@ -1,17 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { runPinnedBun } from "./run-bun-test.mjs";
 
 const root = process.cwd();
 
 function runBun(source, env = {}) {
-  const result = spawnSync("npx", ["--yes", "bun@1.3.14", "-e", source], {
-    cwd: root,
-    env: { ...process.env, ...env },
-    encoding: "utf8",
-  });
+  const result = runPinnedBun(source, { cwd: root, env: { ...process.env, ...env } });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   return result.stdout.trim();
 }
@@ -109,9 +105,11 @@ test("concurrent global error captures refuse unsafe attribution", () => {
 
 test("refund terms state one rule across the offer, the FAQ, and the pricing block", async () => {
   const [offer, faq, pricing] = await Promise.all([
-    readFile(join(root, "src/routes/legal.terms.tsx"), "utf8"),
+    // The offer text lives in the content module, not the route: the page and
+    // `/legal/terms.md` are two renderings of it.
+    readFile(join(root, "src/content/legal.ts"), "utf8"),
     readFile(join(root, "src/content/faq.ts"), "utf8"),
-    readFile(join(root, "src/components/vuzora/Pricing.tsx"), "utf8"),
+    readFile(join(root, "src/content/pricing.ts"), "utf8"),
   ]);
   const refundClause = offer.match(/Возврат полной стоимости[\s\S]*?подписки\./)?.[0] ?? "";
   assert.ok(refundClause, "offer must keep an explicit refund clause");

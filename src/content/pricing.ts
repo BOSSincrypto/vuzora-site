@@ -45,3 +45,51 @@ export const TIMELINE: readonly TimelineEntry[] = [
 export function formatPrice(n: number): string {
   return n.toLocaleString("ru-RU");
 }
+
+/** Everything that ships in every plan — no fake tiering. */
+export const INCLUDED: readonly string[] = [
+  "Утренняя доставка в удобный тебе слот (05:00–10:00 МСК)",
+  "Уведомления об изменениях днём",
+  "Смена группы и курса в один тап",
+  "Заморозка на каникулах",
+  "Без рекламы и сторонних трекеров",
+  "Поддержка в Telegram",
+] as const;
+
+/** Paid time survives the summer break. */
+export const CARRY_OVER_NOTE =
+  "Оплаченное время не сгорает летом – отсчёт стартует с 1 сентября. Без автопродления, " +
+  "без скрытых платежей.";
+
+/**
+ * The refund rule, in the same words the offer and the FAQ use.
+ * `scripts/correctness-regressions.test.mjs` fails the build if the three drift.
+ */
+export const REFUND_NOTE =
+  "Возврат средств: в течение 14 дней с оплаты, если не получил ни одной доставки – вернём " +
+  "полностью. Дальше – пропорционально неиспользованному сроку.";
+
+/**
+ * Plain-sentence summary of the offer.
+ *
+ * The card grid binds a period to its price by layout: extracted as text the
+ * two land in separate runs, so anything reading the page rather than looking
+ * at it has to infer the pairing. These sentences state it outright, and they
+ * are derived from {@link PLANS} and {@link TIMELINE} so they cannot quote a
+ * price the grid no longer charges.
+ */
+export function pricingFacts(): readonly string[] {
+  const prices = PLANS.map((plan) => plan.price);
+  const range = `от ${formatPrice(Math.min(...prices))} ₽ до ${formatPrice(Math.max(...prices))} ₽`;
+  // «Навсегда» is a card label; mid-sentence it has to read as a common noun.
+  const pairs = PLANS.map(
+    (plan) =>
+      `${plan.period.charAt(0).toLowerCase()}${plan.period.slice(1)} – ${formatPrice(plan.price)} ₽`,
+  ).join(", ");
+  return [
+    `Подписка Vuzora стоит ${range} и зависит только от срока: ${pairs}.`,
+    TIMELINE.map((entry) => `${entry.date} – ${entry.label}.`).join(" "),
+    CARRY_OVER_NOTE,
+    REFUND_NOTE,
+  ];
+}

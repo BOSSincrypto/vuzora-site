@@ -5,6 +5,8 @@
  * cannot drift from `src/content/universities.ts`.
  */
 
+import { markdownMirrorPath } from "./markdown-artifacts.mjs";
+
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const BOT_URL = "https://t.me/vuzora_bot";
 export const GENERIC_START = "from-site";
@@ -17,6 +19,19 @@ export const NAMED_AI_CRAWLERS = [
   "Google-Extended",
   "Meta-ExternalAgent",
 ];
+/**
+ * Classic search crawlers, which get the HTML and not the Markdown mirror.
+ *
+ * The mirrors exist so an agent can read a page it cannot render; they are not
+ * a second copy of the site for the index. Left crawlable they are duplicate
+ * content that can outrank the page it mirrors on a brand query. Google and
+ * Bing both honour `*` and `$` in a path rule, so one line closes them.
+ */
+export const SEARCH_ONLY_CRAWLERS = ["Googlebot", "Bingbot"];
+
+/** Path rule that matches every Markdown artifact and nothing else. */
+export const MARKDOWN_DISALLOW_RULE = "/*.md$";
+
 export const APPROVED_CONTENT_SIGNAL = Object.freeze({
   "ai-train": "yes",
   search: "yes",
@@ -190,7 +205,41 @@ export function buildLlmsPacket(universities, options = {}) {
     discoveryRoutes
       .map((path) => `- [${discoveryLabel(path)}](${discoveryUrl(path)})`)
       .join("\n") +
-    (discoveryRoutes.length ? "\n" : "")
+    (discoveryRoutes.length ? "\n" : "") +
+    (discoveryRoutes.length ? `\n${markdownMirrorSection(discoveryRoutes)}` : "")
+  );
+}
+
+/** Page routes carry a Markdown twin; `.xml` and `.txt` artifacts do not. */
+function mirroredRoutes(discoveryRoutes) {
+  return discoveryRoutes.filter((path) => !/\.[a-z0-9]+$/i.test(path));
+}
+
+/**
+ * Where the Markdown representation of each page lives.
+ *
+ * The rule matters more than the list: an agent that learns it can reach the
+ * mirror of any page, including the 25 university pages and every post, which
+ * would otherwise double the length of this packet. The core pages are still
+ * listed so the rule has worked examples next to it.
+ */
+function markdownMirrorSection(discoveryRoutes) {
+  const rows = mirroredRoutes(discoveryRoutes)
+    .map((path) => `- [${discoveryLabel(path)}](${discoveryUrl(markdownMirrorPath(path))})`)
+    .join("\n");
+  return (
+    `## Markdown-версии страниц\n` +
+    `\n` +
+    // The worked example deliberately uses a non-registry page: a university
+    // mirror URL spelled out here would read as a slashless detail URL and
+    // trip the canonical-form guard above.
+    `Каждая публичная страница опубликована и в Markdown. Правило адреса: путь страницы ` +
+    `без завершающего слэша плюс \`.md\`. Например, ${discoveryUrl("/pricing/")} → ` +
+    `${discoveryUrl("/pricing.md")}. По тому же правилу устроены зеркала страниц вузов ` +
+    `и заметок блога.\n` +
+    `\n` +
+    `${rows}\n` +
+    `- [Граница аутентификации](${discoveryUrl("/auth.md")})\n`
   );
 }
 
@@ -281,7 +330,20 @@ export function assertLlmsJoin(body, universities, options = {}) {
       `llms.txt contains non-production discovery link(s): ${nonProductionLinks.join(", ")}`,
     );
   }
-  const expectedDiscoveryUrls = expectedDiscoveryRoutes.map(discoveryUrl);
+  // The packet advertises both representations of every core page, so the
+  // mirror links join the same fail-closed set: a mirror that is listed but no
+  // longer generated, or generated but never listed, is a broken promise.
+  const expectedDiscoveryUrls = [
+    ...expectedDiscoveryRoutes.map(discoveryUrl),
+    ...(expectedDiscoveryRoutes.length
+      ? [
+          ...mirroredRoutes(expectedDiscoveryRoutes).map((path) =>
+            discoveryUrl(markdownMirrorPath(path)),
+          ),
+          discoveryUrl("/auth.md"),
+        ]
+      : []),
+  ];
   const discoveryCounts = new Map();
   for (const url of markdownLinks) discoveryCounts.set(url, (discoveryCounts.get(url) ?? 0) + 1);
   const missingDiscovery = expectedDiscoveryUrls.filter((url) => !discoveryCounts.has(url));
@@ -395,8 +457,16 @@ function matchingRobotsGroups(groups, userAgent) {
 
 function pathRuleMatches(rule, path) {
   if (!rule) return false;
-  if (rule.endsWith("$")) return path === rule.slice(0, -1);
-  return path.startsWith(rule);
+  // Robots path rules are prefix matches extended with two wildcards, both
+  // honoured by Google and Bing: `*` for any run of characters and a trailing
+  // `$` to anchor the end. `/*.md$` needs both.
+  if (!rule.includes("*") && !rule.endsWith("$")) return path.startsWith(rule);
+  const anchored = rule.endsWith("$");
+  const pattern = (anchored ? rule.slice(0, -1) : rule)
+    .split("*")
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  return new RegExp(`^${pattern}${anchored ? "$" : ""}`).test(path);
 }
 
 /**
@@ -519,6 +589,26 @@ export function assertRobotsPolicy(robots) {
     throw new Error("robots.txt wildcard group must retain Disallow: /api/");
 
   const publicPaths = ["/", "/llms.txt", "/blog/rss.xml", "/sitemap.xml", "/blog/"];
+  // One mirror per shape: root, section page, nested detail page.
+  const markdownPaths = ["/index.md", "/pricing.md", "/unis/msu.md", "/auth.md"];
+  for (const agent of SEARCH_ONLY_CRAWLERS) {
+    const groupsForAgent = matchingRobotsGroups(groups, agent);
+    if (!groupsForAgent.some((group) => group.agents.some((candidate) => candidate === agent)))
+      throw new Error(`robots.txt missing search crawler group: ${agent}`);
+    const rules = groupsForAgent.flatMap((group) => group.rules);
+    if (!rules.some((rule) => rule.type === "allow" && rule.path === "/"))
+      throw new Error(`${agent} group must explicitly contain Allow: /`);
+    if (!rules.some((rule) => rule.type === "disallow" && rule.path === "/api/"))
+      throw new Error(`${agent} group must retain Disallow: /api/`);
+    for (const path of publicPaths) {
+      if (!robotsAllowsPath(robots, path, agent))
+        throw new Error(`${agent} group blocks public page path ${path}`);
+    }
+    for (const path of markdownPaths) {
+      if (robotsAllowsPath(robots, path, agent))
+        throw new Error(`${agent} group must keep the Markdown mirror ${path} out of the index`);
+    }
+  }
   for (const agent of NAMED_AI_CRAWLERS) {
     const groupsForAgent = matchingRobotsGroups(groups, agent);
     const rules = groupsForAgent.flatMap((group) => group.rules);
@@ -532,8 +622,12 @@ export function assertRobotsPolicy(robots) {
     }
     if (robotsAllowsPath(robots, "/api/", agent))
       throw new Error(`${agent} group must block /api/`);
+    for (const path of markdownPaths) {
+      if (!robotsAllowsPath(robots, path, agent))
+        throw new Error(`${agent} group blocks the Markdown mirror ${path}`);
+    }
   }
-  for (const path of publicPaths) {
+  for (const path of [...publicPaths, ...markdownPaths]) {
     if (!robotsAllowsPath(robots, path, "*"))
       throw new Error(`wildcard group blocks public AEO path ${path}`);
   }

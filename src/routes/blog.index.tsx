@@ -13,7 +13,7 @@ import { Footer } from "@/components/vuzora/Footer";
 import { Kicker } from "@/components/vuzora/ui/Kicker";
 import { BLOG_INDEX_PATH, blogPostPath, POSTS, formatPostDate } from "@/content/blog";
 import { BRAND, abs, SITE_URL } from "@/content/vuzora";
-import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
+import { DISCOVERY_LINKS, INDEXABLE_META, markdownAlternateLink } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 const TITLE = `Блог – ${BRAND.name}`;
@@ -38,7 +38,11 @@ export const Route = createFileRoute("/blog/")({
       { name: "twitter:image", content: abs(ogCover) },
       ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs(BLOG_INDEX_PATH) }, ...DISCOVERY_LINKS],
+    links: [
+      { rel: "canonical", href: abs(BLOG_INDEX_PATH) },
+      ...DISCOVERY_LINKS,
+      markdownAlternateLink(BLOG_INDEX_PATH),
+    ],
 
     scripts: [
       {

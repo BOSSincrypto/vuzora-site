@@ -4,34 +4,88 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import {
-  MARKDOWN_ARTIFACTS,
   MARKDOWN_MEDIA_TYPE,
+  STATIC_MARKDOWN_ARTIFACTS,
   assertMarkdownArtifact,
   assertMarkdownRelease,
+  buildMarkdownArtifacts,
+  markdownMirrorPath,
 } from "./markdown-artifacts.mjs";
 import { manifestFor, readRegistry } from "./route-policy.mjs";
+import { readContentSnapshot } from "./content-snapshot.mjs";
+import { buildMarkdownMirrors } from "./markdown-mirrors.mjs";
 
 const root = process.cwd();
 
-test("release manifest selects explicit, route-identified Markdown artifacts", async () => {
+/** Every artifact the current content produces: the two boundaries plus one mirror per page. */
+const ALL_ARTIFACTS = buildMarkdownArtifacts(buildMarkdownMirrors(readContentSnapshot(root)));
+
+/** The catalogue mirror, used as a stable fixture for the artifact assertions. */
+const UNIS_MIRROR_ENTRY = {
+  path: "unis.md",
+  route: "/unis/",
+  identity: "Поддерживаемые вузы – Vuzora",
+  mediaType: MARKDOWN_MEDIA_TYPE,
+};
+
+test("release manifest lists the hand-written boundaries plus one mirror per page", async () => {
   const { universities, posts } = await readRegistry();
-  const manifest = manifestFor({ universities, posts });
-  assert.deepEqual(manifest.markdown, MARKDOWN_ARTIFACTS);
-  assert.deepEqual(
-    manifest.markdown.map(({ path }) => path),
-    [
-      "auth.md",
-      "unis.md",
-      ".well-known/agent-skills/public-site-discovery/SKILL.md",
-    ],
-  );
+  const mirrors = buildMarkdownMirrors(readContentSnapshot(root));
+  const manifest = manifestFor({ universities, posts, mirrors });
+
+  assert.deepEqual(manifest.markdown, buildMarkdownArtifacts(mirrors));
+  // Every public page, and nothing else, plus the two hand-written documents.
+  assert.equal(manifest.markdown.length, mirrors.length + STATIC_MARKDOWN_ARTIFACTS.length);
+  for (const entry of STATIC_MARKDOWN_ARTIFACTS) {
+    assert.ok(manifest.markdown.some((candidate) => candidate.path === entry.path), entry.path);
+  }
+  for (const slug of universities.map((university) => university.slug)) {
+    assert.ok(
+      manifest.markdown.some((entry) => entry.path === `unis/${slug}.md`),
+      `missing mirror for /unis/${slug}/`,
+    );
+  }
+  for (const slug of posts) {
+    assert.ok(
+      manifest.markdown.some((entry) => entry.path === `blog/${slug}.md`),
+      `missing mirror for /blog/${slug}/`,
+    );
+  }
   assert.ok(manifest.markdown.every((entry) => entry.mediaType === MARKDOWN_MEDIA_TYPE));
-  assert.ok(manifest.markdown.every((entry) => entry.route.endsWith(".md") || entry.route.startsWith("/")));
+  assert.ok(manifest.markdown.every((entry) => entry.route.startsWith("/")));
+  assert.ok(manifest.markdown.every((entry) => entry.identity.trim().length > 0));
+
+  // Sorted by path, so a rebuild cannot reorder the manifest and fail the
+  // byte comparison in `compare:release`.
+  assert.deepEqual(
+    manifest.markdown.map((entry) => entry.path),
+    [...manifest.markdown.map((entry) => entry.path)].sort(),
+  );
+});
+
+test("the mirror path rule matches the one the pages advertise", async () => {
+  // `src/content/seo.ts` builds the `rel=alternate` href and this module builds
+  // the artifact path. Two implementations, one rule: if they disagree, every
+  // page links at a mirror that is not there.
+  const cases = [
+    ["/", "/index.md"],
+    ["/pricing/", "/pricing.md"],
+    ["/unis/msu/", "/unis/msu.md"],
+    ["/legal/terms/", "/legal/terms.md"],
+  ];
+  for (const [page, mirror] of cases) assert.equal(markdownMirrorPath(page), mirror);
+
+  const snapshot = readContentSnapshot(root);
+  for (const university of snapshot.universities) {
+    assert.equal(markdownMirrorPath(university.path), university.mirrorPath);
+  }
+  for (const post of snapshot.posts) {
+    assert.equal(markdownMirrorPath(post.path), post.mirrorPath);
+  }
 });
 
 test("Markdown artifact validation rejects HTML, binary, unsupported claims, and identity drift", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
-  assert.ok(entry);
+  const entry = UNIS_MIRROR_ENTRY;
   assert.doesNotThrow(() =>
     assertMarkdownArtifact(
       "# Поддерживаемые вузы – Vuzora\n\nМаршрут: `/unis/`.\n",
@@ -57,8 +111,7 @@ test("Markdown artifact validation rejects HTML, binary, unsupported claims, and
 });
 
 test("Markdown artifact validation evaluates every active unsupported claim", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
-  assert.ok(entry);
+  const entry = UNIS_MIRROR_ENTRY;
   const fixtures = [
     [
       "active API after a negative claim",
@@ -157,8 +210,7 @@ test("Markdown artifact validation evaluates every active unsupported claim", ()
 });
 
 test("Markdown artifact validation preserves local negative boundaries", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
-  assert.ok(entry);
+  const entry = UNIS_MIRROR_ENTRY;
   const body = [
     "# Поддерживаемые вузы – Vuzora",
     "",
@@ -174,8 +226,7 @@ test("Markdown artifact validation preserves local negative boundaries", () => {
 });
 
 test("Markdown artifact validation rejects direct MCP server claims in either language and order", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
-  assert.ok(entry);
+  const entry = UNIS_MIRROR_ENTRY;
   const fixtures = [
     [
       "English active claim after a negative claim",
@@ -233,8 +284,7 @@ test("Markdown artifact validation rejects direct MCP server claims in either la
 });
 
 test("Markdown artifact validation evaluates conjunction-linked claims independently", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
-  assert.ok(entry);
+  const entry = UNIS_MIRROR_ENTRY;
   const validBodies = [
     [
       "# Поддерживаемые вузы – Vuzora",
@@ -265,8 +315,7 @@ test("Markdown artifact validation evaluates conjunction-linked claims independe
 });
 
 test("Markdown artifact validation preserves static browser-local WebMCP wording", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "unis.md");
-  assert.ok(entry);
+  const entry = UNIS_MIRROR_ENTRY;
   const body = [
     "# Поддерживаемые вузы – Vuzora",
     "",
@@ -277,7 +326,7 @@ test("Markdown artifact validation preserves static browser-local WebMCP wording
 });
 
 test("Markdown artifact validation applies unsupported-capability guards to auth.md", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "auth.md");
+  const entry = ALL_ARTIFACTS.find((artifact) => artifact.path === "auth.md");
   assert.ok(entry);
   const base = [
     "# auth.md",
@@ -301,7 +350,7 @@ test("Markdown artifact validation applies unsupported-capability guards to auth
 });
 
 test("Markdown artifact validation segments independently negative nor clauses", () => {
-  const entry = MARKDOWN_ARTIFACTS.find((artifact) => artifact.path === "auth.md");
+  const entry = ALL_ARTIFACTS.find((artifact) => artifact.path === "auth.md");
   assert.ok(entry);
   const base = [
     "# auth.md",
@@ -323,7 +372,7 @@ test("Markdown release validation fails closed on missing, extra, empty, and div
   const fixtureRoot = await mkdtemp(join(tmpdir(), "vuzora-markdown-artifacts-"));
   try {
     for (const directory of ["public", "dist"]) await mkdir(join(fixtureRoot, directory), { recursive: true });
-    for (const entry of MARKDOWN_ARTIFACTS) {
+    for (const entry of ALL_ARTIFACTS) {
       const source = join(root, "public", entry.path);
       for (const directory of ["public", "dist"]) {
         const destination = join(fixtureRoot, directory, entry.path);
@@ -334,9 +383,9 @@ test("Markdown release validation fails closed on missing, extra, empty, and div
     const valid = await assertMarkdownRelease({
       root: fixtureRoot,
       dist: join(fixtureRoot, "dist"),
-      manifest: MARKDOWN_ARTIFACTS,
+      manifest: ALL_ARTIFACTS,
     });
-    assert.equal(valid.entries.length, MARKDOWN_ARTIFACTS.length);
+    assert.equal(valid.entries.length, ALL_ARTIFACTS.length);
 
     const activeAfterNegative = [
       "# Поддерживаемые вузы – Vuzora",
@@ -352,7 +401,7 @@ test("Markdown release validation fails closed on missing, extra, empty, and div
         assertMarkdownRelease({
           root: fixtureRoot,
           dist: join(fixtureRoot, "dist"),
-          manifest: MARKDOWN_ARTIFACTS,
+          manifest: ALL_ARTIFACTS,
         }),
       /unsupported|advertises/i,
     );
@@ -365,7 +414,7 @@ test("Markdown release validation fails closed on missing, extra, empty, and div
         assertMarkdownRelease({
           root: fixtureRoot,
           dist: join(fixtureRoot, "dist"),
-          manifest: MARKDOWN_ARTIFACTS,
+          manifest: ALL_ARTIFACTS,
         }),
       /inventory|matching artifact/,
     );
@@ -377,7 +426,7 @@ test("Markdown release validation fails closed on missing, extra, empty, and div
         assertMarkdownRelease({
           root: fixtureRoot,
           dist: join(fixtureRoot, "dist"),
-          manifest: MARKDOWN_ARTIFACTS,
+          manifest: ALL_ARTIFACTS,
         }),
       /empty|differ/,
     );
@@ -389,7 +438,7 @@ test("Markdown release validation fails closed on missing, extra, empty, and div
         assertMarkdownRelease({
           root: fixtureRoot,
           dist: join(fixtureRoot, "dist"),
-          manifest: MARKDOWN_ARTIFACTS,
+          manifest: ALL_ARTIFACTS,
         }),
       /inventory/,
     );
