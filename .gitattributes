@@ -1,0 +1,17 @@
+# One line-ending convention in the repository, on every platform.
+#
+# Without this a Windows checkout with `core.autocrlf=true` rewrites every text
+# file to CRLF, and the release fails on its own gates: the Agent Skills index
+# pins a sha256 over the bytes of SKILL.md, `.bun-version` is compared as an
+# exact string, and `assertMarkdownRelease` compares `public/` against `dist/`
+# byte for byte. Those checks are correct — the checkout was the problem.
+#
+# `text=auto` still lets Git decide what is text; `eol=lf` only fixes what
+# lands in the working tree for the files it decides are.
+* text=auto eol=lf
+
+# Never touched: rewriting a byte here corrupts the asset, and for the icons it
+# breaks the digest the release carries.
+*.png binary
+*.jpg binary
+*.ico binary
