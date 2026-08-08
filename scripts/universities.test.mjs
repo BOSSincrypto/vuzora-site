@@ -144,7 +144,6 @@ test("detail metadata helpers emit bounded unique Russian titles and description
 });
 
 test("every detail title includes the full registry name within 10–70 chars", async () => {
-  const { spawnSync } = await import("node:child_process");
   const script = `
 import { UNIVERSITIES, universityDetailTitle, universityDetailDescription, universityGenitiveName } from "./src/content/universities.ts";
 const TITLE_MIN = 10, TITLE_MAX = 70, DESC_MIN = 50, DESC_MAX = 170;
@@ -201,10 +200,7 @@ for (const u of UNIVERSITIES) {
 }
 console.log("OK", UNIVERSITIES.length);
 `;
-  const result = spawnSync("npx", ["--yes", "bun@1.3.14", "-e", script], {
-    cwd: root,
-    encoding: "utf8",
-  });
+  const result = runPinnedBun(script, { cwd: root });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /OK 25/);
 });
@@ -226,7 +222,9 @@ test("detail content exposes query intent, required sections, and registry FAQ h
     assert.match(route, new RegExp(`data-section=\\"${marker}\\"`));
   }
   assert.match(route, /<details className=/);
-  assert.match(route, /<summary className=/);
+  // Tolerate the line break Prettier inserts once the attribute list grows:
+  // the assertion is about the element carrying a class, not its wrapping.
+  assert.match(route, /<summary\s+className=/);
   assert.match(policy, /"FAQPage"/);
   assert.match(validator, /FAQPage Q&A does not match visible FAQ/);
   assert.match(validator, /sameAs must equal the registry officialUrl/);
@@ -275,7 +273,6 @@ console.log("OK FAQ clusters");
 });
 
 test("Russian schedule copy uses genitive university names without changing registry identity", async () => {
-  const { spawnSync } = await import("node:child_process");
   const script = `
 import { UNIVERSITIES, universityFaq, universityGenitiveName } from "./src/content/universities.ts";
 
@@ -317,10 +314,7 @@ for (const university of UNIVERSITIES) {
 }
 console.log("OK Russian genitive copy");
 `;
-  const result = spawnSync("npx", ["--yes", "bun@1.3.14", "-e", script], {
-    cwd: root,
-    encoding: "utf8",
-  });
+  const result = runPinnedBun(script, { cwd: root });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /OK Russian genitive copy/);
 });

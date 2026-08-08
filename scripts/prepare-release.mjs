@@ -21,10 +21,12 @@ import {
   assertDiscoveryBoundaryRelease,
 } from "./discovery-boundaries.mjs";
 import {
-  MARKDOWN_ARTIFACTS,
+  buildMarkdownArtifacts,
   assertMarkdownRelease,
   assertUnisMarkdownRegistryJoin,
 } from "./markdown-artifacts.mjs";
+import { readContentSnapshot } from "./content-snapshot.mjs";
+import { buildMarkdownMirrors } from "./markdown-mirrors.mjs";
 
 const root = process.cwd();
 const dist = join(root, "dist");
@@ -81,6 +83,8 @@ for (const path of await htmlFiles(dist)) {
 }
 
 const { universities, posts, postRecords, affiliationBoundary } = await readRegistry();
+const mirrors = buildMarkdownMirrors(readContentSnapshot(root));
+const markdownArtifacts = buildMarkdownArtifacts(mirrors);
 const routes = buildRoutes({ universities, posts });
 const rss = buildRssFeed(postRecords);
 assertRssJoin(rss, postRecords);
@@ -130,13 +134,14 @@ for (const entry of agentSkillsIndex.skills) {
   await mkdir(join(destination, ".."), { recursive: true });
   await copyFile(join(root, "public", artifactPath), destination);
 }
-for (const entry of MARKDOWN_ARTIFACTS) {
+for (const entry of markdownArtifacts) {
   const destination = join(dist, entry.path);
   await mkdir(dirname(destination), { recursive: true });
   await copyFile(join(root, "public", entry.path), destination);
 }
-// unis.md is hand-maintained, unlike llms.txt and the RSS feed. Join it to the
-// registry here so a stale catalogue fails the build, not just review.
+// The catalogue mirror is generated, but from a snapshot taken before this
+// build. Re-join it to the registry here so a mirror left uncommitted after a
+// registry change fails the build rather than shipping a stale catalogue.
 assertUnisMarkdownRegistryJoin(
   await readFile(join(dist, "unis.md"), "utf8"),
   universities,
@@ -148,12 +153,12 @@ await assertDiscoveryBoundaryRelease({ root, dist });
 await assertMarkdownRelease({
   root,
   dist,
-  manifest: MARKDOWN_ARTIFACTS,
+  manifest: markdownArtifacts,
 });
 
 await writeFile(
   join(dist, "release-manifest.json"),
-  `${JSON.stringify(manifestFor({ universities, posts }), null, 2)}\n`,
+  `${JSON.stringify(manifestFor({ universities, posts, mirrors }), null, 2)}\n`,
   "utf8",
 );
 

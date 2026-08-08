@@ -7,6 +7,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { markdownMirrorPath } from "./markdown-artifacts.mjs";
 
 const ORIGIN = process.env.VUZORA_ORIGIN ?? "http://127.0.0.1:3100";
 const SESSION =
@@ -85,9 +86,12 @@ function assertSupported(snapshot, expectedPath, expectedType = "website") {
   assert.deepEqual(snapshot.ogUrl, [expectedUrl]);
   assert.deepEqual(snapshot.ogType, [expectedType]);
   assert.deepEqual(snapshot.locale, ["ru_RU"]);
+  // The third link is route-specific: after a client navigation it must point
+  // at this page's mirror, not at the one the previous route advertised.
   assert.deepEqual(snapshot.alternate, [
     "https://vuzora.ru/blog/rss.xml",
     "https://vuzora.ru/llms.txt",
+    `https://vuzora.ru${markdownMirrorPath(expectedPath)}`,
   ]);
   assert.ok(snapshot.jsonLd.length > 0);
 }
