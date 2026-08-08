@@ -11,17 +11,19 @@ import { SectionHeader } from "./ui/SectionHeader";
 import { LaunchTimeline } from "./pricing/LaunchTimeline";
 import { PlanCard } from "./pricing/PlanCard";
 import { CtaButton } from "./ui/CtaButton";
-import { PLANS, LINKS } from "@/content/vuzora";
+import {
+  CARRY_OVER_NOTE,
+  INCLUDED,
+  LINKS,
+  PLANS,
+  REFUND_NOTE,
+  pricingFacts,
+} from "@/content/vuzora";
 
-/** Everything that ships in every plan — no fake tiering. */
-const INCLUDED: readonly string[] = [
-  "Утренняя доставка в удобный тебе слот (05:00–10:00 МСК)",
-  "Уведомления об изменениях днём",
-  "Смена группы и курса в один тап",
-  "Заморозка на каникулах",
-  "Без рекламы и сторонних трекеров",
-  "Поддержка в Telegram",
-];
+// The card grid pairs a period with its price by layout alone. Read as text —
+// by a screen reader, a scraper, or an assistant answering "сколько стоит" —
+// the two land in separate runs. This states the pairing in one sentence.
+const [PLAN_FACTS, TIMELINE_FACTS] = pricingFacts();
 
 /** Pricing + launch timeline section. */
 export function Pricing() {
@@ -43,6 +45,9 @@ export function Pricing() {
           </div>
 
           <div className="md:col-span-7">
+            <p className="mb-5 text-[13px] leading-relaxed text-white/60">
+              {PLAN_FACTS} {TIMELINE_FACTS}
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {PLANS.map((p) => (
                 <PlanCard key={p.id} plan={p} />
@@ -80,15 +85,10 @@ export function Pricing() {
             </div>
 
             <p className="mt-6 font-mono text-[11px] leading-relaxed text-white/55">
-              Оплаченное время не сгорает летом – отсчёт стартует с 1 сентября. Без автопродления,
-              без скрытых платежей.
+              {CARRY_OVER_NOTE}
             </p>
             <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-[12px] leading-relaxed text-white/65">
-              <p>
-                <span className="text-white/85">Возврат средств:</span> в течение 14 дней с оплаты,
-                если не получил ни одной доставки – вернём полностью. Дальше – пропорционально
-                неиспользованному сроку.
-              </p>
+              <p>{REFUND_NOTE}</p>
               <p className="mt-2">
                 Полные условия в{" "}
                 <a href="/legal/terms/" className="underline hover:text-white">

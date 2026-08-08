@@ -21,6 +21,7 @@ import {
   universityBotUrl,
   universityDetailCopy,
   universityFaq,
+  universityLeadSentence,
   universityGenitiveName,
   scheduleSourceHost,
   universityDetailDescription,
@@ -30,7 +31,12 @@ import {
   abs,
   SITE_URL,
 } from "@/content/vuzora";
-import { DISCOVERY_LINKS, INDEXABLE_META, NOINDEX_META } from "@/content/seo";
+import {
+  DISCOVERY_LINKS,
+  INDEXABLE_META,
+  NOINDEX_META,
+  markdownAlternateLink,
+} from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 export const Route = createFileRoute("/unis_/$slug")({
@@ -89,7 +95,11 @@ export const Route = createFileRoute("/unis_/$slug")({
         { name: "twitter:image", content: abs(ogCover) },
         ...INDEXABLE_META,
       ],
-      links: [{ rel: "canonical", href: url }, ...DISCOVERY_LINKS],
+      links: [
+        { rel: "canonical", href: url },
+        ...DISCOVERY_LINKS,
+        markdownAlternateLink(universityPagePath(university.slug)),
+      ],
       scripts: [
         {
           type: "application/ld+json",
@@ -208,6 +218,10 @@ function UniversityDetailPage() {
               Расписание {genitiveName} в Telegram
             </h2>
 
+            <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-white/70">
+              {universityLeadSentence(university)}
+            </p>
+
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <span
                 className={
@@ -272,10 +286,10 @@ function UniversityDetailPage() {
             <section data-section="morning-delivery" className="border-t border-white/10 pt-7">
               <h3 className="font-display text-xl font-semibold text-white">Что приходит утром</h3>
               <p className="mt-3">
-                Бот присылает уведомление с доступным расписанием в выбранный утренний слот с
-                05:00 до 10:00 по Москве. Это формат доставки в Telegram, а не опубликованная на
-                сайте таблица занятий: за актуальными изменениями всегда следи в официальных
-                каналах {university.name}.
+                Бот присылает уведомление с доступным расписанием в выбранный утренний слот с 05:00
+                до 10:00 по Москве. Это формат доставки в Telegram, а не опубликованная на сайте
+                таблица занятий: за актуальными изменениями всегда следи в официальных каналах{" "}
+                {university.name}.
               </p>
             </section>
             <section data-section="status-city" className="border-t border-white/10 pt-7">
@@ -299,13 +313,23 @@ function UniversityDetailPage() {
                 {faq.map((item) => (
                   <li key={item.question}>
                     <details className="group py-4">
-                      <summary className="flex cursor-pointer list-none items-start justify-between gap-5 rounded-sm font-display text-base font-medium text-white/90 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber" data-faq-control="true" tabIndex={0}>
+                      <summary
+                        className="flex cursor-pointer list-none items-start justify-between gap-5 rounded-sm font-display text-base font-medium text-white/90 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber"
+                        data-faq-control="true"
+                        tabIndex={0}
+                      >
                         <span>{item.question}</span>
-                        <span aria-hidden className="shrink-0 text-amber transition-transform group-open:rotate-45">
+                        <span
+                          aria-hidden
+                          className="shrink-0 text-amber transition-transform group-open:rotate-45"
+                        >
                           +
                         </span>
                       </summary>
-                      <p data-faq-answer className="mt-3 pr-8 text-sm leading-relaxed text-white/65">
+                      <p
+                        data-faq-answer
+                        className="mt-3 pr-8 text-sm leading-relaxed text-white/65"
+                      >
                         {item.answer}
                       </p>
                     </details>

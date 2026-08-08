@@ -21,7 +21,14 @@ import { BLOG_INDEX_ROUTE, assertBlogMetadataConsistency } from "./blog-metadata
 import { assertAgentSkillsRelease } from "./agent-skills.mjs";
 import { assertApiCatalogRelease } from "./api-catalog.mjs";
 import { assertDiscoveryBoundaryRelease } from "./discovery-boundaries.mjs";
-import { assertMarkdownRelease, assertUnisMarkdownRegistryJoin } from "./markdown-artifacts.mjs";
+import {
+  MARKDOWN_MEDIA_TYPE,
+  assertMarkdownRelease,
+  assertUnisMarkdownRegistryJoin,
+  markdownMirrorPath,
+} from "./markdown-artifacts.mjs";
+import { readContentSnapshot } from "./content-snapshot.mjs";
+import { buildMarkdownMirrors } from "./markdown-mirrors.mjs";
 
 export const CANONICAL_ORIGIN = "https://vuzora.ru";
 export const GENERIC_CTA = "https://t.me/vuzora_bot?start=from-site";
@@ -219,6 +226,13 @@ export function routeMetadataFailures(document, route, expectedDescription) {
       type: "application/rss+xml",
     },
     { href: `${CANONICAL_ORIGIN}/llms.txt`, type: "text/plain" },
+    // Route-specific, unlike the two site-wide surfaces above: every page
+    // points at its own Markdown mirror and nothing else. A page advertising
+    // another page's mirror is the failure this pins down.
+    {
+      href: `${CANONICAL_ORIGIN}${markdownMirrorPath(route)}`,
+      type: MARKDOWN_MEDIA_TYPE,
+    },
   ];
   if (document.alternateLinks.length !== expectedDiscoveryLinks.length) {
     failures.push(
@@ -923,7 +937,10 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
   const routeExpectations = Object.fromEntries(
     routes.map((route) => [route, routeExpectationFor(route, { universities, postRecords })]),
   );
-  const expectedManifest = manifestFor({ universities, posts });
+  // Rebuilt from `src/content/` rather than read back from the release, so a
+  // mirror that was published but never regenerated has nothing to hide behind.
+  const mirrors = buildMarkdownMirrors(readContentSnapshot(root));
+  const expectedManifest = manifestFor({ universities, posts, mirrors });
   const knownTitles = new Set();
   const knownCanonicals = new Set();
   const knownDescriptions = new Set();
@@ -952,7 +969,9 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
   if (await exists(dist)) {
     const routeArtifacts = new Set([...routes, RSS_PATH].map((route) => artifactFor(route)));
     const files = await htmlFiles(dist);
-    const htmlArtifacts = files.map((path) => relative(dist, path));
+    // `artifactFor` speaks URL paths; `relative` speaks the host separator.
+    // On Windows the two never match and every route reads as unexpected.
+    const htmlArtifacts = files.map((path) => relative(dist, path).split("\\").join("/"));
     for (const route of routes) {
       const artifact = join(dist, artifactFor(route));
       if (!(await exists(artifact))) {

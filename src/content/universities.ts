@@ -384,30 +384,40 @@ export const DETAIL_CONTENT_MIN_LENGTH = 120;
 export const AFFILIATION_BOUNDARY = "Сервис не является официальным сервисом вуза" as const;
 
 const DETAIL_FOCUS_BY_SLUG: Readonly<Record<string, string>> = {
-  "reu-plekhanov": "На этой странице удобно проверить привязку РЭУ к утренней выдаче и сразу перейти к подключению.",
-  "financial-university": "Карточка Финансового университета собрана для быстрого перехода от поиска вуза к настройке уведомлений.",
+  "reu-plekhanov":
+    "На этой странице удобно проверить привязку РЭУ к утренней выдаче и сразу перейти к подключению.",
+  "financial-university":
+    "Карточка Финансового университета собрана для быстрого перехода от поиска вуза к настройке уведомлений.",
   spbu: "Для СПбГУ здесь отдельно вынесены город, статус поддержки и путь к Telegram-подключению.",
   sinergiya: "Страница Синергии помогает сверить запись реестра перед первым переходом в бот.",
-  spbstu: "Для СПбПУ полезно начать с блока статуса, а затем открыть ссылку с привязкой к этому вузу.",
+  spbstu:
+    "Для СПбПУ полезно начать с блока статуса, а затем открыть ссылку с привязкой к этому вузу.",
   urfu: "В карточке УрФУ собраны ориентиры для утреннего сценария без публикации таблиц занятий на сайте.",
   rudn: "Страница РУДН отделяет информацию о доставке от официальных вопросов университета.",
-  mgimo: "Для МГИМО эта страница служит коротким маршрутом к Telegram и обратно в каталог поддерживаемых вузов.",
+  mgimo:
+    "Для МГИМО эта страница служит коротким маршрутом к Telegram и обратно в каталог поддерживаемых вузов.",
   dgtu: "Карточка ДГТУ показывает, какие данные относятся к реестру Vuzora, а какие нужно уточнять у вуза.",
   kfu: "Для КФУ в одном месте собраны город, состояние подключения и утренний формат сообщений.",
-  mirea: "Страница МИРЭА объясняет сценарий доставки без обещаний о полноте официального расписания.",
-  ranepa: "Для РАНХиГС добавлен отдельный ответ о привязке перехода, чтобы не перепутать его с общим CTA сайта.",
+  mirea:
+    "Страница МИРЭА объясняет сценарий доставки без обещаний о полноте официального расписания.",
+  ranepa:
+    "Для РАНХиГС добавлен отдельный ответ о привязке перехода, чтобы не перепутать его с общим CTA сайта.",
   miit: "Карточка МИИТ помогает найти нужный маршрут по коду и проверить его перед запуском Telegram-бота.",
   hse: "Для ВШЭ город отображается в реестровом виде, а подробности доставки остаются в честных пределах сервиса.",
-  mephi: "Страница МИФИ делает акцент на утреннем уведомлении и не подменяет официальные источники университета.",
+  mephi:
+    "Страница МИФИ делает акцент на утреннем уведомлении и не подменяет официальные источники университета.",
   mipt: "Для МФТИ здесь легко сверить код, статус и точную ссылку с параметром этого slug.",
   mpei: "Карточка МЭИ показывает путь от каталога к уведомлениям, сохраняя границу между Vuzora и вузом.",
-  "tgu-tolyatti": "Для ТГУ в Тольятти блоки страницы помогают быстро отличить город реестра от настроек Telegram-доставки.",
-  unecon: "Страница СПбГЭУ связывает карточку каталога с утренним сценарием и понятным возвратом к списку вузов.",
+  "tgu-tolyatti":
+    "Для ТГУ в Тольятти блоки страницы помогают быстро отличить город реестра от настроек Telegram-доставки.",
+  unecon:
+    "Страница СПбГЭУ связывает карточку каталога с утренним сценарием и понятным возвратом к списку вузов.",
   rggu: "Для РГГУ здесь собраны ответы о подключении и статусе, без выдуманных деталей учебного процесса.",
   msu: "Карточка МГУ даёт отдельный маршрут к Telegram-подключению и сохраняет официальные вопросы за каналами университета.",
   sfu: "Для СФУ описание сфокусировано на доставке уведомлений, а не на копировании расписания в публичную страницу.",
   nngu: "Страница ННГУ помогает найти запись по коду и городу, затем перейти к утреннему формату Vuzora.",
-  bmstu: "Для МГТУ им. Баумана FAQ уточняет границы сервиса и оставляет официальные изменения университету.",
+  bmstu:
+    "Для МГТУ им. Баумана FAQ уточняет границы сервиса и оставляет официальные изменения университету.",
   susu: "Карточка ЮУрГУ собрана как самостоятельная точка входа: статус, город, подключение и ответы находятся рядом.",
 };
 
@@ -436,6 +446,23 @@ function officialScheduleSentence(university: University): string {
   return (
     `Официальное расписание занятий ${universityGenitiveName(university)} публикуется на ${host} — ` +
     `Vuzora не дублирует и не заменяет этот источник. `
+  );
+}
+
+/**
+ * One self-contained sentence answering «расписание <вуз> в телеграм».
+ *
+ * The H2 above it carries the keyword but is not a claim; the detail copy
+ * below states everything but takes a paragraph to do it. An answer engine
+ * cites a sentence, so this is the sentence: who delivers what, when, and the
+ * affiliation boundary — quotable without the rest of the page. Carries no
+ * link, because the detail route may render each verified external URL exactly
+ * once and that budget belongs to the official-source block.
+ */
+export function universityLeadSentence(university: University): string {
+  return (
+    `Vuzora присылает расписание ${universityGenitiveName(university)} в Telegram каждое утро ` +
+    `в выбранный слот с 05:00 до 10:00 МСК. ${AFFILIATION_BOUNDARY}.`
   );
 }
 
@@ -497,8 +524,11 @@ export function universityFaq(university: University): readonly UniversityFaq[] 
       answer: `${university.code} имеет статус «${statusLabel(university.status)}», а в реестре Vuzora указан город: ${university.city}. ${availability === "онлайн" ? "Подключение доступно сейчас." : "Поддержка готовится, поэтому подключение может быть недоступно."}`,
     },
     {
-      question: `Является ли Vuzora официальным сервисом ${university.name}?`,
-      answer: `${AFFILIATION_BOUNDARY}. Vuzora только помогает получать сообщения в Telegram. За подтверждением занятий, документов и любых официальных изменений обращайся к ${university.name}.`,
+      // Genitive after «сервисом» and after «каналы»: the registry name is
+      // nominative and reads as a grammatical error inside a sentence, which
+      // is also how it lands in the FAQPage structured data and the mirror.
+      question: `Является ли Vuzora официальным сервисом ${genitiveName}?`,
+      answer: `${AFFILIATION_BOUNDARY}. Vuzora только помогает получать сообщения в Telegram. За подтверждением занятий, документов и любых официальных изменений обращайся в официальные каналы ${genitiveName}.`,
     },
   ];
 }
@@ -590,7 +620,9 @@ export function universityDetailDescription(university: University): string {
     `Расписание ${university.name}. Статус: ${status}. ${AFFILIATION_BOUNDARY}.`,
     `Расписание ${university.name}. ${AFFILIATION_BOUNDARY}.`,
   ];
-  return boundedCandidates.find((candidate) =>
-    withinBounds(candidate, DESCRIPTION_MIN, DESCRIPTION_MAX),
-  ) ?? boundedCandidates[boundedCandidates.length - 1];
+  return (
+    boundedCandidates.find((candidate) =>
+      withinBounds(candidate, DESCRIPTION_MIN, DESCRIPTION_MAX),
+    ) ?? boundedCandidates[boundedCandidates.length - 1]
+  );
 }

@@ -17,6 +17,9 @@ dist
 .env.*
 !.env.example
 
+# Local caches written by MCP tooling, not part of the release.
+.serena/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

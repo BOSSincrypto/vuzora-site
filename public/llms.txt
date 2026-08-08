@@ -53,3 +53,16 @@
 - [Карта сайта](https://vuzora.ru/sitemap.xml)
 - [Публичная страница /legal/privacy/](https://vuzora.ru/legal/privacy/)
 - [Публичная страница /legal/terms/](https://vuzora.ru/legal/terms/)
+
+## Markdown-версии страниц
+
+Каждая публичная страница опубликована и в Markdown. Правило адреса: путь страницы без завершающего слэша плюс `.md`. Например, https://vuzora.ru/pricing/ → https://vuzora.ru/pricing.md. По тому же правилу устроены зеркала страниц вузов и заметок блога.
+
+- [Главная](https://vuzora.ru/index.md)
+- [Тарифы](https://vuzora.ru/pricing.md)
+- [Что нового](https://vuzora.ru/changelog.md)
+- [Поддерживаемые вузы](https://vuzora.ru/unis.md)
+- [Блог](https://vuzora.ru/blog.md)
+- [Публичная страница /legal/privacy/](https://vuzora.ru/legal/privacy.md)
+- [Публичная страница /legal/terms/](https://vuzora.ru/legal/terms.md)
+- [Граница аутентификации](https://vuzora.ru/auth.md)

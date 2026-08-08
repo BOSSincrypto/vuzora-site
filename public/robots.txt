@@ -3,6 +3,20 @@ Allow: /
 Disallow: /api/
 Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
+# Every page is also published as plain Markdown at its own path plus .md, for
+# agents that cannot render the page. Those files are a second representation,
+# not a second page: keeping them out of the search index stops a raw .md from
+# competing with the page it mirrors. AI crawlers below keep full access.
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /*.md$
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /*.md$
+
 User-agent: GPTBot
 Allow: /
 Disallow: /api/

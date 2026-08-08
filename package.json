@@ -15,6 +15,7 @@
     "test:browser:mobile-menu": "node scripts/mobile-menu-browser-regression.mjs",
     "test:browser:blog-metadata": "node scripts/blog-metadata-browser-regression.mjs",
     "test:browser:unknown-route-metadata": "node scripts/unknown-route-metadata-browser-regression.mjs",
+    "generate:md": "node scripts/generate-markdown-mirrors.mjs",
     "generate:llms": "node scripts/generate-llms.mjs",
     "generate:rss": "node scripts/generate-rss.mjs",
     "generate:agent-skills": "node scripts/generate-agent-skills.mjs",

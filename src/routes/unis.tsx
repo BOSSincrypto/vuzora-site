@@ -17,7 +17,7 @@ import {
   SITE_URL,
   universityPageUrl,
 } from "@/content/vuzora";
-import { DISCOVERY_LINKS, INDEXABLE_META } from "@/content/seo";
+import { DISCOVERY_LINKS, INDEXABLE_META, markdownAlternateLink } from "@/content/seo";
 import ogCover from "@/assets/og-cover.jpg";
 
 const TITLE = "Поддерживаемые вузы – Vuzora";
@@ -42,7 +42,11 @@ export const Route = createFileRoute("/unis")({
       { name: "twitter:image", content: abs(ogCover) },
       ...INDEXABLE_META,
     ],
-    links: [{ rel: "canonical", href: abs("/unis/") }, ...DISCOVERY_LINKS],
+    links: [
+      { rel: "canonical", href: abs("/unis/") },
+      ...DISCOVERY_LINKS,
+      markdownAlternateLink("/unis/"),
+    ],
     scripts: [
       {
         type: "application/ld+json",

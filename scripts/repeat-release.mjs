@@ -27,10 +27,20 @@ function run(command, args, cwd) {
 try {
   await cp(root, first, {
     recursive: true,
-    filter: (source) =>
-      !source.includes("/node_modules/") &&
-      !source.includes("/dist/") &&
-      !source.includes("/.git/"),
+    // Compare on URL-style separators: on Windows these paths arrive with
+    // backslashes, the filter never matches, and the "clean" workspace ends up
+    // a copy of node_modules, dist, and .git.
+    filter: (source) => {
+      const path = source.split("\\").join("/");
+      return (
+        !path.includes("/node_modules/") &&
+        !path.endsWith("/node_modules") &&
+        !path.includes("/dist/") &&
+        !path.endsWith("/dist") &&
+        !path.includes("/.git/") &&
+        !path.endsWith("/.git")
+      );
+    },
   });
   await cp(first, second, { recursive: true });
   for (const workspace of [first, second]) {

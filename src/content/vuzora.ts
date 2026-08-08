@@ -31,6 +31,7 @@ export {
   statusLabel,
   universityDetailCopy,
   universityFaq,
+  universityLeadSentence,
   universityGenitiveName,
   scheduleSourceHost,
   universityDetailPaths,
@@ -40,4 +41,22 @@ export {
   type UniversityFaq,
   type UniversityStatus,
 } from "./universities";
-export { PLANS, TIMELINE, formatPrice, type Plan, type TimelineEntry } from "./pricing";
+export {
+  PLANS,
+  TIMELINE,
+  INCLUDED,
+  CARRY_OVER_NOTE,
+  REFUND_NOTE,
+  formatPrice,
+  pricingFacts,
+  type Plan,
+  type TimelineEntry,
+} from "./pricing";
+export {
+  LEGAL_DOCUMENTS,
+  PRIVACY,
+  TERMS,
+  type LegalBlock,
+  type LegalDocument,
+  type LegalSection,
+} from "./legal";

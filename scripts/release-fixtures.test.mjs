@@ -15,6 +15,7 @@ import {
   validateRelease,
 } from "./release-validator.mjs";
 import { assertLlmsJoin, buildLlmsPacket, detailUrl } from "./llms-packet.mjs";
+import { markdownMirrorPath } from "./markdown-artifacts.mjs";
 import {
   artifactFor,
   assertBlogSlugs,
@@ -52,10 +53,7 @@ const metadataFixture = (route, overrides = {}) => {
   const description = overrides.description ?? "Маршрут Vuzora с полезным описанием для студентов и утренней доставки расписания.";
   const robots = overrides.robots ?? "index, follow";
   const locale = overrides.locale ?? "ru_RU";
-  const alternates = overrides.alternates ?? `
-    <link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml"/>
-    <link rel="alternate" type="text/plain" href="https://vuzora.ru/llms.txt"/>
-  `;
+  const alternates = overrides.alternates ?? discoveryAlternatesFor(route);
   // Kept outside `alternates` so discovery-drift fixtures can mutate the
   // alternate links without also dropping the RFC 9727 catalog relation.
   const apiCatalog = overrides.apiCatalog ?? `
@@ -71,9 +69,14 @@ const metadataFixture = (route, overrides = {}) => {
     ${apiCatalog}
   </head><body><main><h1>Проверка маршрута</h1></main></body></html>`;
 };
-const approvedDiscoveryAlternates = `
+/**
+ * The three alternate representations a valid page advertises: two site-wide
+ * discovery surfaces and this page's own Markdown mirror.
+ */
+const discoveryAlternatesFor = (route) => `
     <link rel="alternate" type="application/rss+xml" href="https://vuzora.ru/blog/rss.xml"/>
     <link rel="alternate" type="text/plain" href="https://vuzora.ru/llms.txt"/>
+    <link rel="alternate" type="text/markdown" href="https://vuzora.ru${markdownMirrorPath(route)}"/>
   `;
 
 function rewriteJsonLdNode(html, type, mutate) {
@@ -213,7 +216,7 @@ test("route discovery metadata rejects alternate-origin and duplicate variants",
   for (const [label, extraLink] of fixtures) {
     const failures = routeMetadataFailures(
       parseHtmlDocument(
-        metadataFixture("/pricing/", { alternates: `${approvedDiscoveryAlternates}${extraLink}` }),
+        metadataFixture("/pricing/", { alternates: `${discoveryAlternatesFor("/pricing/")}${extraLink}` }),
       ),
       "/pricing/",
     );
