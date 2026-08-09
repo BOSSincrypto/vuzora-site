@@ -112,10 +112,18 @@ test("Pages release artifacts have independent 404 and nojekyll sources", async 
   assert.doesNotMatch(notFound, /Vuzora\s*[–-]\s*расписание вуза/i);
 });
 
-test("canonical sitemap policy discovers RSS without blocking it", async () => {
+test("canonical sitemap policy discovers RSS without offering it to the index", async () => {
   const robots = await read("public/robots.txt");
   const sitemap = await read("src/routes/sitemap[.]xml.tsx");
-  assert.match(sitemap, /path: "\/blog\/rss\.xml"/);
+  const seo = await read("src/content/seo.ts");
+  const prepare = await read("scripts/prepare-release.mjs");
+  // Listing the feed in the sitemap is what earned it "crawled, not indexed":
+  // a sitemap offers pages to the index and a feed has nothing to index. It
+  // stays discoverable — head link and llms.txt — and stays crawlable.
+  assert.doesNotMatch(sitemap, /"\/blog\/rss\.xml"/);
+  assert.doesNotMatch(prepare, /\[\s*\.\.\.routes,\s*RSS_PATH\s*\]/);
+  assert.match(seo, /application\/rss\+xml/);
+  assert.match(seo, /abs\("\/blog\/rss\.xml"\)/);
   assert.doesNotMatch(robots, /^Disallow:\s*\/blog(?:\/rss\.xml)?/im);
   assert.equal(
     (robots.match(/^Sitemap:\s*https:\/\/vuzora\.ru\/sitemap\.xml$/gim) ?? []).length,

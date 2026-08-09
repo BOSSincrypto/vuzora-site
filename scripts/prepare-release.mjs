@@ -5,6 +5,7 @@ import {
   buildLlmsPacket,
   deriveDiscoveryRoutes,
 } from "./llms-packet.mjs";
+import { buildRouteLastmod } from "./route-lastmod.mjs";
 import { buildRoutes, manifestFor, readRegistry } from "./route-policy.mjs";
 import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 import {
@@ -43,27 +44,22 @@ async function htmlFiles(directory) {
   return files;
 }
 
-function buildAuthoritativeSitemap(routes, { buildDay, postRecords }) {
-  // Blog surfaces carry verifiable dates from the post records — a uniform
-  // build-day lastmod on daily cron rebuilds would claim every page changes
-  // daily, which crawlers discount. Registry-coupled routes keep the build day.
-  const postDateByRoute = new Map(
-    postRecords.map((post) => [`/blog/${post.slug}/`, post.date]),
-  );
-  const latestPostDate = postRecords.reduce(
-    (acc, post) => (post.date > acc ? post.date : acc),
-    "1970-01-01",
-  );
-  const lastmodFor = (route) => {
-    if (postDateByRoute.has(route)) return postDateByRoute.get(route);
-    if (route === "/blog/" || route === RSS_PATH) return latestPostDate;
-    return buildDay;
-  };
-  const body = [...routes, RSS_PATH]
-    .map(
-      (route) =>
-        `  <url><loc>${CANONICAL_ORIGIN}${route}</loc><lastmod>${lastmodFor(route)}</lastmod></url>`,
-    )
+// A sitemap lists pages a crawler should consider indexing. The RSS feed is
+// not one: Google crawled it *because* it was listed here and then filed it
+// under "crawled – currently not indexed", since a feed has nothing to index.
+// It stays discoverable through `<link rel="alternate">` on every page and
+// through llms.txt, which is where a feed belongs.
+function buildAuthoritativeSitemap(routes, { lastmodByRoute }) {
+  // Dates come from post records (blog) or git (everything else) — never from
+  // the build day, which the daily cron rebuild turned into a nightly claim
+  // that all 32 non-blog pages had changed. See scripts/route-lastmod.mjs.
+  // A route with no provable date ships without <lastmod> rather than a guess.
+  const body = routes
+    .map((route) => {
+      const lastmod = lastmodByRoute.get(route);
+      const stamp = lastmod ? `<lastmod>${lastmod}</lastmod>` : "";
+      return `  <url><loc>${CANONICAL_ORIGIN}${route}</loc>${stamp}</url>`;
+    })
     .join("\n");
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
@@ -100,10 +96,11 @@ await mkdir(dirname(join(dist, apiCatalogPath)), { recursive: true });
 await copyFile(join(root, "public", apiCatalogPath), join(dist, apiCatalogPath));
 const authBoundaryPath = AUTH_BOUNDARY_PATH.replace(/^\/+/, "");
 await copyFile(join(root, "public", authBoundaryPath), join(dist, authBoundaryPath));
-// Non-blog routes stamp the UTC calendar day of the build; blog surfaces use
-// the post dates (see buildAuthoritativeSitemap). Repeat-build comparison
-// normalizes lastmod further, so only the route set and non-date bytes must match.
-const buildDay = new Date().toISOString().slice(0, 10);
+// Blog surfaces date themselves from the post records; every other route asks
+// git when its sources last changed, and omits lastmod when git cannot answer.
+// Repeat-build comparison normalizes lastmod further, so only the route set
+// and non-date bytes must match.
+const lastmodByRoute = buildRouteLastmod({ routes, postRecords, root });
 
 const agentSkillsIndexSource = join(
   root,
@@ -166,7 +163,7 @@ await writeFile(
 // seeds and release validation share one explicit indexable route list.
 await writeFile(
   join(dist, "sitemap.xml"),
-  buildAuthoritativeSitemap(routes, { buildDay, postRecords }),
+  buildAuthoritativeSitemap(routes, { lastmodByRoute }),
   "utf8",
 );
 

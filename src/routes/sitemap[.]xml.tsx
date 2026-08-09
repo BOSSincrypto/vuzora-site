@@ -4,9 +4,14 @@
  * NOT the shipped artifact. `scripts/prepare-release.mjs` overwrites
  * `dist/sitemap.xml` with the registry/route-policy set so seeds and release
  * validation share one explicit list; this handler only answers `vite dev` and
- * `vite preview`. The two agree on the URL set and lastmod semantics (post
- * dates for blog surfaces, current/build day elsewhere) — this one
- * additionally emits `changefreq`/`priority`, which the released file omits.
+ * `vite preview`. The two agree on the URL set and on lastmod semantics: a
+ * date is emitted only where one is provable. Blog surfaces prove theirs from
+ * the post records, which is all this handler can reach; the release also
+ * dates the other routes from git (`scripts/route-lastmod.mjs`), which needs a
+ * repository and so stays out of the SSR bundle. Neither ever stamps the
+ * current day on a page that did not change — a lastmod that moves nightly is
+ * one crawlers learn to discount. This one additionally emits
+ * `changefreq`/`priority`, which the released file omits.
  * Fix drift in `scripts/route-policy.mjs` first; editing this file alone
  * changes nothing that GitHub Pages serves.
  *
@@ -17,29 +22,30 @@ import { createFileRoute } from "@tanstack/react-router";
 import { blogPostPath, POSTS } from "@/content/blog";
 import { UNIVERSITIES, abs, universityPagePath } from "@/content/vuzora";
 
-type Entry = { path: string; lastmod: string; changefreq: string; priority: string };
+type Entry = { path: string; lastmod?: string; changefreq: string; priority: string };
 
+// The RSS feed is deliberately absent: a sitemap offers pages to the index and
+// a feed has nothing to index, so listing it only ever earned Google's
+// "crawled – currently not indexed". `DISCOVERY_LINKS` in `src/content/seo.ts`
+// still advertises it from every page head, and llms.txt still lists it.
 function buildEntries(): Entry[] {
-  const today = new Date().toISOString().slice(0, 10);
   const latestPost = POSTS.reduce((acc, p) => (p.date > acc ? p.date : acc), "1970-01-01");
   return [
-    { path: "/", lastmod: today, changefreq: "weekly", priority: "1.0" },
-    { path: "/pricing/", lastmod: today, changefreq: "weekly", priority: "0.9" },
-    { path: "/unis/", lastmod: today, changefreq: "monthly", priority: "0.7" },
+    { path: "/", changefreq: "weekly", priority: "1.0" },
+    { path: "/pricing/", changefreq: "weekly", priority: "0.9" },
+    { path: "/unis/", changefreq: "monthly", priority: "0.7" },
     { path: "/blog/", lastmod: latestPost, changefreq: "weekly", priority: "0.8" },
-    { path: "/blog/rss.xml", lastmod: latestPost, changefreq: "weekly", priority: "0.4" },
-    { path: "/changelog/", lastmod: today, changefreq: "weekly", priority: "0.5" },
+    { path: "/changelog/", changefreq: "weekly", priority: "0.5" },
     ...POSTS.map<Entry>((p) => ({
       path: blogPostPath(p.slug),
       lastmod: p.date,
       changefreq: "monthly",
       priority: "0.6",
     })),
-    { path: "/legal/terms/", lastmod: today, changefreq: "yearly", priority: "0.3" },
-    { path: "/legal/privacy/", lastmod: today, changefreq: "yearly", priority: "0.3" },
+    { path: "/legal/terms/", changefreq: "yearly", priority: "0.3" },
+    { path: "/legal/privacy/", changefreq: "yearly", priority: "0.3" },
     ...UNIVERSITIES.map<Entry>((u) => ({
       path: universityPagePath(u.slug),
-      lastmod: today,
       changefreq: "monthly",
       priority: "0.8",
     })),
@@ -53,21 +59,20 @@ function buildSitemap() {
     buildEntries()
       .map(
         (e) =>
-          `  <url><loc>${abs(e.path)}</loc><lastmod>${e.lastmod}</lastmod><changefreq>${e.changefreq}</changefreq><priority>${e.priority}</priority></url>`,
+          `  <url><loc>${abs(e.path)}</loc>${e.lastmod ? `<lastmod>${e.lastmod}</lastmod>` : ""}<changefreq>${e.changefreq}</changefreq><priority>${e.priority}</priority></url>`,
       )
       .join("\n") +
     `\n</urlset>\n`;
   return body;
 }
 
-// Module-scope cache: rebuild at most once per UTC day. The entry set only
-// changes when POSTS or the current date changes, so this avoids re-stringifying
-// on every crawler hit while still keeping `lastmod` fresh.
-let cached: { day: string; xml: string } | undefined;
+// Module-scope cache. Nothing in the entry set depends on the clock any more —
+// every date comes from the committed post records — so one build per process
+// is enough; a restart picks up new posts.
+let cached: string | undefined;
 function getSitemap() {
-  const day = new Date().toISOString().slice(0, 10);
-  if (!cached || cached.day !== day) cached = { day, xml: buildSitemap() };
-  return cached.xml;
+  cached ??= buildSitemap();
+  return cached;
 }
 
 export const Route = createFileRoute("/sitemap.xml")({

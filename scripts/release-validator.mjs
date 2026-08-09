@@ -1223,11 +1223,15 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
     }
     if (await exists(join(dist, "sitemap.xml"))) {
       try {
+        // `includeRss` stays false: a sitemap lists indexable pages, and the
+        // feed is not one. It is still required to exist and still reachable
+        // from every page head and from llms.txt — just not offered to the
+        // index, which only ever answered "crawled, not indexed".
         assertSitemap(
           await read(join(dist, "sitemap.xml")),
           routes,
           (artifact) => routeArtifacts.has(artifact),
-          true,
+          false,
         );
       } catch (error) {
         fail(error.message);

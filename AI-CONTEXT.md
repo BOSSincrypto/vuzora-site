@@ -170,6 +170,17 @@ part of the current CTA model.
 - Keep `sitemap.xml`, RSS, `llms.txt`, and robots rules joined to the same
   registry and route policy. The sitemap is authoritative, not a result of
   accidental crawler discovery.
+- The sitemap lists indexable pages only. `/blog/rss.xml` is deliberately not
+  one of them: listing it made Google crawl a feed that has nothing to index
+  and file it under "crawled – currently not indexed". It stays discoverable
+  through `DISCOVERY_LINKS` in every page head and through `llms.txt`.
+- A `<lastmod>` is emitted only where a date is provable — post records for
+  blog surfaces, the last commit touching a route's sources for everything
+  else (`scripts/route-lastmod.mjs`). Never the build day: the daily cron
+  rebuild turned that into a nightly claim that every page had changed, which
+  is the fastest way to make a crawler discount the sitemap entirely. When git
+  cannot answer, the entry ships with no `lastmod` rather than a guess, and
+  `deploy.yml` checks out full history so it usually can.
 - Preserve `index, follow` for intended public pages and `noindex` behavior
   for unknown-route recovery. Do not add analytics or tracking claims that are
   not implemented.
