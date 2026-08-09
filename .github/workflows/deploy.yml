@@ -40,6 +40,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          # Sitemap `lastmod` is the date of the last commit touching a route's
+          # sources (scripts/route-lastmod.mjs). The default depth-1 checkout
+          # holds no such commit for almost every path, so the sitemap would
+          # ship with no dates at all. Full history is cheap for this repo.
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
