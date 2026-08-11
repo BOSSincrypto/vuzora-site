@@ -23,6 +23,12 @@ The following are **not deployed or simulated by this static repository**:
 - DNS-AID SVCB/HTTPS records or DNSSEC proofs.
 - True `Accept: text/markdown` content negotiation on extensionless routes.
 
+`edge/markdown-negotiation.mjs` is the reviewed source for the third item.
+It is a Cloudflare Snippet/Worker module held in this repository and covered
+by `scripts/markdown-negotiation.test.mjs`. GitHub Pages cannot execute it,
+so it changes nothing in production until an operator installs it under
+section 3.1.
+
 The checked-in Markdown files (`/auth.md`, `/unis.md`, and the published
 Agent Skills file) are explicit static resources only. They do not provide
 header negotiation. The static API catalog declares that no HTTP API exists.
@@ -238,11 +244,44 @@ References:
 ### 3.1 Configure an edge implementation
 
 GitHub Pages serves the committed static files and cannot select a
-representation from `Accept` on its own. Use Cloudflare Markdown for Agents
-or a reviewed Worker only after confirming that the selected product is
-enabled for the zone.
+representation from `Accept` on its own. Two implementations are available.
+Deploy one, not both.
 
-Configure the edge behavior as follows:
+**Option A — the repository's Snippet (recommended).** Every public page
+already ships a curated Markdown mirror at the path agents probe, so the
+edge only has to route: `/unis/msu/` answers with `/unis/msu.md`, which is
+generated from the same content the HTML renders and validated by the
+release. Deploy `edge/markdown-negotiation.mjs` unchanged:
+
+1. In the Cloudflare dashboard for the `vuzora.ru` zone, open **Rules →
+   Snippets** and create a Snippet named `markdown-negotiation`.
+2. Paste the contents of `edge/markdown-negotiation.mjs` as the code.
+3. Set the rule expression to the production host, all paths:
+   `http.host eq "vuzora.ru"`.
+4. Deploy, then run the verification in section 3.2 before announcing it.
+
+Equivalently, `npx wrangler deploy edge/markdown-negotiation.mjs` publishes
+it as a Worker; add a route for `vuzora.ru/*` so it runs ahead of the origin.
+
+**Option B — Cloudflare Markdown for Agents.** Cloudflare converts the
+origin HTML at the edge instead. It needs no repository code but is a paid
+zone feature, and it converts the rendered page — navigation and footer
+included — rather than serving the curated mirror. Enable it in **AI Crawl
+Control**, or set the zone setting directly, and confirm the plan supports
+it first:
+
+```sh
+curl -fsS -X PATCH \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/content_converter" \
+  -H "Authorization: Bearer $CF_API_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"value":"on"}'
+```
+
+Keep the token out of shell history, this repository, and command logs.
+
+Either implementation must satisfy the following, and section 3.2 checks all
+of them:
 
 1. Keep the default request, including no `Accept` header or ordinary
    `Accept: text/html`, as the existing HTML representation.
@@ -255,9 +294,10 @@ Configure the edge behavior as follows:
 5. Return `Vary: Accept` and include `Accept` in the cache key so Markdown
    cannot be served to an HTML request.
 6. Add `x-markdown-tokens` only when the edge actually calculates the
-   response's token count. It is not a static-site claim.
+   response's token count. It is not a static-site claim, and Option A does
+   not emit it.
 7. Keep redirects, status codes, access policy, and ordinary navigation
-   unchanged.
+   unchanged. A route with no mirror must still answer with its HTML page.
 
 Do not create a catch-all extensionless `.md` route. The repository's
 explicit `/auth.md` and `/unis.md` files remain direct static fallbacks.
@@ -321,9 +361,21 @@ HTML route and explicit files only. It must not be reported as evidence of
 edge negotiation. Use the mission's port-3100 server and compare its
 `Accept: text/markdown` response with the normal HTML response.
 
-Reference:
+An external scanner reports the same capability. Treat it as a second
+opinion, not as the evidence — the curl checks above are the evidence:
+
+```sh
+curl -fsS -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  --data '{"url":"https://vuzora.ru"}' |
+  jq -e '.checks.contentAccessibility.markdownNegotiation.status == "pass"'
+```
+
+References:
 
 - https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/
+- https://developers.cloudflare.com/rules/snippets/
+- https://isitagentready.com/.well-known/agent-skills/markdown-negotiation/SKILL.md
 
 ## 4. Final negative checks and ownership record
 
