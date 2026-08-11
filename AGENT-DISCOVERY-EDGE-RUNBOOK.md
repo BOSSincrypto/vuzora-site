@@ -247,28 +247,39 @@ GitHub Pages serves the committed static files and cannot select a
 representation from `Accept` on its own. Two implementations are available.
 Deploy one, not both.
 
-**Option A — the repository's Snippet (recommended).** Every public page
+**Option A — the repository's Worker (recommended).** Every public page
 already ships a curated Markdown mirror at the path agents probe, so the
 edge only has to route: `/unis/msu/` answers with `/unis/msu.md`, which is
 generated from the same content the HTML renders and validated by the
-release. Deploy `edge/markdown-negotiation.mjs` unchanged:
+release. `edge/markdown-negotiation.mjs` is the code and `wrangler.toml` is
+its deployment, both held here and deployed by the zone operator:
 
-1. In the Cloudflare dashboard for the `vuzora.ru` zone, open **Rules →
-   Snippets** and create a Snippet named `markdown-negotiation`.
-2. Paste the contents of `edge/markdown-negotiation.mjs` as the code.
-3. Set the rule expression to the production host, all paths:
-   `http.host eq "vuzora.ru"`.
-4. Deploy, then run the verification in section 3.2 before announcing it.
+```sh
+npx --yes wrangler@4 login    # opens a browser; authorizes this machine only
+npx --yes wrangler@4 deploy   # publishes the Worker and its routes
+```
 
-Equivalently, `npx wrangler deploy edge/markdown-negotiation.mjs` publishes
-it as a Worker; add a route for `vuzora.ru/*` so it runs ahead of the origin.
+Then confirm the failure mode. In **Workers & Pages → the Worker → Settings
+→ Domains & Routes**, each route should be set to **Fail open**, so a Worker
+that cannot run — including a free plan past its 100,000 requests for the
+day — leaves the request to the origin and the site keeps serving HTML.
+
+The routes in `wrangler.toml` cover the public sections rather than
+`vuzora.ru/*`, so assets do not spend the daily request budget on a
+pass-through. A new top-level section needs a new route; the release test
+`scripts/markdown-negotiation.test.mjs` fails when a published page falls
+outside every pattern.
+
+Cloudflare Snippets run the same module from **Rules → Snippets** with the
+expression `http.host eq "vuzora.ru"`, and are the simpler path on a zone
+whose plan includes them. They are not available on the free plan.
 
 **Option B — Cloudflare Markdown for Agents.** Cloudflare converts the
 origin HTML at the edge instead. It needs no repository code but is a paid
-zone feature, and it converts the rendered page — navigation and footer
-included — rather than serving the curated mirror. Enable it in **AI Crawl
-Control**, or set the zone setting directly, and confirm the plan supports
-it first:
+zone feature (Pro or Business), and it converts the rendered page —
+navigation and footer included — rather than serving the curated mirror.
+Enable it in **AI Crawl Control**, or set the zone setting directly, and
+confirm the plan supports it first:
 
 ```sh
 curl -fsS -X PATCH \

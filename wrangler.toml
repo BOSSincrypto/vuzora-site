@@ -1,0 +1,44 @@
+# Deployment for `edge/markdown-negotiation.mjs`.
+#
+# Cloudflare Snippets are a paid feature; a Worker does the same job on the
+# free plan. `wrangler deploy` publishes this and nothing else — the site
+# itself is still the static GitHub Pages artifact, unchanged.
+#
+# The routes below cover the public pages and deliberately stop there. A
+# worker route on `vuzora.ru/*` would also run for every asset, icon, and feed
+# request and burn the free plan's 100,000 daily requests on responses it
+# would only pass through. `scripts/markdown-negotiation.test.mjs` checks that
+# every published mirror still falls under one of these patterns, so a new
+# top-level section cannot lose negotiation silently.
+#
+# `workers.dev` is off: this Worker is only reachable through the zone, never
+# as a second public origin serving the same content under another name.
+
+name = "vuzora-markdown-negotiation"
+main = "edge/markdown-negotiation.mjs"
+compatibility_date = "2026-08-11"
+workers_dev = false
+
+[[routes]]
+pattern = "vuzora.ru/"
+zone_name = "vuzora.ru"
+
+[[routes]]
+pattern = "vuzora.ru/pricing*"
+zone_name = "vuzora.ru"
+
+[[routes]]
+pattern = "vuzora.ru/unis*"
+zone_name = "vuzora.ru"
+
+[[routes]]
+pattern = "vuzora.ru/blog*"
+zone_name = "vuzora.ru"
+
+[[routes]]
+pattern = "vuzora.ru/changelog*"
+zone_name = "vuzora.ru"
+
+[[routes]]
+pattern = "vuzora.ru/legal*"
+zone_name = "vuzora.ru"
