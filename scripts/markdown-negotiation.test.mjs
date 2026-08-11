@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import negotiation, { mirrorPath, prefersMarkdown } from "../edge/markdown-negotiation.mjs";
 import { markdownMirrorPath } from "./markdown-artifacts.mjs";
@@ -63,6 +64,31 @@ test("the edge maps a page to the same mirror the build publishes", () => {
   assert.equal(mirrorPath("/llms.txt"), null);
   assert.equal(mirrorPath("/assets/app.js"), null);
   assert.equal(mirrorPath("/.well-known/api-catalog"), null);
+});
+
+test("every page the build publishes falls under a deployed worker route", () => {
+  // The worker only runs where `wrangler.toml` says it runs. Routes are kept
+  // to the public sections rather than `vuzora.ru/*` so assets do not spend
+  // the free plan's daily requests — which means a page outside every pattern
+  // would answer HTML to an agent with no failure anywhere else to notice.
+  const config = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
+  const patterns = [...config.matchAll(/^\s*pattern\s*=\s*"([^"]+)"/gm)].map((match) => match[1]);
+  assert.ok(patterns.length > 0, "wrangler.toml declares no routes");
+
+  const matches = (route) =>
+    patterns.some((pattern) =>
+      new RegExp(
+        `^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`,
+      ).test(`vuzora.ru${route}`),
+    );
+
+  for (const mirror of buildMarkdownMirrors(readContentSnapshot(process.cwd())))
+    assert.ok(matches(mirror.route), `no worker route covers ${mirror.route}`);
+
+  // A matcher that accepts everything would pass the loop above while proving
+  // nothing. A section that does not exist yet must not be covered.
+  assert.equal(matches("/faq/"), false);
+  assert.equal(matches("/assets/app.js"), false);
 });
 
 test("an agent asking for Markdown gets the mirror, typed and varied", async () => {
