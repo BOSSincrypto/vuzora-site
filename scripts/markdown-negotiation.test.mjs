@@ -1,0 +1,100 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import negotiation, { mirrorPath, prefersMarkdown } from "../edge/markdown-negotiation.mjs";
+import { markdownMirrorPath } from "./markdown-artifacts.mjs";
+import { buildMarkdownMirrors } from "./markdown-mirrors.mjs";
+import { readContentSnapshot } from "./content-snapshot.mjs";
+
+const ORIGIN = "https://vuzora.ru";
+
+/**
+ * Run the edge module against a fake origin.
+ *
+ * `files` maps a path to the Markdown body published there. A `.md` path with
+ * no entry answers `404`, the way GitHub Pages answers for a page that has no
+ * mirror; every other path answers as the HTML page.
+ */
+async function serve(path, { accept, method = "GET", files = {} } = {}) {
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(input instanceof Request ? input.url : input);
+    const body = files[url.pathname];
+    if (body !== undefined)
+      return new Response(body, { status: 200, headers: { "content-type": "text/markdown" } });
+    return new Response("<!doctype html><html></html>", {
+      status: url.pathname.endsWith(".md") ? 404 : 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
+  };
+  try {
+    const headers = accept ? { accept } : {};
+    return await negotiation.fetch(new Request(`${ORIGIN}${path}`, { method, headers }));
+  } finally {
+    globalThis.fetch = original;
+  }
+}
+
+test("only an explicitly named text/markdown wins the negotiation", () => {
+  assert.equal(prefersMarkdown("text/markdown"), true);
+  assert.equal(prefersMarkdown("text/markdown, text/html"), true);
+  assert.equal(prefersMarkdown("text/markdown;q=0.9, text/html;q=0.8"), true);
+  // A browser's default header names HTML and a wildcard, never Markdown.
+  assert.equal(
+    prefersMarkdown("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+    false,
+  );
+  assert.equal(prefersMarkdown("text/markdown;q=0, text/html;q=1"), false);
+  assert.equal(prefersMarkdown("text/markdown;q=0.2, text/html;q=0.9"), false);
+  assert.equal(prefersMarkdown("*/*"), false);
+  assert.equal(prefersMarkdown(null), false);
+});
+
+test("the edge maps a page to the same mirror the build publishes", () => {
+  const mirrors = buildMarkdownMirrors(readContentSnapshot(process.cwd()));
+  assert.ok(mirrors.length > 0);
+  for (const mirror of mirrors) {
+    assert.equal(mirrorPath(mirror.route), markdownMirrorPath(mirror.route), mirror.route);
+    assert.equal(mirrorPath(mirror.route), `/${mirror.path}`, mirror.route);
+  }
+  // Trailing slash is the canonical form, but an agent may drop it.
+  assert.equal(mirrorPath("/unis/msu"), "/unis/msu.md");
+  // Explicit resources and discovery namespaces have no page mirror.
+  assert.equal(mirrorPath("/unis.md"), null);
+  assert.equal(mirrorPath("/llms.txt"), null);
+  assert.equal(mirrorPath("/assets/app.js"), null);
+  assert.equal(mirrorPath("/.well-known/api-catalog"), null);
+});
+
+test("an agent asking for Markdown gets the mirror, typed and varied", async () => {
+  const response = await serve("/unis/msu/", {
+    accept: "text/markdown",
+    files: { "/unis/msu.md": "# Расписание МГУ\n" },
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "text/markdown; charset=utf-8");
+  assert.equal(response.headers.get("vary"), "Accept");
+  assert.equal(await response.text(), "# Расписание МГУ\n");
+});
+
+test("browsers and non-reads keep the HTML response untouched", async () => {
+  const files = { "/unis/msu.md": "# Расписание МГУ\n" };
+  for (const request of [
+    { accept: "text/html,application/xhtml+xml,*/*;q=0.8" },
+    { accept: undefined },
+    { accept: "text/markdown;q=0, text/html" },
+    { accept: "text/markdown", method: "POST" },
+  ]) {
+    const response = await serve("/unis/msu/", { files, ...request });
+    assert.match(response.headers.get("content-type"), /^text\/html\b/);
+    assert.equal(response.headers.get("vary"), null);
+  }
+});
+
+test("a route without a mirror falls back to its HTML page", async () => {
+  const response = await serve("/unis/msu/", { accept: "text/markdown" });
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type"), /^text\/html\b/);
+  assert.match(await response.text(), /<html/);
+});
