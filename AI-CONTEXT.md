@@ -198,18 +198,25 @@ fetch data, mutate state, expose credentials, or provide schedule rows.
 This is browser-local progressive enhancement. It is not a remote MCP server,
 MCP Server Card, HTTP API, authentication surface, or agent endpoint. The
 static Markdown files are explicit resources, not content negotiation. Do not
-invent protocol endpoints, OAuth discovery, response `Link` headers, DNS-AID
-records, or `Accept: text/markdown` behavior.
+invent protocol endpoints, OAuth discovery, DNS-AID records, or any relation
+whose target the release does not actually publish.
 
-One relation is carried in HTML rather than in a header: every route emits
-`<link rel="api-catalog" type="application/linkset+json">` pointing at
-`/.well-known/api-catalog` (relation registered by RFC 9727; web linking is
-format-agnostic, and GitHub Pages cannot emit response headers). The catalog
-itself states that Vuzora implements no HTTP API, so the link advertises the
-documented boundary, not an endpoint. `routeMetadataFailures` fails the release
-if that link is missing, duplicated, retyped, or points anywhere else. This is
-not permission to add a real `Link` response header, an API, or any other
-relation from an external readiness checklist.
+The `api-catalog` relation is carried in both places its audiences look. Every
+route emits `<link rel="api-catalog" type="application/linkset+json">` pointing
+at `/.well-known/api-catalog` (relation registered by RFC 9727; web linking is
+format-agnostic). `routeMetadataFailures` fails the release if that link is
+missing, duplicated, retyped, or points anywhere else. The response-header
+serialization lives at the edge, in `DISCOVERY_LINK_HEADERS` in
+`edge/markdown-negotiation.mjs`, because GitHub Pages cannot emit a header —
+there alongside `service-doc` for `/auth.md` and `describedby` for
+`/llms.txt`.
+
+Every one of those targets is a file this release publishes, and the catalog
+they point at states that Vuzora implements no HTTP API, so the headers
+advertise the documented boundary rather than an endpoint. `service-desc` is
+deliberately absent: no machine-readable service description exists. Adding a
+relation from an external readiness checklist without a real target is a
+fabricated capability, whatever the checklist scores.
 
 ## Production and Cloudflare boundary
 

@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
-import negotiation, { mirrorPath, prefersMarkdown } from "../edge/markdown-negotiation.mjs";
+import negotiation, {
+  DISCOVERY_LINK_HEADERS,
+  mirrorPath,
+  prefersMarkdown,
+} from "../edge/markdown-negotiation.mjs";
 import { markdownMirrorPath } from "./markdown-artifacts.mjs";
 import { buildMarkdownMirrors } from "./markdown-mirrors.mjs";
 import { readContentSnapshot } from "./content-snapshot.mjs";
@@ -114,6 +118,42 @@ test("browsers and non-reads keep the HTML response untouched", async () => {
     const response = await serve("/unis/msu/", { files, ...request });
     assert.match(response.headers.get("content-type"), /^text\/html\b/);
     assert.equal(response.headers.get("vary"), null);
+  }
+});
+
+test("every relation is registered and every target is published", () => {
+  // RFC 8288 serialization: an angle-bracketed URI reference, then a quoted
+  // `rel`. A relation outside this set, or a target the release does not
+  // publish, would advertise a capability that does not exist.
+  const registered = new Set(["api-catalog", "service-doc", "describedby"]);
+  assert.equal(DISCOVERY_LINK_HEADERS.length, registered.size);
+
+  for (const field of DISCOVERY_LINK_HEADERS) {
+    const match = /^<(\/[^>]*)>; rel="([a-z-]+)"$/.exec(field);
+    assert.ok(match, `not an RFC 8288 link field: ${field}`);
+    const [, target, relation] = match;
+    assert.ok(registered.delete(relation), `unexpected or repeated relation: ${relation}`);
+    assert.ok(
+      existsSync(new URL(`../public${target}`, import.meta.url)),
+      `no published file at ${target}`,
+    );
+  }
+  assert.equal(registered.size, 0);
+});
+
+test("both representations carry the discovery links", async () => {
+  const files = { "/index.md": "# Vuzora\n" };
+  for (const request of [
+    { accept: "text/markdown" },
+    { accept: "text/html,application/xhtml+xml,*/*;q=0.8" },
+    { accept: undefined },
+    { accept: "text/markdown", method: "HEAD" },
+  ]) {
+    const response = await serve("/", { files, ...request });
+    // A repeated field arrives comma-joined; either form is valid RFC 8288.
+    const link = response.headers.get("link");
+    for (const field of DISCOVERY_LINK_HEADERS)
+      assert.ok(link?.includes(field), `${JSON.stringify(request)} lost ${field}`);
   }
 });
 
