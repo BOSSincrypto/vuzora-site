@@ -88,7 +88,7 @@ export const Calculator = memo(function Calculator() {
               value={checks}
               onChange={(e) => setChecks(Number(e.target.value))}
               className="calc-slider mt-6 w-full accent-amber"
-              aria-valuetext={`${checks} проверок в день`}
+              aria-valuetext={`${checks} ${checksNoun(checks)} в день`}
             />
             <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
               <span>{CHECKS_MIN}</span>

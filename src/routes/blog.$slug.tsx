@@ -132,11 +132,13 @@ export const Route = createFileRoute("/blog/$slug")({
 
 function BlogPost() {
   const { post } = Route.useLoaderData();
+  // POSTS is newest-first, so the *older* neighbour sits at idx + 1.
+  // «Предыдущая» must point back in time, not back in array order.
   const { prev, next } = useMemo(() => {
     const idx = POSTS.findIndex((p) => p.slug === post.slug);
     return {
-      prev: idx > 0 ? POSTS[idx - 1] : null,
-      next: idx >= 0 && idx < POSTS.length - 1 ? POSTS[idx + 1] : null,
+      prev: idx >= 0 && idx < POSTS.length - 1 ? POSTS[idx + 1] : null,
+      next: idx > 0 ? POSTS[idx - 1] : null,
     };
   }, [post.slug]);
   const { ref, progress } = useReadProgress<HTMLElement>();
@@ -192,7 +194,7 @@ function BlogPost() {
               Утро без поиска расписания
             </div>
             <p className="mt-2 text-sm text-white/65">
-              Vuzora сама присылает пары в Telegram в удобное тебе утро. Бесплатно до 31 октября
+              Vuzora сам присылает пары в Telegram в удобное тебе утро. Бесплатно до 31 октября
               2026.
             </p>
             <div className="mt-4">
