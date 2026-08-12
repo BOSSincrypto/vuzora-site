@@ -263,7 +263,7 @@ function UniversityDetailPage() {
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-white/65">
                   Сама таблица занятий публикуется университетом на {scheduleHost}. Vuzora её не
-                  дублирует и не заменяет — бот только присылает напоминание утром.
+                  дублирует и не заменяет — бот только присылает утреннее сообщение в Telegram.
                 </p>
                 <a
                   href={university.scheduleUrl}

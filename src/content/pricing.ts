@@ -13,7 +13,7 @@ export type Plan = {
 };
 
 export const PLANS: readonly Plan[] = [
-  { id: "1m", period: "1 месяц", price: 49, hint: "Попробовать вдолгую" },
+  { id: "1m", period: "1 месяц", price: 49, hint: "Просто попробовать" },
   { id: "3m", period: "3 месяца", price: 79, hint: "Семестр без забот" },
   { id: "6m", period: "6 месяцев", price: 149, hint: "Полугодие" },
   { id: "12m", period: "12 месяцев", price: 249, hint: "Учебный год" },
