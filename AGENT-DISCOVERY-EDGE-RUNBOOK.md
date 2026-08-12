@@ -20,15 +20,20 @@ Before changing production:
 The following are **not deployed or simulated by this static repository**:
 
 - HTTP `Link` response headers.
+- Baseline security response headers (`Content-Security-Policy`,
+  `X-Frame-Options`, and the rest of `SECURITY_HEADERS`).
 - DNS-AID SVCB/HTTPS records or DNSSEC proofs.
 - True `Accept: text/markdown` content negotiation on extensionless routes.
 
-`edge/markdown-negotiation.mjs` is the reviewed source for the first and
-third items. It is a Cloudflare Snippet/Worker module held in this repository
-and covered by `scripts/markdown-negotiation.test.mjs`. GitHub Pages cannot
-execute it, so it changes nothing in production until an operator installs it
-under section 3.1 — one deployment carries both capabilities, and the `Link`
-fields reach exactly the routes listed in `wrangler.toml`.
+`edge/markdown-negotiation.mjs` is the reviewed source for the first, second,
+and fourth items. It is a Cloudflare Snippet/Worker module held in this
+repository and covered by `scripts/markdown-negotiation.test.mjs`. GitHub
+Pages cannot execute it, so it changes nothing in production until an
+operator installs it under section 3.1 — one deployment carries all three
+capabilities, and the `Link` and security fields reach exactly the routes
+listed in `wrangler.toml`. Until then, the deployed origin has no CSP and no
+`X-Frame-Options` — `src/start.ts`'s `SECURITY_HEADERS` middleware only ever
+reaches `vite dev`/`vite preview`, never the GitHub Pages artifact.
 
 The checked-in Markdown files (`/auth.md`, `/unis.md`, and the published
 Agent Skills file) are explicit static resources only. They do not provide

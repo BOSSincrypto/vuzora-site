@@ -1,6 +1,7 @@
 /**
- * The two response-header jobs GitHub Pages cannot do: `Accept: text/markdown`
- * content negotiation, and RFC 8288 `Link` headers for agent discovery.
+ * The response-header jobs GitHub Pages cannot do: `Accept: text/markdown`
+ * content negotiation, RFC 8288 `Link` headers for agent discovery, and
+ * baseline security headers on every response.
  *
  * GitHub Pages serves committed files and cannot select a representation from
  * `Accept`. The release already publishes a Markdown mirror of every public
@@ -10,9 +11,13 @@
  * the untouched HTML response.
  *
  * It also cannot emit a response header at all, which is why the discovery
- * relations below travel here rather than in the origin artifact. Every
- * response this edge returns carries them; the HTML `<link rel="api-catalog">`
- * in `src/content/seo.ts` remains the serialization a browser can see.
+ * relations and the security headers below travel here rather than in the
+ * origin artifact. Every response this edge returns carries them; the HTML
+ * `<link rel="api-catalog">` in `src/content/seo.ts` remains the
+ * serialization a browser can see, and `SECURITY_HEADERS` in `src/start.ts`
+ * remains the serialization `vite dev`/`vite preview` can see — that
+ * middleware never reaches the deployed GitHub Pages artifact, so this
+ * Worker is the only place that actually headers production.
  *
  * This file is a Cloudflare Snippet / Worker module. It is **not deployed by
  * this repository** — GitHub Pages cannot run it. Installing it is the
@@ -65,6 +70,49 @@ function withDiscoveryLinks(response) {
   const linked = new Response(response.body, response);
   for (const value of DISCOVERY_LINK_HEADERS) linked.headers.append("link", value);
   return linked;
+}
+
+/**
+ * Baseline security response headers, mirroring `SECURITY_HEADERS` in
+ * `src/start.ts`. That middleware only ever reaches `vite dev`/`vite
+ * preview`, never the deployed GitHub Pages artifact — so without this,
+ * production ships with no clickjacking or content-injection defense at all.
+ *
+ * `script-src`/`style-src` allow `'unsafe-inline'` for the same reason
+ * `src/start.ts` does: the inline bootstrap `<script>` in `src/routes/
+ * __root.tsx` and Tailwind v4's inlined styles both need it.
+ */
+export const SECURITY_HEADERS = {
+  "x-frame-options": "DENY",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "geolocation=(), microphone=(), camera=(), payment=()",
+  "content-security-policy": [
+    "default-src 'self'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline'",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self' mailto:",
+  ].join("; "),
+};
+
+/**
+ * The same response, plus the baseline security headers — set only where the
+ * origin has not already set one, so an origin-level change is never
+ * silently overridden.
+ *
+ * @param {Response} response
+ */
+function withSecurityHeaders(response) {
+  const secured = new Response(response.body, response);
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!secured.headers.has(name)) secured.headers.set(name, value);
+  }
+  return secured;
 }
 
 /**
@@ -127,7 +175,7 @@ export default {
    * @param {Request} request
    */
   async fetch(request) {
-    return withDiscoveryLinks(await represent(request));
+    return withSecurityHeaders(withDiscoveryLinks(await represent(request)));
   },
 };
 

@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import negotiation, {
   DISCOVERY_LINK_HEADERS,
+  SECURITY_HEADERS,
   mirrorPath,
   prefersMarkdown,
 } from "../edge/markdown-negotiation.mjs";
@@ -154,6 +155,33 @@ test("both representations carry the discovery links", async () => {
     const link = response.headers.get("link");
     for (const field of DISCOVERY_LINK_HEADERS)
       assert.ok(link?.includes(field), `${JSON.stringify(request)} lost ${field}`);
+  }
+});
+
+test("every representation carries the baseline security headers", async () => {
+  const files = { "/index.md": "# Vuzora\n" };
+  for (const request of [
+    { accept: "text/markdown" },
+    { accept: "text/html,application/xhtml+xml,*/*;q=0.8" },
+  ]) {
+    const response = await serve("/", { files, ...request });
+    for (const [name, value] of Object.entries(SECURITY_HEADERS))
+      assert.equal(response.headers.get(name), value, name);
+  }
+});
+
+test("a security header the origin already set is left alone", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response("<!doctype html><html></html>", {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8", "x-frame-options": "SAMEORIGIN" },
+    });
+  try {
+    const response = await negotiation.fetch(new Request(`${ORIGIN}/`));
+    assert.equal(response.headers.get("x-frame-options"), "SAMEORIGIN");
+  } finally {
+    globalThis.fetch = original;
   }
 });
 
