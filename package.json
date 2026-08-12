@@ -19,6 +19,7 @@
     "generate:llms": "node scripts/generate-llms.mjs",
     "generate:rss": "node scripts/generate-rss.mjs",
     "generate:agent-skills": "node scripts/generate-agent-skills.mjs",
+    "generate:agent-card": "node scripts/generate-agent-card.mjs",
     "generate:icons": "node scripts/generate-icons.mjs",
     "test:browser:webmcp": "node scripts/webmcp-browser-regression.mjs",
     "validate:release": "node scripts/validate-release.mjs",

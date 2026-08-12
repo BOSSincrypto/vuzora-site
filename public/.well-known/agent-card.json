@@ -1,0 +1,71 @@
+{
+  "name": "Vuzora Discovery Agent",
+  "description": "Read-only agent over Vuzora's published catalogue. It reports which Russian universities have a published Vuzora page and returns the Markdown mirror of any public page. It does not deliver timetables, and Vuzora is not an official university service.",
+  "supportedInterfaces": [
+    {
+      "url": "https://vuzora.ru/a2a/v1",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "provider": {
+    "organization": "Vuzora",
+    "url": "https://vuzora.ru/"
+  },
+  "iconUrl": "https://vuzora.ru/icon-192.png",
+  "version": "1.0.0",
+  "documentationUrl": "https://vuzora.ru/llms.txt",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "extendedAgentCard": false
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/markdown",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "university-lookup",
+      "name": "University coverage lookup",
+      "description": "Given a university name, abbreviation, or slug, answers whether Vuzora publishes a page for it and returns that page as Markdown. Answers are read from the published catalogue and never contain class times.",
+      "tags": [
+        "universities",
+        "catalogue",
+        "discovery",
+        "russian"
+      ],
+      "examples": [
+        "МГУ",
+        "msu",
+        "is HSE covered?"
+      ],
+      "outputModes": [
+        "text/markdown",
+        "text/plain"
+      ]
+    },
+    {
+      "id": "page-markdown",
+      "name": "Published page as Markdown",
+      "description": "Given the path of a public Vuzora page, returns the curated Markdown mirror the release publishes for it.",
+      "tags": [
+        "markdown",
+        "documentation",
+        "discovery"
+      ],
+      "examples": [
+        "/unis/msu/",
+        "/pricing/",
+        "/legal/privacy/"
+      ],
+      "outputModes": [
+        "text/markdown",
+        "text/plain"
+      ]
+    }
+  ]
+}
