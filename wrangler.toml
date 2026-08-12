@@ -1,4 +1,5 @@
-# Deployment for `edge/markdown-negotiation.mjs`.
+# Deployment for `edge/markdown-negotiation.mjs`: Markdown negotiation and the
+# RFC 8288 discovery `Link` headers, neither of which GitHub Pages can emit.
 #
 # Cloudflare Snippets are a paid feature; a Worker does the same job on the
 # free plan. `wrangler deploy` publishes this and nothing else — the site

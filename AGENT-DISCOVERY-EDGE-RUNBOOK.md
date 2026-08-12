@@ -23,11 +23,12 @@ The following are **not deployed or simulated by this static repository**:
 - DNS-AID SVCB/HTTPS records or DNSSEC proofs.
 - True `Accept: text/markdown` content negotiation on extensionless routes.
 
-`edge/markdown-negotiation.mjs` is the reviewed source for the third item.
-It is a Cloudflare Snippet/Worker module held in this repository and covered
-by `scripts/markdown-negotiation.test.mjs`. GitHub Pages cannot execute it,
-so it changes nothing in production until an operator installs it under
-section 3.1.
+`edge/markdown-negotiation.mjs` is the reviewed source for the first and
+third items. It is a Cloudflare Snippet/Worker module held in this repository
+and covered by `scripts/markdown-negotiation.test.mjs`. GitHub Pages cannot
+execute it, so it changes nothing in production until an operator installs it
+under section 3.1 — one deployment carries both capabilities, and the `Link`
+fields reach exactly the routes listed in `wrangler.toml`.
 
 The checked-in Markdown files (`/auth.md`, `/unis.md`, and the published
 Agent Skills file) are explicit static resources only. They do not provide
@@ -56,13 +57,10 @@ fictional API.
 
 ### 1.2 Configure the edge rule
 
-In Cloudflare, use an HTTP response header Transform Rule or a Worker owned
-by the production operator:
-
-1. Match only the intended host and response paths, starting with `/`.
-2. Preserve the origin status, body, content type, and existing headers.
-3. Append the following only after each target has been verified as public
-   and intentional:
+`edge/markdown-negotiation.mjs` appends these fields to every response it
+returns, so deploying that Worker under section 3.1 covers this section too —
+there is nothing separate to configure, and `DISCOVERY_LINK_HEADERS` in that
+module is the single place the fields are written:
 
 ```http
 Link: </.well-known/api-catalog>; rel="api-catalog"
@@ -70,9 +68,25 @@ Link: </auth.md>; rel="service-doc"
 Link: </llms.txt>; rel="describedby"
 ```
 
+`scripts/markdown-negotiation.test.mjs` fails if a relation outside the
+registered set appears or if a target stops being published, but a passing
+test only proves the file exists — verify the served identity under 1.3.
+
+An HTTP response header Transform Rule is the alternative when the Worker is
+not deployed. Deploy one, not both, or the fields arrive twice. A rule must:
+
+1. Match only the intended host and response paths, starting with `/`.
+2. Preserve the origin status, body, content type, and existing headers.
+3. Append the fields above only after each target has been verified as public
+   and intentional.
+
 Multiple `Link` fields are valid. A comma-separated field is also valid, but
 each target and relation must retain its own parameters. Use quoted relation
 parameters and angle brackets around URI references as shown.
+
+Note that the Worker's routes stop at the public sections, so the fields do
+not appear on assets or on the discovery targets themselves. The homepage,
+which is what an external readiness scanner reads, is covered.
 
 ### 1.3 Verify after deployment
 
@@ -98,8 +112,8 @@ Confirm manually that each response is `200`, has the expected media type,
 and contains the expected identity. A successful header grep alone is not
 proof that the targets are valid.
 
-Before edge deployment, the repository-controlled negative check should show
-that no `Link` header is being faked by the static origin:
+Until the edge is deployed, this check must find nothing — a `Link` header
+before deployment means the static origin is faking one:
 
 ```sh
 if curl -fsSL -D - -o /dev/null https://vuzora.ru/ |
@@ -107,6 +121,20 @@ if curl -fsSL -D - -o /dev/null https://vuzora.ru/ |
   echo 'Unexpected static Link header; investigate before proceeding'
   exit 1
 fi
+```
+
+After deployment it is expected to find the three fields and nothing else.
+The static artifact still emits no header of its own; a local build served on
+the mission's port-3100 server is where that stays checkable.
+
+An external scanner reports the same capability. Treat it as a second
+opinion, not as the evidence:
+
+```sh
+curl -fsS -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  --data '{"url":"https://vuzora.ru"}' |
+  jq -e '.checks.discoverability.linkHeaders.status == "pass"'
 ```
 
 References:
