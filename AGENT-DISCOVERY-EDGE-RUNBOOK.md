@@ -460,7 +460,29 @@ or a target file the release does not publish.
 Do not add a skill to the card before the endpoint implements it. The card
 and `edge/a2a-agent.mjs` are pinned together by `scripts/agent-card.test.mjs`.
 
-### 4.3 Verify after deployment
+### 4.3 Rate-limit the endpoint before it is public
+
+`/a2a/v1` takes no authentication, and one Worker script answers it *and* every
+public page. Each `SendMessage` fans out to up to two same-zone subrequests, so
+a scripted loop spends roughly three times its own request count against the
+free plan's 100,000 daily budget. Exhausting it degrades the home page,
+pricing, university, blog, and changelog routes — not just the agent interface.
+
+The code cannot fix this: a counter needs KV or a Durable Object, and neither
+is on the free plan. It is a zone-level rule, so it is an operator step:
+
+1. Cloudflare dashboard → **Security → WAF → Rate limiting rules**.
+2. Match `http.request.uri.path starts_with "/a2a/"`.
+3. Something around 60 requests per minute per IP is far above what the two
+   skills can legitimately need, and far below anything that threatens the
+   daily budget.
+4. Action **Block**, and confirm the counter shows traffic after the checks
+   below.
+
+Bot Fight Mode is a reasonable second layer, not a substitute — it does not
+bound a well-behaved client that simply asks too often.
+
+### 4.4 Verify after deployment
 
 These commands are evidence only once the Worker is live:
 

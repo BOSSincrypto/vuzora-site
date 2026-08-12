@@ -57,6 +57,16 @@ export function NavBar() {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  // Pending `section-flash` cleanup, so a second click supersedes the first
+  // and unmounting cancels it instead of firing into a detached node.
+  const flashTimer = useRef(0);
+
+  useEffect(
+    () => () => {
+      if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    },
+    [],
+  );
   const closeMenu = useCallback(() => setOpen(false), []);
   const toggleMenu = useCallback(() => setOpen((v) => !v), []);
   // Closing from inside the panel hides the element that holds focus — return
@@ -101,7 +111,13 @@ export function NavBar() {
           target.classList.remove("section-flash");
           void target.offsetWidth;
           target.classList.add("section-flash");
-          window.setTimeout(() => target.classList.remove("section-flash"), 1300);
+          // One flash at a time: a rapid second nav click would otherwise
+          // leave the first timer running to strip the class mid-animation.
+          if (flashTimer.current) window.clearTimeout(flashTimer.current);
+          flashTimer.current = window.setTimeout(() => {
+            target.classList.remove("section-flash");
+            flashTimer.current = 0;
+          }, 1300);
         }
       }
       closeMenu();

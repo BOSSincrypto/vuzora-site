@@ -170,9 +170,23 @@ test("a path query returns the mirror and cannot escape the origin", async () =>
   const ok = await (await call(send("/pricing/"), { files })).json();
   assert.equal(ok.result.message.parts[0].text, "# Тарифы\n");
 
-  // `mirrorPath` rejects traversal, so no subrequest can leave the origin.
-  const escape = await (await call(send("/../../etc/passwd"), { files })).json();
-  assert.equal(escape.error.code, ERROR.invalidParams);
+  // Every shape that makes `new URL(path, origin)` resolve somewhere other
+  // than this origin. Traversal was the only one this test used to cover, and
+  // an authority (`//host`) is the one that actually escaped: it is not a
+  // path at all, so a `..` check never sees it.
+  for (const escape of [
+    "/../../etc/passwd",
+    "//attacker.example/payload",
+    "///attacker.example/payload",
+    "////attacker.example/payload",
+    "/\\attacker.example/payload",
+    "/\\\\attacker.example/payload",
+    "//user:pw@attacker.example/payload",
+    "//attacker.example/exfil?q=1",
+  ]) {
+    const rejected = await (await call(send(escape), { files })).json();
+    assert.equal(rejected.error?.code, ERROR.invalidParams, `${escape} was not rejected`);
+  }
 });
 
 test("unimplemented operations say so precisely", async () => {

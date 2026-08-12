@@ -148,7 +148,12 @@ function BlogPost() {
     <div className="grain min-h-screen bg-ink text-white">
       <ReadProgress progress={progress} />
       <NavBar />
-      <main ref={ref} className="px-6 pt-28 pb-20 md:px-12 md:pt-32 md:pb-28">
+      {/* `key` remounts the article — and with it `useReadProgress` — when the
+          reader moves between posts. Without it TanStack Router keeps this
+          element across a `/blog/$slug` → `/blog/$slug` navigation, and the
+          progress bar carries the previous post's percentage into the new one
+          until some scroll event happens to recompute it. */}
+      <main key={post.slug} ref={ref} className="px-6 pt-28 pb-20 md:px-12 md:pt-32 md:pb-28">
         <article className="mx-auto max-w-2xl">
           <Kicker tone="amber">Блог</Kicker>
           <div className="mt-3 flex items-baseline justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40">

@@ -136,6 +136,7 @@ export const Compare = memo(function Compare() {
 function Th({ children, highlight = false }: { children: React.ReactNode; highlight?: boolean }) {
   return (
     <th
+      scope="col"
       className={`px-5 py-4 font-mono text-[10px] uppercase tracking-[0.2em] ${
         highlight ? "text-amber" : "text-white/45"
       }`}
