@@ -1,5 +1,7 @@
-# Deployment for `edge/markdown-negotiation.mjs`: Markdown negotiation and the
-# RFC 8288 discovery `Link` headers, neither of which GitHub Pages can emit.
+# Deployment for `edge/worker.mjs`: Markdown negotiation, the RFC 8288
+# discovery `Link` headers, and the A2A JSON-RPC interface — none of which
+# GitHub Pages can serve, because the first two are response headers and the
+# third is a POST.
 #
 # Cloudflare Snippets are a paid feature; a Worker does the same job on the
 # free plan. `wrangler deploy` publishes this and nothing else — the site
@@ -16,7 +18,7 @@
 # as a second public origin serving the same content under another name.
 
 name = "vuzora-markdown-negotiation"
-main = "edge/markdown-negotiation.mjs"
+main = "edge/worker.mjs"
 compatibility_date = "2026-08-11"
 workers_dev = false
 
@@ -42,4 +44,12 @@ zone_name = "vuzora.ru"
 
 [[routes]]
 pattern = "vuzora.ru/legal*"
+zone_name = "vuzora.ru"
+
+# The A2A interface named by `/.well-known/agent-card.json`. The origin has
+# nothing at this path, so the route is the endpoint: without it the card
+# advertises a URL that answers 404. `scripts/agent-card.test.mjs` checks that
+# the URL in the card still falls under this pattern.
+[[routes]]
+pattern = "vuzora.ru/a2a/*"
 zone_name = "vuzora.ru"

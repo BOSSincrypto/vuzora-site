@@ -416,7 +416,83 @@ References:
 - https://developers.cloudflare.com/rules/snippets/
 - https://isitagentready.com/.well-known/agent-skills/markdown-negotiation/SKILL.md
 
-## 4. Final negative checks and ownership record
+## 4. A2A Agent Card and the JSON-RPC interface
+
+Unlike every other artifact in this runbook, the Agent Card at
+`/.well-known/agent-card.json` describes an *agent*, not a document. Its
+`supportedInterfaces[0].url` is `https://vuzora.ru/a2a/v1`, and the origin has
+nothing at that path: GitHub Pages serves committed files and cannot answer a
+POST. The endpoint is `edge/a2a-agent.mjs`, reached through `edge/worker.mjs`
+on the `vuzora.ru/a2a/*` route in `wrangler.toml`.
+
+### 4.1 Deployment order is not optional
+
+The card is a static artifact and ships with the GitHub Pages release; the
+endpoint ships with `wrangler deploy`. Publishing the card first advertises a
+URL that answers `404`, which is exactly the fabricated capability section 0
+forbids. Deploy the Worker **before** merging the card to `main`:
+
+```sh
+bun run test
+npx --yes wrangler@latest deploy
+```
+
+`wrangler deploy` publishes `edge/worker.mjs` and its imports, and nothing
+else. The site remains the static GitHub Pages artifact.
+
+### 4.2 What the endpoint is allowed to be
+
+The endpoint implements `SendMessage` and nothing else. It creates no task,
+holds no state, requires no authentication, and answers
+`UnsupportedOperationError` for every other operation the specification
+defines. Every reply is read back out of an artifact the release already
+publishes — `/unis.md` and the Markdown mirrors — so the agent cannot say
+anything the site does not already say in public. `scripts/agent-card.mjs`
+fails the release if the card claims streaming, push notifications, an
+extended card, a security scheme, an interface other than the deployed one,
+or a target file the release does not publish.
+
+Do not add a skill to the card before the endpoint implements it. The card
+and `edge/a2a-agent.mjs` are pinned together by `scripts/agent-card.test.mjs`.
+
+### 4.3 Verify after deployment
+
+These commands are evidence only once the Worker is live:
+
+```sh
+set -eu
+curl -fsS https://vuzora.ru/.well-known/agent-card.json |
+  jq -e '.supportedInterfaces[0].protocolBinding == "JSONRPC"'
+
+curl -fsS -X POST https://vuzora.ru/a2a/v1 \
+  -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{"message":{"messageId":"probe","role":"ROLE_USER","parts":[{"text":"МГУ"}]}}}' |
+  jq -e '.result.message.role == "ROLE_AGENT"'
+
+# Operations the card declares unsupported must fail as unsupported, not 404.
+curl -fsS -X POST https://vuzora.ru/a2a/v1 \
+  -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","id":2,"method":"SendStreamingMessage","params":{}}' |
+  jq -e '.error.code == -32004'
+```
+
+An external scanner reports the same capability. Treat it as a second
+opinion, not as the evidence:
+
+```sh
+curl -fsS -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  --data '{"url":"https://vuzora.ru"}' |
+  jq -e '.checks.discovery.a2aAgentCard.status == "pass"'
+```
+
+References:
+
+- https://a2a-protocol.org/latest/specification/
+- https://a2a-protocol.org/latest/topics/agent-discovery/
+- https://www.rfc-editor.org/rfc/rfc8615
+
+## 5. Final negative checks and ownership record
 
 Record the date, zone, edge product or Worker version, DNS change ID, and
 the exact commands above in the operator's deployment system. Do not record

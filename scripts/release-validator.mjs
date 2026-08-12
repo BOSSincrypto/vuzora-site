@@ -19,6 +19,7 @@ import { assertRssJoin, buildRssFeed, RSS_PATH } from "./rss-feed.mjs";
 import { assertBlogIndexJoin, assertEditorialGraph } from "./editorial-joins.mjs";
 import { BLOG_INDEX_ROUTE, assertBlogMetadataConsistency } from "./blog-metadata.mjs";
 import { assertAgentSkillsRelease } from "./agent-skills.mjs";
+import { assertAgentCardRelease } from "./agent-card.mjs";
 import { assertApiCatalogRelease } from "./api-catalog.mjs";
 import { assertDiscoveryBoundaryRelease } from "./discovery-boundaries.mjs";
 import {
@@ -1030,6 +1031,11 @@ export async function validateRelease({ root = process.cwd(), dist = join(root, 
       await assertAgentSkillsRelease({ root, dist });
     } catch (error) {
       fail(`Agent Skills: ${error.message}`);
+    }
+    try {
+      await assertAgentCardRelease({ root, dist });
+    } catch (error) {
+      fail(`Agent Card: ${error.message}`);
     }
     try {
       await assertApiCatalogRelease({ root, dist });
