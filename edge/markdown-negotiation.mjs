@@ -83,6 +83,10 @@ function withDiscoveryLinks(response) {
  * __root.tsx` and Tailwind v4's inlined styles both need it.
  */
 export const SECURITY_HEADERS = {
+  // Without this, the first plaintext request to `http://vuzora.ru/...` — a
+  // typed URL, an old link, a QR code — is strippable by an on-path attacker,
+  // because the browser has never been told this origin is HTTPS-only.
+  "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
   "x-frame-options": "DENY",
   "x-content-type-options": "nosniff",
   "referrer-policy": "strict-origin-when-cross-origin",
@@ -164,10 +168,37 @@ export function prefersMarkdown(accept) {
  * @param {string} pathname
  */
 export function mirrorPath(pathname) {
-  if (!pathname.startsWith("/") || pathname.includes("..")) return null;
+  if (typeof pathname !== "string" || !pathname.startsWith("/")) return null;
+  // A leading `//` or `/\` is an *authority*, not a path: `new URL("//host/x",
+  // origin)` resolves to `https://host/x`. Both callers resolve this return
+  // value against an origin and `edge/a2a-agent.mjs` passes a raw client
+  // string, so rejecting the authority forms here is what keeps a subrequest
+  // from leaving the origin. WHATWG reads `\` as `/` in a special scheme.
+  if (pathname.includes("\\")) return null;
+  if (/^\/{2,}/.test(pathname)) return null;
+  if (pathname.includes("..")) return null;
   if (PASSTHROUGH_RE.test(pathname)) return null;
   if (pathname === "/") return "/index.md";
   return `${pathname.replace(/\/+$/, "")}.md`;
+}
+
+/**
+ * The mirror URL for a page path, or `null` when it would leave the origin.
+ *
+ * `mirrorPath` filters strings; this resolves one and asks the URL parser
+ * whether the answer is still this origin. The parser is the authority on what
+ * a string means, so a form the filter did not anticipate is caught here
+ * instead of becoming a subrequest to somebody else's server.
+ *
+ * @param {string} pathname
+ * @param {string} origin
+ * @returns {URL | null}
+ */
+export function mirrorUrl(pathname, origin) {
+  const path = mirrorPath(pathname);
+  if (!path) return null;
+  const target = new URL(path, origin);
+  return target.origin === new URL(origin).origin ? target : null;
 }
 
 export default {
@@ -190,20 +221,30 @@ async function represent(request) {
   if (!prefersMarkdown(request.headers.get("accept"))) return fetch(request);
 
   const url = new URL(request.url);
-  const path = mirrorPath(url.pathname);
-  if (!path) return fetch(request);
-
   // Query strings do not select content on a static site; dropping them
   // keeps every agent on one cache entry per mirror.
-  const mirror = new URL(path, url.origin);
+  const mirror = mirrorUrl(url.pathname, url.origin);
+  if (!mirror) return fetch(request);
+
   const response = await fetch(new Request(mirror, { method: request.method }));
 
   // No mirror (a 404, a redirect, an origin error) means this route has no
   // Markdown representation. Serve the page the browser would have got.
   if (response.status !== 200) return fetch(request);
 
-  const headers = new Headers(response.headers);
-  headers.set("content-type", MARKDOWN_CONTENT_TYPE);
-  headers.set("vary", "Accept");
+  // Built from scratch, not copied from the subrequest. Forwarding the
+  // origin's header set would let anything the mirror fetch reaches put
+  // `set-cookie`, a weaker `content-security-policy`, or its own caching
+  // directives on a response the browser attributes to this origin.
+  const headers = new Headers({
+    "content-type": MARKDOWN_CONTENT_TYPE,
+    // `Vary: Accept` only separates the HTML and Markdown representations in a
+    // shared cache that keys on `Accept`, which Cloudflare does not do by
+    // default. Until the zone's cache rule says otherwise, keeping the
+    // negotiated response out of shared caches is what stops one agent's
+    // Markdown request from being replayed to every later browser visitor.
+    "cache-control": "private, no-store",
+    vary: "Accept",
+  });
   return new Response(response.body, { status: 200, headers });
 }

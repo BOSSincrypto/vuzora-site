@@ -24,7 +24,7 @@
  * @module edge/a2a-agent
  */
 
-import { mirrorPath } from "./markdown-negotiation.mjs";
+import { mirrorUrl } from "./markdown-negotiation.mjs";
 
 /** Path the Agent Card names as the JSON-RPC interface. */
 export const A2A_PATH = "/a2a/v1";
@@ -188,17 +188,20 @@ class RpcError extends Error {
 /**
  * The Markdown mirror for a site path the client asked about.
  *
- * `mirrorPath` is the same guard the negotiation edge uses, so a traversal
- * attempt or a non-page path is rejected here for the same reason and this
- * endpoint can only ever read a published page of this origin.
+ * `query` is a raw client string, so this is the one place in either edge
+ * module where an unfiltered value reaches a URL. `mirrorUrl` both applies the
+ * negotiation edge's path guard and re-checks the resolved origin, so a
+ * traversal attempt, an authority (`//host`, `/\host`), or a non-page path is
+ * rejected and this endpoint can only ever read a published page of this
+ * origin.
  *
  * @param {string} query
  * @param {string} origin
  */
 async function respondWithMirror(query, origin) {
-  const path = mirrorPath(query);
-  if (!path) throw new RpcError(ERROR.invalidParams, `No Vuzora page corresponds to ${query}`);
-  const response = await fetch(new URL(path, origin));
+  const target = mirrorUrl(query, origin);
+  if (!target) throw new RpcError(ERROR.invalidParams, `No Vuzora page corresponds to ${query}`);
+  const response = await fetch(target);
   if (response.status !== 200)
     return agentMessage(`Vuzora publishes no Markdown mirror for ${query}.`, "text/plain");
   return agentMessage(await response.text(), "text/markdown");
@@ -256,6 +259,37 @@ export async function sendMessage(params, origin) {
   return { message: { ...reply, ...(contextId ? { contextId } : {}) } };
 }
 
+/**
+ * The request body as text, or `null` once it passes `limit` bytes.
+ *
+ * `request.text()` buffers whatever the client sends before anything can be
+ * measured, which is the spend `MAX_REQUEST_BYTES` exists to prevent — and a
+ * client that omits `content-length` skips the declared-size check entirely.
+ * Reading through the stream stops at the cap instead of after it.
+ *
+ * @param {Request} request
+ * @param {number} limit
+ * @returns {Promise<string | null>}
+ */
+async function readCapped(request, limit) {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let size = 0;
+  let text = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > limit) {
+      await reader.cancel();
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
 /** @param {unknown} body */
 function json(body) {
   return new Response(JSON.stringify(body), {
@@ -281,15 +315,20 @@ export default {
     if (request.method !== "POST")
       return new Response(null, { status: 405, headers: { allow: "POST" } });
 
+    // The declared size rejects the honest oversized client before a byte is
+    // read. It is only an early-out: `content-length` is absent under chunked
+    // encoding and a client is free to lie, so the read below is what actually
+    // enforces the cap.
     const declared = Number.parseInt(request.headers.get("content-length") ?? "", 10);
     if (Number.isFinite(declared) && declared > MAX_REQUEST_BYTES)
       return rpcError(null, ERROR.invalidRequest, "Request body is too large");
 
+    const text = await readCapped(request, MAX_REQUEST_BYTES);
+    if (text === null)
+      return rpcError(null, ERROR.invalidRequest, "Request body is too large");
+
     let body;
     try {
-      const text = await request.text();
-      if (text.length > MAX_REQUEST_BYTES)
-        return rpcError(null, ERROR.invalidRequest, "Request body is too large");
       body = JSON.parse(text);
     } catch {
       return rpcError(null, ERROR.parse, "Request body is not valid JSON");

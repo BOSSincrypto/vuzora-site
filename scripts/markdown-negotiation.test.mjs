@@ -5,6 +5,7 @@ import negotiation, {
   DISCOVERY_LINK_HEADERS,
   SECURITY_HEADERS,
   mirrorPath,
+  mirrorUrl,
   prefersMarkdown,
 } from "../edge/markdown-negotiation.mjs";
 import { markdownMirrorPath } from "./markdown-artifacts.mjs";
@@ -69,6 +70,44 @@ test("the edge maps a page to the same mirror the build publishes", () => {
   assert.equal(mirrorPath("/llms.txt"), null);
   assert.equal(mirrorPath("/assets/app.js"), null);
   assert.equal(mirrorPath("/.well-known/api-catalog"), null);
+});
+
+test("a mirror path can never resolve off this origin", () => {
+  // `//host` is an authority, not a path: `new URL("//host/x", origin)` is
+  // `https://host/x`. A `..` check never sees it, so both the string guard and
+  // the resolved-origin check have to reject it — `edge/a2a-agent.mjs` hands
+  // `mirrorUrl` a raw client string, and a miss there is a subrequest to
+  // somebody else's server, answered in this site's voice.
+  for (const escape of [
+    "//attacker.example/payload",
+    "///attacker.example/payload",
+    "////attacker.example/payload",
+    "/\\attacker.example/payload",
+    "/\\\\attacker.example/payload",
+    "//user:pw@attacker.example/payload",
+    "//attacker.example/exfil?q=1",
+    "/../../etc/passwd",
+    "not-a-path",
+  ]) {
+    assert.equal(mirrorPath(escape), null, escape);
+    assert.equal(mirrorUrl(escape, ORIGIN), null, escape);
+  }
+
+  // The guard must not cost the site its own pages.
+  for (const page of ["/", "/pricing/", "/unis/", "/unis/msu/", "/blog/pochemu-utro/"]) {
+    assert.equal(mirrorUrl(page, ORIGIN).origin, ORIGIN, page);
+  }
+});
+
+test("a negotiated mirror is not served from a shared cache", async () => {
+  // `Vary: Accept` only separates representations in a cache that keys on
+  // `Accept`; Cloudflare does not by default. Without this, one agent's
+  // Markdown request can be replayed to every later browser visitor.
+  const response = await serve("/unis/msu/", {
+    accept: "text/markdown",
+    files: { "/unis/msu.md": "# Расписание МГУ\n" },
+  });
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
 });
 
 test("every page the build publishes falls under a deployed worker route", () => {

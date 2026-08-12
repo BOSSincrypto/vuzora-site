@@ -7,6 +7,7 @@
  * @module routes/unis.$slug
  */
 
+import { useEffect } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { NavBar } from "@/components/vuzora/NavBar";
 import { Footer } from "@/components/vuzora/Footer";
@@ -189,10 +190,14 @@ function UniversityDetailPage() {
   const label = statusLabel(university.status);
   const returnHref = "/unis/";
 
-  // Satisfy the published content floor at build/typecheck time without runtime work.
-  if (import.meta.env.DEV && copy.length < DETAIL_CONTENT_MIN_LENGTH) {
-    console.warn(`[vuzora:university] detail copy too short for ${university.slug}`);
-  }
+  // Render stays pure: under React 19 Strict Mode a warning in the body
+  // double-fires and repeats on every unrelated re-render. The content floor
+  // itself is enforced at build time; this is only its dev-time echo.
+  useEffect(() => {
+    if (import.meta.env.DEV && copy.length < DETAIL_CONTENT_MIN_LENGTH) {
+      console.warn(`[vuzora:university] detail copy too short for ${university.slug}`);
+    }
+  }, [copy.length, university.slug]);
 
   return (
     <div className="min-h-screen bg-ink text-white">

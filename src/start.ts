@@ -39,6 +39,9 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
  *   CSP оставлен умеренно открытым (style-src 'unsafe-inline') – Tailwind v4 и JSON-LD требуют этого.
  */
 const SECURITY_HEADERS: Record<string, string> = {
+  // Первый запрос по `http://` — набранный вручную, старая ссылка, QR-код —
+  // перехватывается on-path, пока браузер не узнал, что origin только HTTPS.
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
