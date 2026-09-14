@@ -37,7 +37,7 @@ test("every other route takes the last commit date of its own sources", () => {
   const routes = ["/", "/pricing/", "/unis/", "/changelog/", "/unis/msu/", "/unis/hse/"];
   const lastmod = buildRouteLastmod({ routes, postRecords: POSTS, git });
   for (const route of routes) assert.equal(lastmod.get(route), "2026-05-04");
-  // The 25 detail pages share one source set, so they must share one git call:
+  // The 28 detail pages share one source set, so they must share one git call:
   // four core routes plus one for the whole detail family.
   assert.equal(calls.length, 5);
   assert.ok(calls.every((call) => call.args[0] === "log" && call.args.includes("--")));

@@ -10,7 +10,7 @@ const SLUG_RE = /^[a-z0-9-]+$/;
 
 test("every university has a unique stable ASCII slug and registry fields", async () => {
   const { universities } = await readRegistry(root);
-  assert.equal(universities.length, 25);
+  assert.equal(universities.length, 28);
   const slugs = new Set();
   for (const university of universities) {
     assert.ok(university.slug, `missing slug for ${university.code ?? university.name}`);
@@ -202,7 +202,7 @@ console.log("OK", UNIVERSITIES.length);
 `;
   const result = runPinnedBun(script, { cwd: root });
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /OK 25/);
+  assert.match(result.stdout, /OK 28/);
 });
 
 test("detail content exposes query intent, required sections, and registry FAQ helper", async () => {

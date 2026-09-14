@@ -15,7 +15,7 @@
  * only other honest answer: "unknown" beats a date we invented. `deploy.yml`
  * checks out full history so the published sitemap takes the git branch.
  *
- * Granularity is per source file, not per rendered pixel: all 25 university
+ * Granularity is per source file, not per rendered pixel: all 28 university
  * pages read from one registry, so they share its date. A registry edit really
  * does rewrite every one of those pages' facts, so that is a claim we can
  * defend — unlike the build day, which claimed a change that never happened.
@@ -125,7 +125,7 @@ export function buildRouteLastmod({ routes, postRecords = [], root = process.cwd
     (latest, post) => (post.date > latest ? post.date : latest),
     "",
   );
-  // One git call per distinct source set, not per route: the 25 detail pages
+  // One git call per distinct source set, not per route: the 28 detail pages
   // share theirs.
   const cache = new Map();
   const dateForSources = (paths) => {

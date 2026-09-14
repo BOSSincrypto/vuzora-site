@@ -219,7 +219,7 @@ function mirroredRoutes(discoveryRoutes) {
  * Where the Markdown representation of each page lives.
  *
  * The rule matters more than the list: an agent that learns it can reach the
- * mirror of any page, including the 25 university pages and every post, which
+ * mirror of any page, including the 28 university pages and every post, which
  * would otherwise double the length of this packet. The core pages are still
  * listed so the rule has worked examples next to it.
  */

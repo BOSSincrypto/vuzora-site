@@ -294,6 +294,33 @@ export const UNIVERSITIES: readonly University[] = [
     // officialUrl omitted: root redirects to language-specific /en; Russian homepage not stable enough.
     scheduleUrl: "https://www.susu.ru/ru/lessons/",
   },
+  {
+    slug: "guu",
+    code: "ГУУ",
+    name: "Государственный университет управления",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://guu.ru/",
+    scheduleUrl: "https://guu.ru/student/schedule/",
+  },
+  {
+    slug: "mospolytech",
+    code: "МосПолитех",
+    name: "Московский политехнический университет",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://mospolytech.ru/",
+    scheduleUrl: "https://mospolytech.ru/obuchauschimsya/raspisaniya/",
+  },
+  {
+    slug: "miigaik",
+    code: "МИИГАиК",
+    name: "Московский государственный университет геодезии и картографии",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://miigaik.ru/",
+    scheduleUrl: "https://study.miigaik.ru/",
+  },
 ] as const;
 
 const BY_SLUG = new Map(UNIVERSITIES.map((university) => [university.slug, university]));
@@ -336,6 +363,9 @@ const UNIVERSITY_GENITIVE_NAMES: Readonly<Record<string, string>> = {
   nngu: "Нижегородского государственного университета им. Н. И. Лобачевского",
   bmstu: "Московского государственного технического университета им. Н. Э. Баумана",
   susu: "Южно-Уральского государственного университета",
+  guu: "Государственного университета управления",
+  mospolytech: "Московского политехнического университета",
+  miigaik: "Московского государственного университета геодезии и картографии",
 };
 
 /** Return the registry university name in natural genitive Russian copy. */
@@ -419,6 +449,11 @@ const DETAIL_FOCUS_BY_SLUG: Readonly<Record<string, string>> = {
   bmstu:
     "Для МГТУ им. Баумана FAQ уточняет границы сервиса и оставляет официальные изменения университету.",
   susu: "Карточка ЮУрГУ собрана как самостоятельная точка входа: статус, город, подключение и ответы находятся рядом.",
+  guu: "Страница ГУУ связывает запись реестра с утренней доставкой и честной границей официальных источников университета.",
+  mospolytech:
+    "Для Московского политеха карточка отделяет маршрут подключения от официальных вопросов вуза.",
+  miigaik:
+    "Карточка МИИГАиК помогает сверить код и город, затем перейти к Telegram-подключению этого вуза.",
 };
 
 /**
