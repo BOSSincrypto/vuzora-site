@@ -64,7 +64,7 @@ Custom domain: **vuzora.ru**.
 | --- | --- |
 | `/` | Landing |
 | `/unis/` | University directory |
-| `/unis/<slug>/` | University detail pages from the registry in `src/content/universities.ts` (**25** entries) |
+| `/unis/<slug>/` | University detail pages from the registry in `src/content/universities.ts` (**28** entries) |
 | `/blog/`, `/blog/<slug>/` | Blog index and posts |
 | `/pricing/`, `/changelog/` | Product pages |
 | `/legal/terms/`, `/legal/privacy/` | Legal |
