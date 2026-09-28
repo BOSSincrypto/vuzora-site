@@ -284,8 +284,6 @@ function UniversityDetailPage() {
               <h3 className="font-display text-xl font-semibold text-white">Как подключиться</h3>
               <p className="mt-3">
                 Нажми кнопку подключения, открой Vuzora в Telegram и выбери {university.code}.
-                Параметр ссылки сохраняет привязку к странице {university.name}, поэтому начать
-                можно без поиска по списку.
               </p>
             </section>
             <section data-section="morning-delivery" className="border-t border-white/10 pt-7">
