@@ -87,7 +87,7 @@ function universityMirror(snapshot, university) {
     university.officialUrl ? `- Сайт вуза: ${university.officialUrl}` : "",
     university.scheduleUrl
       ? `- Официальное расписание занятий: ${university.scheduleUrl}`
-      : "- Официальное расписание: единой страницы нет, его публикуют факультеты.",
+      : "- Официальное расписание: единой проверенной страницы нет — уточняй его в официальных каналах вуза.",
   ].filter(Boolean);
 
   return document([

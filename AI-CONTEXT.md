@@ -81,13 +81,15 @@ router is configured with `trailingSlash: "always"` so `<Link>` renders the
 canonical form; note that `to` props still use the route id, which the
 generated union spells with the slash.
 
-The registry currently contains 28 universities. Each record has a stable
+The registry currently contains 50 universities. Each record has a stable
 lowercase slug, code, display name, city, status, an optional official URL, and
 an optional `scheduleUrl` — the university's own timetable page. `scheduleUrl`
 follows the same verify-or-omit rule as `officialUrl`: confirmed before it
-lands in the registry, omitted when uncertain. It is currently set for 27 of
-28. The one omission (МГУ) carries a comment naming the reason: faculties
-publish their own schedules and there is no central page to link. The release validator fails if
+lands in the registry, omitted when uncertain. It is currently set for 46 of
+50. Each of the four omissions carries a comment naming the reason: МГУ and
+МПГУ publish schedules per faculty or institute with no central page, the two
+ЮФУ institutes Vuzora covers (ИКТИБ and мехмат) publish separately, and no
+public МГУУ timetable page could be verified. The release validator fails if
 a registry-verified external URL is not rendered exactly once on its detail
 page, or if any other external destination appears there.
 The detail route, sitemap, release manifest, `unis.md`, and WebMCP all derive

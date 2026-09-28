@@ -321,6 +321,216 @@ export const UNIVERSITIES: readonly University[] = [
     officialUrl: "https://miigaik.ru/",
     scheduleUrl: "https://study.miigaik.ru/",
   },
+  {
+    slug: "rgau-msha",
+    code: "РГАУ-МСХА",
+    name: "РГАУ-МСХА им. К. А. Тимирязева",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://www.timacad.ru/",
+    scheduleUrl: "https://eg.timacad.ru/schedule/groups/",
+  },
+  {
+    slug: "nstu",
+    code: "НГТУ НЭТИ",
+    name: "Новосибирский государственный технический университет",
+    city: "Новосибирск",
+    status: "online",
+    officialUrl: "https://www.nstu.ru/",
+    scheduleUrl: "https://www.nstu.ru/studies/schedule/schedule_classes",
+  },
+  {
+    slug: "sfedu",
+    code: "ЮФУ",
+    name: "Южный федеральный университет",
+    city: "Ростов-на-Дону · Таганрог",
+    status: "online",
+    officialUrl: "https://sfedu.ru/",
+    // scheduleUrl omitted: Vuzora covers two institutes (ИКТИБ, мехмат) and each publishes its own schedule.
+  },
+  {
+    slug: "mpgu",
+    code: "МПГУ",
+    name: "Московский педагогический государственный университет",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://mpgu.su/",
+    // scheduleUrl omitted: each institute and faculty publishes its own schedule; no central page.
+  },
+  {
+    slug: "spmi",
+    code: "СПГУ",
+    shortName: "СПГУ императрицы Екатерины II",
+    name: "Санкт-Петербургский горный университет императрицы Екатерины II",
+    city: "Санкт-Петербург",
+    status: "online",
+    officialUrl: "https://spmi.ru/",
+    scheduleUrl: "https://spmi.ru/raspisanie-zanyatiy",
+  },
+  {
+    slug: "mgavmib",
+    code: "МГАВМиБ",
+    // Full academy title is over 70 chars; this is the form the academy uses in its own site title.
+    name: "МГАВМиБ – МВА им. К. И. Скрябина",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://mgavm.ru/",
+    scheduleUrl: "https://plan.mgavm.ru/",
+  },
+  {
+    slug: "rsue",
+    code: "РГЭУ (РИНХ)",
+    name: "Ростовский государственный экономический университет (РИНХ)",
+    city: "Ростов-на-Дону",
+    status: "online",
+    officialUrl: "https://rsue.ru/",
+    scheduleUrl: "https://rasp.rsue.ru/",
+  },
+  {
+    slug: "spbgasu",
+    code: "СПбГАСУ",
+    // «Санкт-Петербургский» spelled in full is 73 chars; «С.-Петербургский» keeps every word within 70.
+    name: "С.-Петербургский государственный архитектурно-строительный университет",
+    city: "Санкт-Петербург",
+    status: "online",
+    officialUrl: "https://www.spbgasu.ru/",
+    scheduleUrl: "https://www.spbgasu.ru/students/raspisanie/",
+  },
+  {
+    slug: "gumrf",
+    code: "ГУМРФ",
+    shortName: "ГУМРФ им. адмирала С. О. Макарова",
+    name: "Государственный университет морского и речного флота",
+    city: "Санкт-Петербург",
+    status: "online",
+    officialUrl: "https://gumrf.ru/",
+    scheduleUrl: "https://gumrf.ru/obrdejat/studentam/raspisaniye",
+  },
+  {
+    slug: "npi",
+    code: "ЮРГПУ (НПИ)",
+    shortName: "ЮРГПУ (НПИ) им. М. И. Платова",
+    name: "Южно-Российский государственный политехнический университет (НПИ)",
+    city: "Новочеркасск",
+    status: "online",
+    officialUrl: "https://www.npi-tu.ru/",
+    scheduleUrl: "https://npi-tu.ru/schedule/",
+  },
+  {
+    slug: "dgmu",
+    code: "ДГМУ",
+    name: "Дагестанский государственный медицинский университет",
+    city: "Махачкала",
+    status: "online",
+    officialUrl: "https://dgmu.ru/",
+    scheduleUrl: "https://dgmu.ru/studentu/raspisanie-zanyatij/",
+  },
+  {
+    slug: "rnimu",
+    code: "РНИМУ",
+    shortName: "РНИМУ им. Н. И. Пирогова",
+    name: "Российский национальный исследовательский медицинский университет",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://rsmu.ru/",
+    scheduleUrl: "https://rsmu.ru/students/schedule",
+  },
+  {
+    slug: "reu-pyatigorsk",
+    code: "РЭУ Пятигорск",
+    name: "Пятигорский филиал РЭУ им. Г. В. Плеханова",
+    city: "Пятигорск",
+    status: "online",
+    // Branch section of rea.ru; the branch's own pbrea.ru carries the current timetable.
+    officialUrl: "https://www.rea.ru/structure/filials/pyatigorsk",
+    scheduleUrl: "https://pbrea.ru/raspisanie.html",
+  },
+  {
+    slug: "pgu-pyatigorsk",
+    code: "ПГУ",
+    name: "Пятигорский государственный университет",
+    city: "Пятигорск",
+    status: "online",
+    officialUrl: "https://pgu.ru/",
+    scheduleUrl: "https://pgu.ru/education/schedule/",
+  },
+  {
+    slug: "rosunimed",
+    code: "РосУниМед",
+    // Formerly МГМСУ им. А. И. Евдокимова; msmsu.ru redirects to rosunimed.ru.
+    name: "Российский университет медицины",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://www.rosunimed.ru/",
+    scheduleUrl: "https://rosunimed.ru/obrazovanie/student/uchebnoe-raspisanie/",
+  },
+  {
+    slug: "mtuci",
+    code: "МТУСИ",
+    name: "Московский технический университет связи и информатики",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://mtuci.ru/",
+    scheduleUrl: "https://mtuci.ru/time-table/",
+  },
+  {
+    slug: "madi",
+    code: "МАДИ",
+    // Full title is 72 chars; «Университет МАДИ» is how the university titles its own site.
+    name: "Университет МАДИ",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://madi.ru/",
+    scheduleUrl: "https://madi.ru/tplan/",
+  },
+  {
+    slug: "rgu-kosygin",
+    code: "РГУ Косыгина",
+    shortName: "РГУ им. А. Н. Косыгина",
+    name: "Российский государственный университет им. А. Н. Косыгина",
+    city: "Москва",
+    status: "online",
+    // The former kosygin-rgu.ru domain now serves unrelated content; rguk.ru is the live site.
+    officialUrl: "https://rguk.ru/",
+    scheduleUrl: "https://rguk.ru/students/schedule/",
+  },
+  {
+    slug: "mguu",
+    code: "МГУУ",
+    shortName: "МГУУ Правительства Москвы",
+    name: "Московский городской университет управления Правительства Москвы",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://mguu.ru/",
+    // scheduleUrl omitted: no public timetable page could be verified.
+  },
+  {
+    slug: "kemsu",
+    code: "КемГУ",
+    name: "Кемеровский государственный университет",
+    city: "Кемерово",
+    status: "online",
+    officialUrl: "https://kemsu.ru/",
+    scheduleUrl: "https://kemsu.ru/education/schedule/",
+  },
+  {
+    slug: "mgusit",
+    code: "МГУСиТ",
+    name: "Московский государственный университет спорта и туризма",
+    city: "Москва",
+    status: "online",
+    officialUrl: "https://mgusit.mossport.ru/",
+    scheduleUrl: "https://mgusit.mossport.ru/students/13056/",
+  },
+  {
+    slug: "mgyua-kirov",
+    code: "МГЮА Киров",
+    name: "Волго-Вятский институт (филиал) Университета им. О. Е. Кутафина (МГЮА)",
+    city: "Киров",
+    status: "online",
+    officialUrl: "https://msalkirov.ru/",
+    scheduleUrl: "https://msalkirov.ru/shedule/",
+  },
 ] as const;
 
 const BY_SLUG = new Map(UNIVERSITIES.map((university) => [university.slug, university]));
@@ -366,6 +576,28 @@ const UNIVERSITY_GENITIVE_NAMES: Readonly<Record<string, string>> = {
   guu: "Государственного университета управления",
   mospolytech: "Московского политехнического университета",
   miigaik: "Московского государственного университета геодезии и картографии",
+  "rgau-msha": "РГАУ-МСХА им. К. А. Тимирязева",
+  nstu: "Новосибирского государственного технического университета",
+  sfedu: "Южного федерального университета",
+  mpgu: "Московского педагогического государственного университета",
+  spmi: "Санкт-Петербургского горного университета императрицы Екатерины II",
+  mgavmib: "МГАВМиБ – МВА им. К. И. Скрябина",
+  rsue: "Ростовского государственного экономического университета (РИНХ)",
+  spbgasu: "С.-Петербургского государственного архитектурно-строительного университета",
+  gumrf: "Государственного университета морского и речного флота",
+  npi: "Южно-Российского государственного политехнического университета (НПИ)",
+  dgmu: "Дагестанского государственного медицинского университета",
+  rnimu: "Российского национального исследовательского медицинского университета",
+  "reu-pyatigorsk": "Пятигорского филиала РЭУ им. Г. В. Плеханова",
+  "pgu-pyatigorsk": "Пятигорского государственного университета",
+  rosunimed: "Российского университета медицины",
+  mtuci: "Московского технического университета связи и информатики",
+  madi: "Университета МАДИ",
+  "rgu-kosygin": "Российского государственного университета им. А. Н. Косыгина",
+  mguu: "Московского городского университета управления Правительства Москвы",
+  kemsu: "Кемеровского государственного университета",
+  mgusit: "Московского государственного университета спорта и туризма",
+  "mgyua-kirov": "Волго-Вятского института (филиала) Университета им. О. Е. Кутафина (МГЮА)",
 };
 
 /** Return the registry university name in natural genitive Russian copy. */
@@ -454,6 +686,42 @@ const DETAIL_FOCUS_BY_SLUG: Readonly<Record<string, string>> = {
     "Для Московского политеха карточка отделяет маршрут подключения от официальных вопросов вуза.",
   miigaik:
     "Карточка МИИГАиК помогает сверить код и город, затем перейти к Telegram-подключению этого вуза.",
+  "rgau-msha":
+    "Карточка Тимирязевской академии собрана для быстрого перехода от поиска вуза к утренней доставке в Telegram.",
+  nstu: "Для НГТУ НЭТИ здесь рядом код, город и статус, а ссылка подключения сразу ведёт в бота с привязкой к вузу.",
+  sfedu:
+    "В Vuzora подключены два института ЮФУ: ИКТИБ в Таганроге и мехмат (Институт математики, механики и компьютерных наук) в Ростове-на-Дону. Каждый публикует расписание отдельно, поэтому единой ссылки на него здесь нет.",
+  mpgu: "Расписание МПГУ публикуют институты и факультеты на своих страницах, поэтому единой ссылки на него здесь нет.",
+  spmi: "Карточка Горного университета помогает сверить код СПГУ и город, а затем перейти к подключению в Telegram.",
+  mgavmib:
+    "Для МГАВМиБ — Московской ветеринарной академии им. К. И. Скрябина — страница отделяет утреннюю доставку от официальных вопросов вуза.",
+  rsue: "Страница РГЭУ (РИНХ) связывает запись каталога с утренним сообщением в Telegram, не подменяя официальные каналы вуза.",
+  spbgasu:
+    "Полное название вуза — Санкт-Петербургский государственный архитектурно-строительный университет; в каталоге он указан под кодом СПбГАСУ.",
+  gumrf:
+    "Карточка ГУМРФ им. адмирала С. О. Макарова показывает город, статус и маршрут подключения без таблиц занятий на сайте.",
+  npi: "Для ЮРГПУ (НПИ) в Новочеркасске страница собирает статус, город и ссылку подключения в одном месте.",
+  dgmu: "Страница ДГМУ помогает сверить запись реестра по коду и городу перед первым запуском бота.",
+  rnimu:
+    "Для РНИМУ им. Н. И. Пирогова карточка отделяет доставку уведомлений от официальных вопросов университета.",
+  "reu-pyatigorsk":
+    "Это отдельная карточка филиала в Пятигорске: у московского РЭУ им. Г. В. Плеханова в каталоге своя страница.",
+  "pgu-pyatigorsk":
+    "Карточка ПГУ относится к Пятигорскому государственному университету — сверь город перед подключением, чтобы не перепутать вуз.",
+  rosunimed:
+    "Российский университет медицины — это бывший МГМСУ им. А. И. Евдокимова; карточка собрана под текущим названием вуза.",
+  mtuci:
+    "Для МТУСИ здесь собраны статус, город и точная ссылка подключения с привязкой к этой странице.",
+  madi: "Полное название вуза — Московский автомобильно-дорожный государственный технический университет; в каталоге Vuzora он указан как МАДИ.",
+  "rgu-kosygin":
+    "Карточка РГУ им. А. Н. Косыгина ведёт от каталога к утренней доставке и оставляет официальные изменения за университетом.",
+  mguu: "Страница МГУУ — Университета Правительства Москвы — объясняет формат утренних сообщений без выдуманных деталей учебного процесса.",
+  kemsu:
+    "Для КемГУ в Кемерове карточка показывает статус и путь к подключению, а расписание остаётся за официальным источником вуза.",
+  mgusit:
+    "Карточка МГУСиТ собрана как короткий маршрут: проверить запись реестра и перейти к подключению в Telegram.",
+  "mgyua-kirov":
+    "Карточка относится к Волго-Вятскому институту (филиалу) МГЮА в Кирове, а не к московскому Университету им. О. Е. Кутафина.",
 };
 
 /**
