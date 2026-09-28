@@ -24,11 +24,11 @@ const read = (path) => readFile(join(root, path), "utf8");
 
 test("buildLlmsPacket joins full registry with absolute production detail URLs", async () => {
   const { universities, affiliationBoundary } = await readRegistry(root);
-  assert.equal(universities.length, 28);
+  assert.equal(universities.length, 50);
   const body = buildLlmsPacket(universities, { affiliationBoundary });
   const result = assertLlmsJoin(body, universities, { affiliationBoundary });
-  assert.equal(result.expectedCount, 28);
-  assert.equal(result.foundCount, 28);
+  assert.equal(result.expectedCount, 50);
+  assert.equal(result.foundCount, 50);
   for (const university of universities) {
     assert.ok(body.includes(detailUrl(university.slug)));
     assert.ok(
